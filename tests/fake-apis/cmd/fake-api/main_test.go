@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -87,4 +89,83 @@ func TestHandleSimulate(t *testing.T) {
 	if payload["simulatedDrift"] != "source_version_changed" {
 		t.Fatalf("simulatedDrift = %v, want source_version_changed", payload["simulatedDrift"])
 	}
+}
+
+func TestHandleFlows(t *testing.T) {
+	server := testServer()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/flows", nil)
+	rr := httptest.NewRecorder()
+
+	server.handleFlows(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	var payload struct {
+		Service string `json:"service"`
+		Domain  string `json:"domain"`
+		Flows   []flow `json:"flows"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.Service != "LogisticsGateway" {
+		t.Fatalf("service = %q, want LogisticsGateway", payload.Service)
+	}
+	if payload.Domain != "logistics" {
+		t.Fatalf("domain = %q, want logistics", payload.Domain)
+	}
+	if len(payload.Flows) != 1 {
+		t.Fatalf("flows len = %d, want 1", len(payload.Flows))
+	}
+}
+
+func TestHandleUseCases(t *testing.T) {
+	server := testServer()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/use-cases", nil)
+	rr := httptest.NewRecorder()
+
+	server.handleUseCases(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	var payload struct {
+		Summary []struct {
+			UseCase string `json:"useCase"`
+			Count   int    `json:"count"`
+		} `json:"summary"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(payload.Summary) != 2 {
+		t.Fatalf("summary len = %d, want 2", len(payload.Summary))
+	}
+	if payload.Summary[0].UseCase != "drift_blocking" || payload.Summary[0].Count != 1 {
+		t.Fatalf("summary[0] = %+v, want drift_blocking=1", payload.Summary[0])
+	}
+	if payload.Summary[1].UseCase != "escalation_chain" || payload.Summary[1].Count != 1 {
+		t.Fatalf("summary[1] = %+v, want escalation_chain=1", payload.Summary[1])
+	}
+}
+
+func TestLoadFlows(t *testing.T) {
+	t.Run("missing file", func(t *testing.T) {
+		if _, err := loadFlows("does-not-exist.json"); err == nil {
+			t.Fatalf("expected error for missing file")
+		}
+	})
+
+	t.Run("invalid json", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := filepath.Join(tmpDir, "flows.json")
+		if err := os.WriteFile(path, []byte("{not-json"), 0o644); err != nil {
+			t.Fatalf("write invalid json file: %v", err)
+		}
+
+		if _, err := loadFlows(path); err == nil {
+			t.Fatalf("expected parse error")
+		}
+	})
 }

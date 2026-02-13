@@ -118,6 +118,7 @@ run_agent() {
 
 	run_step "generate-usecase-examples" "go run ./scripts/generate-usecase-examples.go"
 	run_step "usecase-tests" "go test ./internal/lineage -run 'TestUseCase' -count=1"
+	run_step "fake-api-tests" "go test ./tests/fake-apis/cmd/fake-api -count=1"
 	run_step "lineage-export-usecases" "go run ./cmd/stricture lineage-export --strict=true --out '$CURRENT_PATH' '$FIXTURE_PATH'"
 
 	if [ ! -f "$BASELINE_PATH" ]; then
