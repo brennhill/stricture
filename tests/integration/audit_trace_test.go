@@ -129,3 +129,51 @@ func TestAuditRejectsInvalidStrictness(t *testing.T) {
 		t.Fatalf("stderr should mention strictness validation, got %q", stderr)
 	}
 }
+
+func TestTraceHarValidationRequiresLogEnvelope(t *testing.T) {
+	tmp := t.TempDir()
+	tracePath := filepath.Join(tmp, "trace.har")
+	if err := os.WriteFile(tracePath, []byte(`{"events":[]}`), 0o644); err != nil {
+		t.Fatalf("write trace file: %v", err)
+	}
+
+	_, stderr, code := runInDir(t, tmp, "trace", "trace.har", "--trace-format", "har")
+	if code != 2 {
+		t.Fatalf("har trace without log envelope exit code = %d, want 2", code)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "har") {
+		t.Fatalf("stderr should mention har validation, got %q", stderr)
+	}
+}
+
+func TestTraceOtelValidationRequiresResourceSpans(t *testing.T) {
+	tmp := t.TempDir()
+	tracePath := filepath.Join(tmp, "trace.json")
+	if err := os.WriteFile(tracePath, []byte(`{"events":[]}`), 0o644); err != nil {
+		t.Fatalf("write trace file: %v", err)
+	}
+
+	_, stderr, code := runInDir(t, tmp, "trace", "trace.json", "--trace-format", "otel")
+	if code != 2 {
+		t.Fatalf("otel trace without resourceSpans exit code = %d, want 2", code)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "resource") {
+		t.Fatalf("stderr should mention resourceSpans validation, got %q", stderr)
+	}
+}
+
+func TestTraceAutoDetectsHarFromExtension(t *testing.T) {
+	tmp := t.TempDir()
+	tracePath := filepath.Join(tmp, "trace.har")
+	if err := os.WriteFile(tracePath, []byte(`{"log":{"version":"1.2"}}`), 0o644); err != nil {
+		t.Fatalf("write trace file: %v", err)
+	}
+
+	stdout, stderr, code := runInDir(t, tmp, "trace", "trace.har")
+	if code != 0 {
+		t.Fatalf("auto-detect HAR exit code = %d, want 0\nstderr=%q\nstdout=%q", code, stderr, stdout)
+	}
+	if !strings.Contains(strings.ToLower(stdout), "format=har") {
+		t.Fatalf("trace output should report har format, got %q", stdout)
+	}
+}

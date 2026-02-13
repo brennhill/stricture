@@ -668,24 +668,10 @@ func runTrace(args []string) {
 
 	format := strings.ToLower(strings.TrimSpace(*traceFormat))
 	if format == "" || format == "auto" {
-		format = inferTraceFormat(tracePath)
+		format = inferTraceFormat(tracePath, data)
 	}
-	switch format {
-	case "har", "otel", "custom":
-		// JSON is the baseline envelope for currently supported trace formats.
-		if !json.Valid(data) {
-			fmt.Fprintf(os.Stderr, "Error: trace %s is not valid JSON for format %s\n", tracePath, format)
-			os.Exit(2)
-		}
-		if *strict {
-			var envelope map[string]interface{}
-			if err := json.Unmarshal(data, &envelope); err != nil || len(envelope) == 0 {
-				fmt.Fprintf(os.Stderr, "Error: strict trace validation failed for %s\n", tracePath)
-				os.Exit(2)
-			}
-		}
-	default:
-		fmt.Fprintf(os.Stderr, "Error: unsupported trace format %q (valid: auto, har, otel, custom)\n", *traceFormat)
+	if err := validateTracePayload(format, data, *strict); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
 	}
 
@@ -761,13 +747,75 @@ func splitTraceArgs(args []string) (string, []string, error) {
 	return tracePath, flagArgs, nil
 }
 
-func inferTraceFormat(pathValue string) string {
+func inferTraceFormat(pathValue string, data []byte) string {
 	switch strings.ToLower(strings.TrimSpace(filepath.Ext(pathValue))) {
 	case ".har":
 		return "har"
-	default:
+	case ".otel", ".otlp":
+		return "otel"
+	}
+	envelope, err := parseTraceEnvelope(data)
+	if err != nil {
 		return "custom"
 	}
+	if _, ok := envelope["resourceSpans"]; ok {
+		return "otel"
+	}
+	if _, ok := envelope["log"]; ok {
+		return "har"
+	}
+	return "custom"
+}
+
+func validateTracePayload(format string, data []byte, strict bool) error {
+	envelope, err := parseTraceEnvelope(data)
+	if err != nil {
+		return err
+	}
+	switch format {
+	case "har":
+		logRaw, ok := envelope["log"]
+		if !ok {
+			return fmt.Errorf("HAR trace must include top-level log object")
+		}
+		logObj, ok := logRaw.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("HAR trace log field must be an object")
+		}
+		if strict && len(logObj) == 0 {
+			return fmt.Errorf("strict HAR validation requires non-empty log object")
+		}
+	case "otel":
+		resourceRaw, ok := envelope["resourceSpans"]
+		if !ok {
+			return fmt.Errorf("OTEL trace must include resourceSpans array")
+		}
+		resourceSpans, ok := resourceRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("OTEL trace resourceSpans field must be an array")
+		}
+		if strict && len(resourceSpans) == 0 {
+			return fmt.Errorf("strict OTEL validation requires non-empty resourceSpans array")
+		}
+	case "custom":
+		if strict && len(envelope) == 0 {
+			return fmt.Errorf("strict custom trace validation requires non-empty JSON object")
+		}
+	default:
+		return fmt.Errorf("unsupported trace format %q (valid: auto, har, otel, custom)", format)
+	}
+	return nil
+}
+
+func parseTraceEnvelope(data []byte) (map[string]interface{}, error) {
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("trace payload is not valid JSON")
+	}
+	var envelope map[string]interface{}
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, fmt.Errorf("trace payload must be a JSON object")
+	}
+	return envelope, nil
 }
 
 func autoDetectManifestPath() string {
