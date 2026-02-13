@@ -11,6 +11,7 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -145,11 +146,11 @@ func runLint(args []string) {
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
 	diffMode := fs.Bool("diff", false, "When used with --baseline, include added/resolved diff details against baseline")
+	changedOnly := fs.Bool("changed", false, "Lint only changed files in git working tree/index")
+	stagedOnly := fs.Bool("staged", false, "Lint only staged files in git index")
 	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
 	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
 	fixBackup := fs.Bool("fix-backup", false, "When used with --fix, create .bak files before modifying sources")
-	_ = fs.Bool("changed", false, "Lint only changed files")
-	_ = fs.Bool("staged", false, "Lint only staged files")
 	_ = fs.Bool("no-cache", false, "Disable caching")
 	_ = fs.Parse(args)
 
@@ -159,6 +160,10 @@ func runLint(args []string) {
 	}
 	if *fixBackup && !*fixApply {
 		fmt.Fprintln(os.Stderr, "Error: --fix-backup requires --fix")
+		os.Exit(2)
+	}
+	if *changedOnly && *stagedOnly {
+		fmt.Fprintln(os.Stderr, "Error: --changed and --staged are mutually exclusive")
 		os.Exit(2)
 	}
 	if *diffMode && strings.TrimSpace(*baselinePath) == "" {
@@ -225,6 +230,26 @@ func runLint(args []string) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: collect files: %v\n", err)
 		os.Exit(1)
+	}
+	if *changedOnly || *stagedOnly {
+		scoped, err := resolveGitScopedFileSet(*changedOnly, *stagedOnly)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(2)
+		}
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: get working directory: %v\n", err)
+			os.Exit(1)
+		}
+		filtered := make([]string, 0, len(filePaths))
+		for _, p := range filePaths {
+			if scoped[pathKeyFromBase(cwd, p)] {
+				filtered = append(filtered, p)
+			}
+		}
+		filePaths = filtered
 	}
 
 	files, err := buildUnifiedFiles(filePaths)
@@ -841,6 +866,100 @@ func collectLintFilePaths(paths []string) ([]string, error) {
 
 	sort.Strings(files)
 	return files, nil
+}
+
+func resolveGitScopedFileSet(changedOnly bool, stagedOnly bool) (map[string]bool, error) {
+	rootRaw, err := gitOutput("rev-parse", "--show-toplevel")
+	if err != nil {
+		return nil, fmt.Errorf("git-scoped lint requires a git repository: %w", err)
+	}
+	root := strings.TrimSpace(rootRaw)
+	if root == "" {
+		return nil, fmt.Errorf("unable to resolve git repository root")
+	}
+
+	combined := make([]string, 0)
+	switch {
+	case stagedOnly:
+		staged, err := gitOutputLines("diff", "--name-only", "--cached", "--diff-filter=ACMRT")
+		if err != nil {
+			return nil, err
+		}
+		combined = append(combined, staged...)
+	case changedOnly:
+		working, err := gitOutputLines("diff", "--name-only", "--diff-filter=ACMRT")
+		if err != nil {
+			return nil, err
+		}
+		staged, err := gitOutputLines("diff", "--name-only", "--cached", "--diff-filter=ACMRT")
+		if err != nil {
+			return nil, err
+		}
+		untracked, err := gitOutputLines("ls-files", "--others", "--exclude-standard")
+		if err != nil {
+			return nil, err
+		}
+		combined = append(combined, working...)
+		combined = append(combined, staged...)
+		combined = append(combined, untracked...)
+	default:
+		return map[string]bool{}, nil
+	}
+
+	out := map[string]bool{}
+	for _, rel := range combined {
+		r := strings.TrimSpace(rel)
+		if r == "" {
+			continue
+		}
+		out[pathKeyFromBase(root, r)] = true
+	}
+	return out, nil
+}
+
+func gitOutputLines(args ...string) ([]string, error) {
+	out, err := gitOutput(args...)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(out, "\n")
+	trimmed := make([]string, 0, len(lines))
+	for _, line := range lines {
+		v := strings.TrimSpace(line)
+		if v == "" {
+			continue
+		}
+		trimmed = append(trimmed, v)
+	}
+	return trimmed, nil
+}
+
+func gitOutput(args ...string) (string, error) {
+	cmd := exec.Command("git", args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		msg := strings.TrimSpace(string(out))
+		if msg == "" {
+			msg = err.Error()
+		}
+		return "", fmt.Errorf("git %s failed: %s", strings.Join(args, " "), msg)
+	}
+	return string(out), nil
+}
+
+func pathKeyFromBase(baseDir string, pathValue string) string {
+	candidate := pathValue
+	if !filepath.IsAbs(candidate) {
+		candidate = filepath.Join(baseDir, candidate)
+	}
+	abs, err := filepath.Abs(candidate)
+	if err == nil {
+		candidate = abs
+	}
+	if resolved, err := filepath.EvalSymlinks(candidate); err == nil {
+		candidate = resolved
+	}
+	return filepath.ToSlash(filepath.Clean(candidate))
 }
 
 func currentProjectRoot() string {
