@@ -60,6 +60,8 @@ func main() {
 		runLineageEscalate(os.Args[2:])
 	case "list-rules":
 		runListRules()
+	case "explain":
+		runExplain(os.Args[2:])
 	case "validate-config":
 		runValidateConfig(os.Args[2:])
 	case "lint":
@@ -97,6 +99,7 @@ func printUsage() {
 	fmt.Println("  lineage-diff      Diff two lineage artifacts and classify drift severity")
 	fmt.Println("  lineage-escalate  Resolve emergency contacts upstream from a service")
 	fmt.Println("  list-rules        List all registered rules")
+	fmt.Println("  explain           Show details for a specific rule")
 	fmt.Println("  validate-config   Check that a .stricture.yml file is valid")
 	fmt.Println("  version           Print version and exit")
 	fmt.Println("  help              Print this help message")
@@ -106,7 +109,7 @@ func printUsage() {
 
 func printUnknownCommand(command string) {
 	fmt.Fprintf(os.Stderr, "Error: unknown command %q\n", command)
-	fmt.Fprintln(os.Stderr, "Valid commands: lint, fix, init, inspect, inspect-lineage, lineage-export, lineage-diff, lineage-escalate, list-rules, validate-config, version, help")
+	fmt.Fprintln(os.Stderr, "Valid commands: lint, fix, init, inspect, inspect-lineage, lineage-export, lineage-diff, lineage-escalate, list-rules, explain, validate-config, version, help")
 }
 
 func looksLikePathArg(value string) bool {
@@ -1082,6 +1085,46 @@ func runListRules() {
 	}
 	w.Flush()
 	fmt.Printf("\n%d rules registered.\n", len(registry.All()))
+}
+
+func runExplain(args []string) {
+	fs := flag.NewFlagSet("explain", flag.ExitOnError)
+	fs.Usage = func() {
+		fmt.Println("Usage: stricture explain <rule-id>")
+		fmt.Println()
+		fmt.Println("Show details for a specific rule.")
+	}
+	_ = fs.Parse(args)
+
+	if fs.NArg() == 0 {
+		fmt.Fprintln(os.Stderr, "Error: explain requires a rule ID argument.")
+		fs.Usage()
+		os.Exit(2)
+	}
+
+	ruleID := strings.TrimSpace(fs.Arg(0))
+	registry := buildRegistry()
+	ruleDef, ok := registry.ByID(ruleID)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "Error: unknown rule %q\n", ruleID)
+		fmt.Fprintln(os.Stderr, "Run 'stricture list-rules' to see available rules.")
+		os.Exit(2)
+	}
+
+	meta := ruleMetadata(ruleDef.ID())
+	requiresManifest := "No"
+	if meta.RequiresManifest {
+		requiresManifest = "Yes"
+	}
+
+	fmt.Printf("ID: %s\n", ruleDef.ID())
+	fmt.Printf("Category: %s\n", strings.ToUpper(ruleDef.Category()))
+	fmt.Printf("Default Severity: %s\n", ruleDef.DefaultSeverity())
+	fmt.Printf("Fixable: %s\n", meta.Fixability)
+	fmt.Printf("Needs Project Context: %t\n", ruleDef.NeedsProjectContext())
+	fmt.Printf("Requires Manifest: %s\n", requiresManifest)
+	fmt.Printf("Description: %s\n", ruleDef.Description())
+	fmt.Printf("Why: %s\n", ruleDef.Why())
 }
 
 // runValidateConfig checks that a config file is valid YAML with recognized rule IDs.
