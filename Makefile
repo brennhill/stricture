@@ -38,7 +38,8 @@ test-phase6: test-phase5
 	go test $(GOFLAGS) ./internal/fix/... ./internal/plugins/... ./internal/suppression/...
 
 lint:
-	golangci-lint run ./...
+	mkdir -p .cache/go-build .cache/golangci-lint
+	GOCACHE=$(PWD)/.cache/go-build GOLANGCI_LINT_CACHE=$(PWD)/.cache/golangci-lint golangci-lint run ./cmd/... ./internal/...
 
 benchmark:
 	go test $(GOFLAGS) -bench=. -benchmem $(BENCH_PKGS)

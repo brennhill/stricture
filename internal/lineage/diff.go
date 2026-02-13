@@ -499,14 +499,13 @@ func applyOverrides(changes []DriftChange, overrides []Override) {
 
 func activeOverrides(overrides []Override) []Override {
 	nowDate := time.Now().UTC().Format("2006-01-02")
-	now, _ := time.Parse("2006-01-02", nowDate)
 	result := make([]Override, 0, len(overrides))
 	for _, ov := range overrides {
 		expires, err := time.Parse("2006-01-02", ov.Expires)
 		if err != nil {
 			continue
 		}
-		if expires.Before(now) {
+		if expires.Format("2006-01-02") < nowDate {
 			continue
 		}
 		result = append(result, ov)

@@ -295,8 +295,14 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 		return Annotation{}, parseErr(line, "sunset_at must use YYYY-MM-DD")
 	}
 	if sunset != "" {
-		introducedT, _ := time.Parse("2006-01-02", fields["introduced_at"])
-		sunsetT, _ := time.Parse("2006-01-02", sunset)
+		introducedT, err := time.Parse("2006-01-02", fields["introduced_at"])
+		if err != nil {
+			return Annotation{}, parseErr(line, "introduced_at must use YYYY-MM-DD")
+		}
+		sunsetT, err := time.Parse("2006-01-02", sunset)
+		if err != nil {
+			return Annotation{}, parseErr(line, "sunset_at must use YYYY-MM-DD")
+		}
 		if sunsetT.Before(introducedT) {
 			return Annotation{}, parseErr(line, "sunset_at must be >= introduced_at")
 		}

@@ -201,7 +201,7 @@ func runLint(args []string) {
 	fixBackup := fs.Bool("fix-backup", false, "When used with --fix, create .bak files before modifying sources")
 	cacheEnabled := fs.Bool("cache", false, "Enable caching (default behavior)")
 	noCache := fs.Bool("no-cache", false, "Disable caching")
-	_ = fs.Parse(flagArgs)
+	parseFlagSetOrExit(fs, flagArgs)
 
 	if *fixApply && *fixDryRun {
 		fmt.Fprintln(os.Stderr, "Error: --fix and --fix-dry-run are mutually exclusive")
@@ -501,7 +501,8 @@ func runLint(args []string) {
 			fmt.Fprintf(os.Stderr, "Error: write %s output: %v\n", *format, err)
 			os.Exit(1)
 		}
-		report = append(encoded, '\n')
+		report = append(report, encoded...)
+		report = append(report, '\n')
 	default:
 		var out strings.Builder
 		if baselineInfo.Enabled {
@@ -579,7 +580,7 @@ func runAudit(args []string) {
 	outputPath := fs.String("output", "", "Write report to file instead of stdout")
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
-	_ = fs.Parse(flagArgs)
+	parseFlagSetOrExit(fs, flagArgs)
 
 	strictnessValue := strings.ToLower(strings.TrimSpace(*strictness))
 	if strictnessValue != "" && !validStrictness(strictnessValue) {
@@ -655,7 +656,7 @@ func runTrace(args []string) {
 	traceFormat := fs.String("trace-format", "auto", "Trace format (auto, har, otel, custom)")
 	service := fs.String("service", "", "Service name that produced the trace")
 	strict := fs.Bool("strict", false, "Fail on parse anomalies")
-	_ = fs.Parse(flagArgs)
+	parseFlagSetOrExit(fs, flagArgs)
 
 	if strings.TrimSpace(tracePath) == "" {
 		fmt.Fprintln(os.Stderr, "Error: trace requires a trace file path.")
@@ -716,6 +717,12 @@ func hasHelpFlag(args []string) bool {
 		}
 	}
 	return false
+}
+
+func parseFlagSetOrExit(fs *flag.FlagSet, args []string) {
+	if err := fs.Parse(args); err != nil {
+		os.Exit(2)
+	}
 }
 
 func splitLintArgs(args []string) ([]string, []string, error) {
@@ -965,7 +972,7 @@ func runInit(args []string) {
 		fmt.Println("Create a default .stricture.yml with recommended settings.")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	target := strings.TrimSpace(*pathValue)
 	if target == "" {
@@ -1291,10 +1298,6 @@ func formatFixSummary(ops []fix.Operation, dryRun bool) string {
 	return out.String()
 }
 
-func printFixSummary(ops []fix.Operation, dryRun bool) {
-	fmt.Print(formatFixSummary(ops, dryRun))
-}
-
 func writeFixBackups(ops []fix.Operation) error {
 	paths := map[string]bool{}
 	for _, op := range ops {
@@ -1612,6 +1615,7 @@ func symlinkResolvesOutsideProject(pathValue string, projectRoot string) (bool, 
 	resolved, err := filepath.EvalSymlinks(pathValue)
 	if err != nil {
 		// Broken or inaccessible symlink should not be linted.
+		//nolint:nilerr // Returning nil error is intentional because this is a soft-skip condition.
 		return true, nil
 	}
 	absResolved, err := filepath.Abs(resolved)
@@ -1953,7 +1957,7 @@ func runInspect(args []string) {
 		fmt.Println("This is a debugging tool for adapter development.")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	if fs.NArg() == 0 {
 		fmt.Fprintln(os.Stderr, "Error: inspect requires a file path argument.")
@@ -2109,7 +2113,7 @@ func runInspectLineage(args []string) {
 		fmt.Println()
 		fmt.Println("Parse stricture-source annotations from comments and print them as JSON.")
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	if fs.NArg() == 0 {
 		fmt.Fprintln(os.Stderr, "Error: inspect-lineage requires a file path argument.")
@@ -2154,7 +2158,7 @@ func runLineageExport(args []string) {
 		fmt.Println("Build a normalized lineage artifact from source files.")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	paths := fs.Args()
 	if len(paths) == 0 {
@@ -2182,8 +2186,12 @@ func runLineageExport(args []string) {
 	}
 
 	if len(parseErrs) > 0 {
-		errOut, _ := json.MarshalIndent(parseErrs, "", "  ")
-		fmt.Fprintf(os.Stderr, "Lineage parse errors (%d):\n%s\n", len(parseErrs), string(errOut))
+		errOut, err := json.MarshalIndent(parseErrs, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Lineage parse errors (%d)\n", len(parseErrs))
+		} else {
+			fmt.Fprintf(os.Stderr, "Lineage parse errors (%d):\n%s\n", len(parseErrs), string(errOut))
+		}
 		if *strict {
 			os.Exit(1)
 		}
@@ -2204,7 +2212,7 @@ func runLineageDiff(args []string) {
 		fmt.Println("Diff two lineage artifacts and classify drift severity.")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	if strings.TrimSpace(*basePath) == "" || strings.TrimSpace(*headPath) == "" {
 		fmt.Fprintln(os.Stderr, "Error: --base and --head are required")
@@ -2272,7 +2280,7 @@ func runLineageEscalate(args []string) {
 		fmt.Println("Show emergency contacts for a service and its upstream dependencies.")
 		fs.PrintDefaults()
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	if strings.TrimSpace(*serviceID) == "" || strings.TrimSpace(*artifactPath) == "" {
 		fmt.Fprintln(os.Stderr, "Error: --service and --artifact are required")
@@ -2340,7 +2348,7 @@ func runExplain(args []string) {
 		fmt.Println()
 		fmt.Println("Show details for a specific rule.")
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	if fs.NArg() == 0 {
 		fmt.Fprintln(os.Stderr, "Error: explain requires a rule ID argument.")
@@ -2382,7 +2390,7 @@ func runValidateConfig(args []string) {
 		fmt.Println("Validate a .stricture.yml configuration file.")
 		fmt.Println("Checks YAML syntax and verifies all rule IDs are recognized.")
 	}
-	_ = fs.Parse(args)
+	parseFlagSetOrExit(fs, args)
 
 	configPath := ".stricture.yml"
 	if fs.NArg() > 0 {
