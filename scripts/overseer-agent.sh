@@ -244,7 +244,7 @@ Commands:
 Environment:
   OVERSEER_MAX_HOURS     Max runtime window in hours (default: 5)
   OVERSEER_POLL_SECONDS  Delay between blocked retries (default: 60)
-  OVERSEER_MIN_COVERAGE  Coverage threshold for spec-quality-audit (default: 80)
+  OVERSEER_MIN_COVERAGE  Coverage threshold for spec-quality-audit (default: 81)
 EOF_USAGE
 }
 
