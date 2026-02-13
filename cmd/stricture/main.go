@@ -143,6 +143,7 @@ func runLint(args []string) {
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
+	outputPath := fs.String("output", "", "Write report to file instead of stdout")
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
 	diffMode := fs.Bool("diff", false, "When used with --baseline, include added/resolved diff details against baseline")
@@ -363,6 +364,7 @@ func runLint(args []string) {
 		summary["diffResolved"] = len(baselineInfo.Resolved)
 	}
 
+	var report []byte
 	switch *format {
 	case "json", "sarif", "junit":
 		payload := map[string]interface{}{
@@ -397,36 +399,55 @@ func runLint(args []string) {
 				"applied": *fixApply,
 			}
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
+		encoded, err := json.MarshalIndent(payload, "", "  ")
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: write %s output: %v\n", *format, err)
 			os.Exit(1)
 		}
+		report = append(encoded, '\n')
 	default:
+		var out strings.Builder
 		if baselineInfo.Enabled {
 			if baselineInfo.Bootstrapped {
-				fmt.Printf("Baseline created at %s with %d entry(s); existing violations suppressed.\n", baselineInfo.Path, baselineInfo.EntryCount)
+				fmt.Fprintf(&out, "Baseline created at %s with %d entry(s); existing violations suppressed.\n", baselineInfo.Path, baselineInfo.EntryCount)
 			} else if baselineInfo.Suppressed > 0 {
-				fmt.Printf("Baseline suppressed %d violation(s) from %s.\n", baselineInfo.Suppressed, baselineInfo.Path)
+				fmt.Fprintf(&out, "Baseline suppressed %d violation(s) from %s.\n", baselineInfo.Suppressed, baselineInfo.Path)
 			}
 		}
 		if *diffMode {
-			fmt.Printf("Diff: added=%d resolved=%d (baseline=%s)\n", len(baselineInfo.Added), len(baselineInfo.Resolved), baselineInfo.Path)
+			fmt.Fprintf(&out, "Diff: added=%d resolved=%d (baseline=%s)\n", len(baselineInfo.Added), len(baselineInfo.Resolved), baselineInfo.Path)
 		}
 		if *fixApply || *fixDryRun {
-			printFixSummary(fixOps, *fixDryRun)
+			out.WriteString(formatFixSummary(fixOps, *fixDryRun))
 		}
 
 		if len(violations) == 0 {
-			fmt.Println("No violations found.")
+			fmt.Fprintln(&out, "No violations found.")
 		} else {
 			for _, v := range violations {
-				fmt.Printf("%s:%d: %s %s: %s\n", v.FilePath, v.StartLine, strings.ToUpper(v.Severity), v.RuleID, v.Message)
+				fmt.Fprintf(&out, "%s:%d: %s %s: %s\n", v.FilePath, v.StartLine, strings.ToUpper(v.Severity), v.RuleID, v.Message)
 			}
 		}
-		fmt.Printf("Summary: files=%d issues=%d violations=%d errors=%d warnings=%d elapsedMs=%d\n",
+		fmt.Fprintf(&out, "Summary: files=%d issues=%d violations=%d errors=%d warnings=%d elapsedMs=%d\n",
 			summary["filesChecked"], summary["filesWithIssues"], summary["totalViolations"], summary["errors"], summary["warnings"], summary["elapsedMs"])
+		report = []byte(out.String())
+	}
+
+	targetOutput := strings.TrimSpace(*outputPath)
+	if targetOutput == "" {
+		if _, err := os.Stdout.Write(report); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: write output: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		if err := os.MkdirAll(filepath.Dir(targetOutput), 0o755); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: create output directory for %s: %v\n", targetOutput, err)
+			os.Exit(1)
+		}
+		if err := os.WriteFile(targetOutput, report, 0o644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: write output file %s: %v\n", targetOutput, err)
+			os.Exit(1)
+		}
 	}
 
 	if errorCount > 0 {
@@ -749,15 +770,21 @@ func renderFixOperations(ops []fix.Operation) []map[string]string {
 	return out
 }
 
-func printFixSummary(ops []fix.Operation, dryRun bool) {
+func formatFixSummary(ops []fix.Operation, dryRun bool) string {
+	var out strings.Builder
 	mode := "apply"
 	if dryRun {
 		mode = "dry-run"
 	}
-	fmt.Printf("Fixes: %d operation(s) (%s)\n", len(ops), mode)
+	fmt.Fprintf(&out, "Fixes: %d operation(s) (%s)\n", len(ops), mode)
 	for _, op := range ops {
-		fmt.Printf("  - [%s] %s\n", op.RuleID, op.Description)
+		fmt.Fprintf(&out, "  - [%s] %s\n", op.RuleID, op.Description)
 	}
+	return out.String()
+}
+
+func printFixSummary(ops []fix.Operation, dryRun bool) {
+	fmt.Print(formatFixSummary(ops, dryRun))
 }
 
 func writeFixBackups(ops []fix.Operation) error {
