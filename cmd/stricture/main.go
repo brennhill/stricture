@@ -142,6 +142,7 @@ func runLint(args []string) {
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
+	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
 	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
 	_ = fs.Bool("changed", false, "Lint only changed files")
@@ -157,6 +158,10 @@ func runLint(args []string) {
 	validFormats := map[string]bool{"text": true, "json": true, "sarif": true, "junit": true}
 	if !validFormats[*format] {
 		fmt.Fprintf(os.Stderr, "Error: invalid format %q (valid: text, json, sarif, junit)\n", *format)
+		os.Exit(2)
+	}
+	if *maxViolations < 0 {
+		fmt.Fprintln(os.Stderr, "Error: --max-violations must be >= 0")
 		os.Exit(2)
 	}
 
@@ -216,7 +221,7 @@ func runLint(args []string) {
 	}
 
 	start := time.Now()
-	violations := runLintRules(files, selectedRules, ctx)
+	violations := runLintRules(files, selectedRules, ctx, *maxViolations)
 	elapsed := time.Since(start).Milliseconds()
 
 	fixOps := make([]fix.Operation, 0)
@@ -249,7 +254,7 @@ func runLint(args []string) {
 			for _, file := range files {
 				ctx.Files[file.Path] = file
 			}
-			violations = runLintRules(files, selectedRules, ctx)
+			violations = runLintRules(files, selectedRules, ctx, *maxViolations)
 		}
 	}
 
@@ -601,11 +606,18 @@ func looksLikeTestFile(pathValue string) bool {
 		strings.HasSuffix(name, "test.java")
 }
 
-func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext) []model.Violation {
+func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int) []model.Violation {
 	violations := make([]model.Violation, 0)
+	stop := false
 	for _, file := range files {
+		if stop {
+			break
+		}
 		policy := suppression.Compile(file.Source)
 		for _, rawRule := range rules {
+			if stop {
+				break
+			}
 			ruleCfg := model.RuleConfig{Severity: rawRule.DefaultSeverity(), Options: map[string]interface{}{}}
 			if withCfg, ok := rawRule.(lintRuleWithConfig); ok {
 				rawRule = withCfg.Rule
@@ -622,6 +634,9 @@ func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *mode
 							FilePath:  file.Path,
 							StartLine: 1,
 						})
+						if maxViolations > 0 && len(violations) >= maxViolations {
+							stop = true
+						}
 					}
 				}()
 				rawViolations := rawRule.Check(file, ctx, ruleCfg)
@@ -639,6 +654,10 @@ func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *mode
 						continue
 					}
 					violations = append(violations, v)
+					if maxViolations > 0 && len(violations) >= maxViolations {
+						stop = true
+						break
+					}
 				}
 			}()
 		}
