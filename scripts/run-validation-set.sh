@@ -10,6 +10,10 @@ VALIDATION_DIR="$PROJECT_ROOT/docs/test-plan/validation-set"
 TEMP_DIR="${TMPDIR:-/tmp}/stricture-validation-$$"
 STRICTURE="${STRICTURE_BIN:-$PROJECT_ROOT/bin/stricture}"
 SINGLE_FILE=""
+VALIDATION_SET_ENFORCE_SKIP_POLICY="${VALIDATION_SET_ENFORCE_SKIP_POLICY:-0}"
+VALIDATION_SET_ALLOWED_SKIPS="${VALIDATION_SET_ALLOWED_SKIPS:-}"
+VALIDATION_SET_MAX_SKIPS="${VALIDATION_SET_MAX_SKIPS:-}"
+VALIDATION_SET_REQUIRE_ALLOWED_SKIPS="${VALIDATION_SET_REQUIRE_ALLOWED_SKIPS:-0}"
 
 # ── Colors ────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -25,6 +29,7 @@ PASSED=0
 FAILED=0
 SKIPPED=0
 ERRORS=""
+SKIPPED_CASES=()
 
 # ── Bug-to-Rule Mapping ──────────────────────────────────
 # Maps each bug level to the Stricture rule that should detect it.
@@ -100,8 +105,74 @@ rules_for_scope() {
 # ── Helpers ───────────────────────────────────────────────
 log_pass() { echo -e "  ${GREEN}PASS${NC} $1"; PASSED=$((PASSED + 1)); TOTAL=$((TOTAL + 1)); }
 log_fail() { echo -e "  ${RED}FAIL${NC} $1"; FAILED=$((FAILED + 1)); TOTAL=$((TOTAL + 1)); ERRORS="$ERRORS\n  FAIL: $1"; }
-log_skip() { echo -e "  ${YELLOW}SKIP${NC} $1"; SKIPPED=$((SKIPPED + 1)); }
+log_skip() {
+    local message="$1"
+    echo -e "  ${YELLOW}SKIP${NC} $message"
+    SKIPPED=$((SKIPPED + 1))
+    SKIPPED_CASES+=("${message%% — *}")
+}
 log_info() { echo -e "${CYAN}$1${NC}"; }
+
+trim_spaces() {
+    local value="$1"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
+enforce_skip_policy() {
+    if [ "$VALIDATION_SET_ENFORCE_SKIP_POLICY" != "1" ]; then
+        return
+    fi
+
+    local before_failed="$FAILED"
+    local before_total="$TOTAL"
+    local max_skips="${VALIDATION_SET_MAX_SKIPS:-}"
+    local skip_case item
+    declare -A allowed=()
+
+    if [ -n "$VALIDATION_SET_ALLOWED_SKIPS" ]; then
+        IFS=',' read -r -a items <<< "$VALIDATION_SET_ALLOWED_SKIPS"
+        for item in "${items[@]}"; do
+            item="$(trim_spaces "$item")"
+            [ -n "$item" ] && allowed["$item"]=1
+        done
+    fi
+
+    for skip_case in "${SKIPPED_CASES[@]}"; do
+        if [ "${allowed[$skip_case]:-}" != "1" ]; then
+            log_fail "skip-policy — unexpected skip: $skip_case"
+        fi
+    done
+
+    if [ -n "$max_skips" ] && [ "$SKIPPED" -gt "$max_skips" ]; then
+        log_fail "skip-policy — skip count $SKIPPED exceeds max $max_skips"
+    fi
+
+    if [ "$VALIDATION_SET_REQUIRE_ALLOWED_SKIPS" = "1" ]; then
+        local allowed_case found
+        for allowed_case in "${!allowed[@]}"; do
+            found=0
+            for skip_case in "${SKIPPED_CASES[@]}"; do
+                if [ "$skip_case" = "$allowed_case" ]; then
+                    found=1
+                    break
+                fi
+            done
+            if [ "$found" -eq 0 ]; then
+                log_fail "skip-policy — expected skip missing: $allowed_case"
+            fi
+        done
+    fi
+
+    if [ "$FAILED" -eq "$before_failed" ]; then
+        PASSED=$((PASSED + 1))
+        TOTAL=$((TOTAL + 1))
+        echo -e "  ${GREEN}PASS${NC} skip-policy — all skips comply with configured policy"
+    elif [ "$TOTAL" -eq "$before_total" ]; then
+        log_fail "skip-policy — validation failed"
+    fi
+}
 
 cleanup() {
     rm -rf "$TEMP_DIR"
@@ -352,6 +423,8 @@ main() {
     echo -e "  ${RED}Failed:  $FAILED${NC}"
     echo -e "  ${YELLOW}Skipped: $SKIPPED${NC}"
 
+    enforce_skip_policy
+
     if [ $FAILED -gt 0 ]; then
         echo ""
         echo -e "${RED}Failures:${NC}"
@@ -392,6 +465,10 @@ case "${1:-}" in
         echo ""
         echo "Environment:"
         echo "  STRICTURE_BIN  Path to Stricture binary (default: npx stricture)"
+        echo "  VALIDATION_SET_ENFORCE_SKIP_POLICY  1 to fail on unexpected skips"
+        echo "  VALIDATION_SET_ALLOWED_SKIPS        Comma-separated allowed skip case IDs"
+        echo "  VALIDATION_SET_MAX_SKIPS            Maximum allowed skip count"
+        echo "  VALIDATION_SET_REQUIRE_ALLOWED_SKIPS  1 to require each allowed skip to appear"
         exit 0
         ;;
     --file)

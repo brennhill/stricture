@@ -45,6 +45,10 @@ benchmark:
 	go test $(GOFLAGS) -bench=. -benchmem $(BENCH_PKGS)
 
 validate:
+	VALIDATION_SET_ENFORCE_SKIP_POLICY=1 \
+	VALIDATION_SET_ALLOWED_SKIPS="50-convention-patterns/PERFECT,61-event-driven/PERFECT,72-framework-patterns-java/PERFECT" \
+	VALIDATION_SET_MAX_SKIPS=3 \
+	VALIDATION_SET_REQUIRE_ALLOWED_SKIPS=1 \
 	./scripts/run-validation-set.sh
 
 ci: lint quality-gate benchmark validate
