@@ -115,7 +115,7 @@ check_coverage_threshold() {
 main() {
     log "spec-quality-audit start"
 
-    run_check "phase5-tests" "make test-phase5" || true
+    run_check "phase6-tests" "make test-phase6" || true
     run_check "integration-tests" "go test -tags=integration -timeout=120s ./tests/integration/..." || true
     run_check "full-gates" "./scripts/validate-gate.sh --all" || true
     run_check "message-catalog-consistency" "./scripts/validate-error-messages.sh" || true

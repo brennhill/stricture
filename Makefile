@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
 
 GOFLAGS ?=
 LINEAGE_MODE ?= block
@@ -34,6 +34,9 @@ test-phase4: test-phase3
 test-phase5: test-phase4
 	go test $(GOFLAGS) ./internal/adapter/python/... ./internal/adapter/java/...
 
+test-phase6: test-phase5
+	go test $(GOFLAGS) ./internal/fix/... ./internal/plugins/... ./internal/suppression/...
+
 lint:
 	golangci-lint run ./...
 
@@ -47,7 +50,7 @@ ci: quality-gate benchmark validate
 
 quality-gate:
 	$(MAKE) build
-	$(MAKE) test-phase1
+	$(MAKE) test-phase6
 	./scripts/check-lineage-drift.sh
 	./scripts/validate-gate.sh --phase 1
 	./scripts/validate-error-messages.sh

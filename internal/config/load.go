@@ -16,6 +16,7 @@ import (
 type Config struct {
 	Version string
 	Rules   map[string]model.RuleConfig
+	Plugins []string
 }
 
 // Default returns an empty configuration with default schema version.
@@ -23,6 +24,7 @@ func Default() *Config {
 	return &Config{
 		Version: "1.0",
 		Rules:   map[string]model.RuleConfig{},
+		Plugins: []string{},
 	}
 }
 
@@ -47,6 +49,7 @@ func LoadFromBytes(data []byte) (*Config, error) {
 	var raw struct {
 		Version string                 `yaml:"version"`
 		Rules   map[string]interface{} `yaml:"rules"`
+		Plugins []string               `yaml:"plugins"`
 	}
 	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("%w: %v", model.ErrConfigInvalid, err)
@@ -64,6 +67,7 @@ func LoadFromBytes(data []byte) (*Config, error) {
 		}
 		cfg.Rules[ruleID] = ruleCfg
 	}
+	cfg.Plugins = append(cfg.Plugins, raw.Plugins...)
 
 	return cfg, nil
 }

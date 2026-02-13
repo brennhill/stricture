@@ -6,6 +6,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,14 +16,22 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+	"unicode/utf8"
 
+	"github.com/stricture/stricture/internal/adapter"
+	"github.com/stricture/stricture/internal/adapter/java"
+	"github.com/stricture/stricture/internal/adapter/python"
+	"github.com/stricture/stricture/internal/adapter/typescript"
 	"github.com/stricture/stricture/internal/config"
+	"github.com/stricture/stricture/internal/fix"
 	"github.com/stricture/stricture/internal/lineage"
 	"github.com/stricture/stricture/internal/model"
+	"github.com/stricture/stricture/internal/plugins"
 	"github.com/stricture/stricture/internal/rules/arch"
 	"github.com/stricture/stricture/internal/rules/conv"
 	"github.com/stricture/stricture/internal/rules/ctr"
 	"github.com/stricture/stricture/internal/rules/tq"
+	"github.com/stricture/stricture/internal/suppression"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,6 +44,10 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "init":
+		runInit(os.Args[2:])
+	case "fix":
+		runFix(os.Args[2:])
 	case "inspect":
 		runInspect(os.Args[2:])
 	case "inspect-lineage":
@@ -68,6 +83,8 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  lint              Lint files (default when no command given)")
+	fmt.Println("  fix               Apply auto-fixes for fixable violations")
+	fmt.Println("  init              Create a default .stricture.yml")
 	fmt.Println("  inspect <file>    Parse a file and print its UnifiedFileModel as JSON")
 	fmt.Println("  inspect-lineage   Parse stricture-source annotations from a file")
 	fmt.Println("  lineage-export    Build normalized lineage artifact from source files")
@@ -88,10 +105,17 @@ func runLint(args []string) {
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
+	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
+	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
 	_ = fs.Bool("changed", false, "Lint only changed files")
 	_ = fs.Bool("staged", false, "Lint only staged files")
 	_ = fs.Bool("no-cache", false, "Disable caching")
 	_ = fs.Parse(args)
+
+	if *fixApply && *fixDryRun {
+		fmt.Fprintln(os.Stderr, "Error: --fix and --fix-dry-run are mutually exclusive")
+		os.Exit(2)
+	}
 
 	validFormats := map[string]bool{"text": true, "json": true, "sarif": true, "junit": true}
 	if !validFormats[*format] {
@@ -108,6 +132,18 @@ func runLint(args []string) {
 	} else if !errors.Is(err, model.ErrConfigNotFound) {
 		fmt.Fprintf(os.Stderr, "Error: invalid config %s: %v\n", resolvedConfigPath, err)
 		os.Exit(1)
+	}
+
+	if len(cfg.Plugins) > 0 {
+		pluginPaths := resolvePluginPaths(resolvedConfigPath, cfg.Plugins)
+		pluginRules, err := plugins.Load(pluginPaths)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: load plugins: %v\n", err)
+			os.Exit(2)
+		}
+		for _, r := range pluginRules {
+			registry.Register(r)
+		}
 	}
 
 	if unknown := config.UnknownRuleIDs(cfg, registry); len(unknown) > 0 {
@@ -145,6 +181,40 @@ func runLint(args []string) {
 	start := time.Now()
 	violations := runLintRules(files, selectedRules, ctx)
 	elapsed := time.Since(start).Milliseconds()
+
+	fixOps := make([]fix.Operation, 0)
+	if *fixApply || *fixDryRun {
+		planned, err := fix.Plan(violations)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: build fix plan: %v\n", err)
+			os.Exit(1)
+		}
+		fixOps = planned
+
+		if *fixApply && len(fixOps) > 0 {
+			if err := fix.Apply(fixOps); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: apply fixes: %v\n", err)
+				os.Exit(1)
+			}
+
+			rewrittenPaths := rewritePathsAfterFix(paths, fixOps)
+			filePaths, err = collectLintFilePaths(rewrittenPaths)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: collect files after fix: %v\n", err)
+				os.Exit(1)
+			}
+			files, err = buildUnifiedFiles(filePaths)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: parse files after fix: %v\n", err)
+				os.Exit(1)
+			}
+			ctx = &model.ProjectContext{Files: map[string]*model.UnifiedFileModel{}}
+			for _, file := range files {
+				ctx.Files[file.Path] = file
+			}
+			violations = runLintRules(files, selectedRules, ctx)
+		}
+	}
 
 	sort.Slice(violations, func(i, j int) bool {
 		if violations[i].FilePath != violations[j].FilePath {
@@ -185,6 +255,14 @@ func runLint(args []string) {
 			"violations": violations,
 			"summary":    summary,
 		}
+		if *fixApply || *fixDryRun {
+			payload["fixes"] = renderFixOperations(fixOps)
+			payload["fixMode"] = map[string]bool{
+				"apply":   *fixApply,
+				"dryRun":  *fixDryRun,
+				"applied": *fixApply,
+			}
+		}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(payload); err != nil {
@@ -192,6 +270,10 @@ func runLint(args []string) {
 			os.Exit(1)
 		}
 	default:
+		if *fixApply || *fixDryRun {
+			printFixSummary(fixOps, *fixDryRun)
+		}
+
 		if len(violations) == 0 {
 			fmt.Println("No violations found.")
 		} else {
@@ -206,6 +288,41 @@ func runLint(args []string) {
 	if errorCount > 0 {
 		os.Exit(1)
 	}
+}
+
+func runFix(args []string) {
+	runLint(append([]string{"--fix"}, args...))
+}
+
+func runInit(args []string) {
+	fs := flag.NewFlagSet("init", flag.ExitOnError)
+	force := fs.Bool("force", false, "Overwrite existing .stricture.yml if it exists")
+	pathValue := fs.String("path", ".stricture.yml", "Destination config path")
+	fs.Usage = func() {
+		fmt.Println("Usage: stricture init [options]")
+		fmt.Println()
+		fmt.Println("Create a default .stricture.yml with recommended settings.")
+		fs.PrintDefaults()
+	}
+	_ = fs.Parse(args)
+
+	target := strings.TrimSpace(*pathValue)
+	if target == "" {
+		target = ".stricture.yml"
+	}
+
+	if _, err := os.Stat(target); err == nil && !*force {
+		fmt.Fprintf(os.Stderr, "Error: %s already exists. Re-run with --force to overwrite.\n", target)
+		os.Exit(2)
+	}
+
+	content := defaultInitConfig()
+	if err := os.WriteFile(target, []byte(content), 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: write %s: %v\n", target, err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Created %s\n", target)
 }
 
 func resolveLintRules(registry *model.RuleRegistry, cfg *config.Config, singleRule string, category string) ([]model.Rule, error) {
@@ -275,6 +392,58 @@ func resolveLintRules(registry *model.RuleRegistry, cfg *config.Config, singleRu
 type lintRuleWithConfig struct {
 	model.Rule
 	Config model.RuleConfig
+}
+
+func rewritePathsAfterFix(paths []string, ops []fix.Operation) []string {
+	renames := map[string]string{}
+	for _, op := range ops {
+		if op.Kind != "rename" {
+			continue
+		}
+		renames[filepath.Clean(op.Path)] = filepath.Clean(op.NewPath)
+	}
+	if len(renames) == 0 {
+		return append([]string(nil), paths...)
+	}
+
+	rewritten := make([]string, 0, len(paths))
+	for _, pathValue := range paths {
+		clean := filepath.Clean(pathValue)
+		if newPath, ok := renames[clean]; ok {
+			rewritten = append(rewritten, newPath)
+			continue
+		}
+		rewritten = append(rewritten, pathValue)
+	}
+	return rewritten
+}
+
+func renderFixOperations(ops []fix.Operation) []map[string]string {
+	out := make([]map[string]string, 0, len(ops))
+	for _, op := range ops {
+		entry := map[string]string{
+			"ruleId":      op.RuleID,
+			"kind":        op.Kind,
+			"path":        filepath.ToSlash(op.Path),
+			"description": op.Description,
+		}
+		if op.NewPath != "" {
+			entry["newPath"] = filepath.ToSlash(op.NewPath)
+		}
+		out = append(out, entry)
+	}
+	return out
+}
+
+func printFixSummary(ops []fix.Operation, dryRun bool) {
+	mode := "apply"
+	if dryRun {
+		mode = "dry-run"
+	}
+	fmt.Printf("Fixes: %d operation(s) (%s)\n", len(ops), mode)
+	for _, op := range ops {
+		fmt.Printf("  - [%s] %s\n", op.RuleID, op.Description)
+	}
 }
 
 func collectLintFilePaths(paths []string) ([]string, error) {
@@ -398,14 +567,12 @@ func looksLikeTestFile(pathValue string) bool {
 func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext) []model.Violation {
 	violations := make([]model.Violation, 0)
 	for _, file := range files {
+		policy := suppression.Compile(file.Source)
 		for _, rawRule := range rules {
 			ruleCfg := model.RuleConfig{Severity: rawRule.DefaultSeverity(), Options: map[string]interface{}{}}
 			if withCfg, ok := rawRule.(lintRuleWithConfig); ok {
 				rawRule = withCfg.Rule
 				ruleCfg = withCfg.Config
-			}
-			if isRuleSuppressed(file.Source, rawRule.ID()) {
-				continue
 			}
 
 			func() {
@@ -420,17 +587,26 @@ func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *mode
 						})
 					}
 				}()
-				violations = append(violations, rawRule.Check(file, ctx, ruleCfg)...)
+				rawViolations := rawRule.Check(file, ctx, ruleCfg)
+				for _, v := range rawViolations {
+					ruleID := strings.TrimSpace(v.RuleID)
+					if ruleID == "" {
+						ruleID = rawRule.ID()
+						v.RuleID = ruleID
+					}
+					line := v.StartLine
+					if line <= 0 {
+						line = 1
+					}
+					if policy.Suppressed(ruleID, line) {
+						continue
+					}
+					violations = append(violations, v)
+				}
 			}()
 		}
 	}
 	return violations
-}
-
-func isRuleSuppressed(source []byte, ruleID string) bool {
-	text := string(source)
-	return strings.Contains(text, "stricture-disable "+ruleID) ||
-		strings.Contains(text, "stricture-disable-next-line "+ruleID)
 }
 
 func resolveConfigPath(configPath string) string {
@@ -463,6 +639,27 @@ func resolveConfigPath(configPath string) string {
 	return configPath
 }
 
+func resolvePluginPaths(configPath string, pluginPaths []string) []string {
+	resolved := make([]string, 0, len(pluginPaths))
+	configDir := filepath.Dir(configPath)
+	for _, pathValue := range pluginPaths {
+		p := strings.TrimSpace(pathValue)
+		if p == "" {
+			continue
+		}
+		if filepath.IsAbs(p) {
+			resolved = append(resolved, p)
+			continue
+		}
+		if strings.Contains(p, "://") {
+			resolved = append(resolved, p)
+			continue
+		}
+		resolved = append(resolved, filepath.Join(configDir, p))
+	}
+	return resolved
+}
+
 // runInspect parses a file and prints its UnifiedFileModel as JSON.
 func runInspect(args []string) {
 	fs := flag.NewFlagSet("inspect", flag.ExitOnError)
@@ -482,23 +679,143 @@ func runInspect(args []string) {
 	}
 
 	filePath := fs.Arg(0)
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Error: file not found: %s\n", filePath)
-		os.Exit(1)
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Error: file not found: %s\n", filePath)
+			os.Exit(2)
+		}
+		fmt.Fprintf(os.Stderr, "Error: cannot read %s: %v\n", filePath, err)
+		os.Exit(2)
+	}
+	if isLikelyBinary(data) {
+		fmt.Fprintf(os.Stderr, "Error: cannot inspect binary file: %s\n", filePath)
+		os.Exit(2)
 	}
 
-	// Stub: return an empty UnifiedFileModel until adapters are built.
-	stub := model.UnifiedFileModel{
-		Path:     filePath,
-		Language: detectLanguage(filePath),
+	lang := detectLanguage(filePath)
+	if lang == "unknown" {
+		fmt.Fprintf(os.Stderr, "Error: no language adapter for %q files. Supported: %s\n", filepath.Ext(filePath), strings.Join(supportedInspectLanguages(), ", "))
+		os.Exit(2)
 	}
 
-	out, err := json.MarshalIndent(stub, "", "  ")
+	parsed, err := inspectParseFile(filePath, data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: inspect parse failed for %s: %v\n", filePath, err)
+		os.Exit(2)
+	}
+
+	out, err := json.MarshalIndent(parsed, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: failed to marshal model: %v\n", err)
 		os.Exit(1)
 	}
 	fmt.Println(string(out))
+}
+
+func inspectParseFile(path string, source []byte) (*model.UnifiedFileModel, error) {
+	lang := detectLanguage(path)
+	cfg := adapter.AdapterConfig{}
+
+	switch lang {
+	case "typescript", "javascript":
+		return (&typescript.Adapter{}).Parse(path, source, cfg)
+	case "python":
+		return (&python.Adapter{}).Parse(path, source, cfg)
+	case "java":
+		return (&java.Adapter{}).Parse(path, source, cfg)
+	case "go":
+		return parseGoInspect(path, source)
+	default:
+		return nil, fmt.Errorf("unsupported language %q", lang)
+	}
+}
+
+func parseGoInspect(path string, source []byte) (*model.UnifiedFileModel, error) {
+	fset := token.NewFileSet()
+	parsed, err := parser.ParseFile(fset, path, source, parser.ParseComments)
+	if err != nil {
+		return nil, err
+	}
+
+	ufm := &model.UnifiedFileModel{
+		Path:       filepath.ToSlash(path),
+		Language:   "go",
+		Source:     append([]byte(nil), source...),
+		LineCount:  countLines(source),
+		IsTestFile: strings.HasSuffix(strings.ToLower(filepath.Base(path)), "_test.go"),
+		Imports:    []model.ImportDecl{},
+		Functions:  []model.FuncModel{},
+		Types:      []model.TypeModel{},
+	}
+
+	for _, imp := range parsed.Imports {
+		importPath := strings.Trim(imp.Path.Value, `"`)
+		name := ""
+		if imp.Name != nil {
+			name = imp.Name.Name
+		}
+		ufm.Imports = append(ufm.Imports, model.ImportDecl{
+			Path:      importPath,
+			Alias:     name,
+			StartLine: fset.Position(imp.Pos()).Line,
+			EndLine:   fset.Position(imp.End()).Line,
+		})
+	}
+
+	for _, decl := range parsed.Decls {
+		switch d := decl.(type) {
+		case *ast.FuncDecl:
+			fn := model.FuncModel{
+				Name:       d.Name.Name,
+				IsExported: ast.IsExported(d.Name.Name),
+				StartLine:  fset.Position(d.Pos()).Line,
+				EndLine:    fset.Position(d.End()).Line,
+			}
+			ufm.Functions = append(ufm.Functions, fn)
+		case *ast.GenDecl:
+			if d.Tok != token.TYPE {
+				continue
+			}
+			for _, spec := range d.Specs {
+				ts, ok := spec.(*ast.TypeSpec)
+				if !ok {
+					continue
+				}
+				ufm.Types = append(ufm.Types, model.TypeModel{
+					Name:      ts.Name.Name,
+					Exported:  ast.IsExported(ts.Name.Name),
+					StartLine: fset.Position(ts.Pos()).Line,
+					EndLine:   fset.Position(ts.End()).Line,
+				})
+			}
+		}
+	}
+
+	return ufm, nil
+}
+
+func isLikelyBinary(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	if !utf8.Valid(data) {
+		return true
+	}
+	sample := data
+	if len(sample) > 1024 {
+		sample = sample[:1024]
+	}
+	for _, b := range sample {
+		if b == 0x00 {
+			return true
+		}
+	}
+	return false
+}
+
+func supportedInspectLanguages() []string {
+	return []string{"go", "typescript", "javascript", "python", "java"}
 }
 
 // runInspectLineage parses stricture-source annotations and prints JSON output.
@@ -718,11 +1035,16 @@ func runListRules() {
 	registry := buildRegistry()
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tCATEGORY\tDEFAULT\tDESCRIPTION")
-	fmt.Fprintln(w, "--\t--------\t-------\t-----------")
-	for _, r := range registry.All() {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			r.ID(), strings.ToUpper(r.Category()), r.DefaultSeverity(), r.Description())
+	fmt.Fprintln(w, "ID\tCATEGORY\tDEFAULT\tFIXABLE\tDESCRIPTION")
+	fmt.Fprintln(w, "--\t--------\t-------\t-------\t-----------")
+	for _, r := range sortedRulesForDisplay(registry) {
+		meta := ruleMetadata(r.ID())
+		desc := r.Description()
+		if meta.RequiresManifest {
+			desc += " (requires manifest)"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			r.ID(), strings.ToUpper(r.Category()), r.DefaultSeverity(), meta.Fixability, desc)
 	}
 	w.Flush()
 	fmt.Printf("\n%d rules registered.\n", len(registry.All()))
@@ -774,6 +1096,89 @@ func runValidateConfig(args []string) {
 	}
 
 	fmt.Printf("Config %s: valid YAML, %d rules configured.\n", configPath, len(cfg.Rules))
+}
+
+type ruleMeta struct {
+	Fixability       string
+	RequiresManifest bool
+}
+
+func ruleMetadata(ruleID string) ruleMeta {
+	switch ruleID {
+	case "CONV-file-header", "CONV-file-naming", "CONV-test-file-location":
+		return ruleMeta{Fixability: "Yes"}
+	case "TQ-mock-scope":
+		return ruleMeta{Fixability: "Partial"}
+	case "CTR-strictness-parity", "CTR-manifest-conformance":
+		return ruleMeta{Fixability: "No", RequiresManifest: true}
+	default:
+		return ruleMeta{Fixability: "No"}
+	}
+}
+
+func sortedRulesForDisplay(registry *model.RuleRegistry) []model.Rule {
+	all := append([]model.Rule(nil), registry.All()...)
+	sort.SliceStable(all, func(i, j int) bool {
+		ci := categoryOrder(strings.ToLower(all[i].Category()))
+		cj := categoryOrder(strings.ToLower(all[j].Category()))
+		if ci != cj {
+			return ci < cj
+		}
+		return all[i].ID() < all[j].ID()
+	})
+	return all
+}
+
+func categoryOrder(category string) int {
+	switch strings.ToLower(category) {
+	case "tq":
+		return 0
+	case "arch":
+		return 1
+	case "conv":
+		return 2
+	case "ctr":
+		return 3
+	default:
+		return 4
+	}
+}
+
+func defaultInitConfig() string {
+	return `version: "1.0"
+
+rules:
+  CONV-file-naming: error
+  CONV-file-header: error
+  CONV-error-format: error
+  CONV-export-naming: error
+  CONV-test-file-location: error
+  CONV-required-exports: error
+  ARCH-dependency-direction: error
+  ARCH-import-boundary: error
+  ARCH-no-circular-deps: error
+  ARCH-max-file-lines: error
+  ARCH-layer-violation: error
+  ARCH-module-boundary: error
+  TQ-no-shallow-assertions: error
+  TQ-return-type-verified: error
+  TQ-schema-conformance: error
+  TQ-error-path-coverage: error
+  TQ-assertion-depth: error
+  TQ-boundary-tested: error
+  TQ-mock-scope: error
+  TQ-test-isolation: error
+  TQ-negative-cases: error
+  TQ-test-naming: error
+  CTR-request-shape: error
+  CTR-response-shape: error
+  CTR-status-code-handling: error
+  CTR-shared-type-sync: error
+  CTR-json-tag-match: error
+  CTR-dual-test: error
+  CTR-strictness-parity: error
+  CTR-manifest-conformance: error
+`
 }
 
 // buildRegistry creates a RuleRegistry with all known rules.

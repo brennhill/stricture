@@ -72,6 +72,28 @@ func run(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 	return outBuf.String(), errBuf.String(), exitCode
 }
 
+// runInDir executes stricture in a specific working directory.
+func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, exitCode int) {
+	t.Helper()
+	bin := binaryPath(t)
+	cmd := exec.Command(bin, args...)
+	cmd.Dir = dir
+
+	var outBuf, errBuf strings.Builder
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &errBuf
+
+	err := cmd.Run()
+	exitCode = 0
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		exitCode = exitErr.ExitCode()
+	} else if err != nil {
+		t.Fatalf("failed to run stricture in %s: %v", dir, err)
+	}
+
+	return outBuf.String(), errBuf.String(), exitCode
+}
+
 // === Exit code tests ===
 
 func TestVersionExitsZero(t *testing.T) {

@@ -119,3 +119,16 @@ func TestUnknownRuleIDsNilInputs(t *testing.T) {
 		t.Fatalf("UnknownRuleIDs(nil,nil) = %v, want nil", got)
 	}
 }
+
+func TestLoadFromBytes_ParsesPluginsList(t *testing.T) {
+	data := []byte(`plugins:
+  - ./plugins/custom.yml
+`)
+	cfg, err := LoadFromBytes(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(cfg.Plugins) != 1 || cfg.Plugins[0] != "./plugins/custom.yml" {
+		t.Fatalf("plugins = %v, want [./plugins/custom.yml]", cfg.Plugins)
+	}
+}
