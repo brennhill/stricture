@@ -4,3 +4,4 @@ bin/
 coverage.out
 phase1.out
 stricture
+.phase-agent/
