@@ -102,7 +102,7 @@ When uncertain, Stricture should flag the issue (potential false positive) rathe
 
 ### 3.4 Zero configuration to start
 
-Running `npx stricture` in any Go or TypeScript project should produce useful output with zero config. The default ruleset covers the most universal concerns. Configuration is for customization, not setup.
+Running `stricture` in any Go or TypeScript project should produce useful output with zero config. The default ruleset covers the most universal concerns. Configuration is for customization, not setup.
 
 ### 3.5 Explainable violations
 
@@ -120,28 +120,30 @@ Every violation must include:
 ```
 ┌─────────────────────────────────────────────────┐
 │                   CLI / Entry                    │
-│  npx stricture [options] [paths...]              │
+│  stricture [options] [paths...]                  │
+│  (single Go binary, zero runtime dependencies)   │
 ├─────────────────────────────────────────────────┤
 │                Config Loader                     │
 │  .stricture.yml → merged config object           │
 ├──────────┬──────────────┬───────────────────────┤
 │ Language │   Language   │     Language           │
 │ Adapter: │   Adapter:   │     Adapter:           │
-│ TypeScript│     Go      │   (future: Py, Rust)   │
-│ (ts-morph)│ (go/parser) │                        │
+│TypeScript│     Go       │   Python, Java         │
+│(tree-sit)│ (go/parser)  │   (tree-sitter)        │
 ├──────────┴──────────┬───┴───────────────────────┤
 │              Unified File Model                  │
-│  { path, language, ast, imports, exports,        │
-│    testTargets, functions, classes, types }       │
+│  { Path, Language, AST, Imports, Exports,        │
+│    TestTargets, Functions, Classes, Types }       │
 ├─────────────────────────────────────────────────┤
 │                Rule Engine                        │
 │  For each file → run matching rules → collect     │
 │  violations. Rules receive UnifiedFileModel +     │
 │  ProjectContext (all files, dependency graph).     │
+│  Parallel execution via goroutines.               │
 ├──────────┬──────────┬───────────┬───────────────┤
 │ Built-in │ Built-in │ Built-in  │   User        │
 │ Rules:   │ Rules:   │ Rules:    │   Plugins     │
-│ TQ-*     │ ARCH-*   │ CONV-*    │   (.js/.ts)   │
+│ TQ-*     │ ARCH-*   │ CONV-*    │   (YAML/Go)   │
 ├──────────┴──────────┴───────────┴───────────────┤
 │              Reporter / Formatter                │
 │  text | json | sarif | junit                     │
@@ -156,13 +158,13 @@ Every violation must include:
 | Component | Responsibility | Key Decisions |
 |-----------|---------------|---------------|
 | **Config Loader** | Parse `.stricture.yml`, merge with defaults, resolve plugin paths | YAML format. Supports `extends` for shared configs. |
-| **Language Adapter** | Parse source into `UnifiedFileModel` | One adapter per language. Adapters are npm packages. |
+| **Language Adapter** | Parse source into `UnifiedFileModel` | One adapter per language. Go adapter uses `go/parser` natively; all others use tree-sitter. |
 | **UnifiedFileModel** | Language-agnostic representation of a source file | Contains AST, imports, exports, functions, types, test metadata. Adapters produce this. Rules consume this. |
 | **ProjectContext** | Cross-file analysis state | Dependency graph, file index, module boundaries. Built once, shared across rules. |
 | **Rule Engine** | Orchestrate rule execution, collect violations | Runs rules in dependency order. Supports `--rule` flag for single-rule execution. |
 | **Reporter** | Format violations for output | Multiple formats. SARIF for GitHub, JUnit for CI, JSON for tooling, text for humans. |
 | **Auto-Fix Engine** | Apply safe code transformations | Only runs with `--fix` or `--fix-dry-run`. Never modifies files without explicit opt-in. |
-| **Plugin Loader** | Load and validate user plugins | Plugins export a rule factory function. Validated at load time for required interface. |
+| **Plugin Loader** | Load and validate user plugins | Plugins are YAML-defined custom rules or compiled Go plugins. Validated at load time. |
 
 ### Data Flow
 
@@ -193,9 +195,9 @@ Located at project root. Supports `extends` for shared configurations.
 ```yaml
 # .stricture.yml — Example configuration
 
-# Inherit from a shared config (npm package or local path)
+# Inherit from a shared config (git URL, local path, or bundled preset)
 extends:
-  - "@stricture/config-recommended"
+  - "stricture-config-recommended"
   - "./configs/team-overrides.yml"
 
 # Language adapters to activate (auto-detected if omitted)
@@ -205,7 +207,7 @@ languages:
 
 # Global settings
 settings:
-  # Max parallel file processing (default: os.cpus().length)
+  # Max parallel file processing (default: runtime.NumCPU())
   concurrency: 8
   # Fail on first error (default: false)
   bail: false
@@ -291,12 +293,12 @@ import "internal/capture"
 
 ### 5.4 Shared Configurations
 
-Shared configs are npm packages that export a YAML-compatible object:
+Shared configs are YAML files published as Git repos, Go modules, or bundled with the binary:
 
 ```
-@stricture/config-recommended   — sensible defaults for any project
-@stricture/config-strict        — maximum strictness, all rules error
-@stricture/config-gasoline      — Gasoline project conventions
+stricture-config-recommended   — sensible defaults for any project (bundled)
+stricture-config-strict        — maximum strictness, all rules error (bundled)
+<git-url>                      — custom shared config from any Git repo
 ```
 
 ---
@@ -1644,169 +1646,165 @@ contracts:
 
 ## 7. Language Adapters
 
-Adapters parse source files into the `UnifiedFileModel` that rules consume. Each adapter is an npm package implementing the `LanguageAdapter` interface.
+Adapters parse source files into the `UnifiedFileModel` that rules consume. Stricture is written in Go — the Go adapter uses `go/parser` + `go/types` natively, while all other language adapters use [tree-sitter](https://tree-sitter.github.io/tree-sitter/) via [go-tree-sitter](https://github.com/smacker/go-tree-sitter) bindings.
+
+**Why Go + tree-sitter:**
+- Single static binary — no Node.js, Python, or JVM runtime required
+- ~2ms cold start vs ~300ms for Node.js
+- Native goroutine parallelism for file processing
+- tree-sitter provides unified parsing for TypeScript, Python, Java, and future languages
+- Go adapter gets full type resolution via `go/types` (richer than tree-sitter)
 
 ### 7.1 UnifiedFileModel
 
-```typescript
-interface UnifiedFileModel {
-  /** Absolute file path */
-  path: string;
-
-  /** Detected language */
-  language: "typescript" | "go" | string;
-
-  /** Whether this file is a test file */
-  isTestFile: boolean;
-
-  /** Raw source text */
-  source: string;
-
-  /** Line count (excluding blank lines and comments if configured) */
-  lineCount: number;
-
-  /** Import statements */
-  imports: ImportDeclaration[];
-
-  /** Export statements (TS) or exported symbols (Go) */
-  exports: ExportDeclaration[];
-
-  /** All functions/methods defined in this file */
-  functions: FunctionModel[];
-
-  /** All type/interface/struct definitions */
-  types: TypeModel[];
-
-  /** All class definitions (TS) */
-  classes: ClassModel[];
-
-  /** If test file: test cases and their metadata */
-  testCases: TestCaseModel[];
-
-  /** If test file: which source files this test covers */
-  testTargets: string[];
-
-  /** Language-specific AST (opaque to rules, available for plugins) */
-  rawAST: unknown;
+```go
+// UnifiedFileModel is the language-agnostic representation of a parsed source file.
+// Language adapters produce this. Rules consume this.
+type UnifiedFileModel struct {
+    Path        string       // Absolute file path
+    Language    string       // "typescript", "go", "python", "java"
+    IsTestFile  bool         // Whether this file is a test file
+    Source      string       // Raw source text
+    LineCount   int          // Line count (excluding blank lines and comments if configured)
+    Imports     []ImportDecl // Import statements
+    Exports     []ExportDecl // Export statements (TS) or exported symbols (Go)
+    Functions   []FuncModel  // All functions/methods defined in this file
+    Types       []TypeModel  // All type/interface/struct definitions
+    Classes     []ClassModel // All class definitions (TS, Java)
+    TestCases   []TestCase   // If test file: test cases and their metadata
+    TestTargets []string     // If test file: which source files this test covers
+    RawAST      any          // Language-specific AST (opaque to rules, available for plugins)
 }
 
-interface FunctionModel {
-  name: string;
-  exported: boolean;
-  async: boolean;
-  parameters: ParameterModel[];
-  returnType: TypeModel | null;
-  /** Lines where errors are thrown/returned */
-  errorExits: ErrorExitPoint[];
-  startLine: number;
-  endLine: number;
+type FuncModel struct {
+    Name       string
+    Exported   bool
+    Async      bool
+    Params     []ParamModel
+    ReturnType *TypeModel     // nil if void/no return type
+    ErrorExits []ErrorExit    // Lines where errors are thrown/returned
+    StartLine  int
+    EndLine    int
 }
 
-interface TypeModel {
-  name: string;
-  kind: "interface" | "type" | "struct" | "enum" | "class";
-  fields: FieldModel[];
-  exported: boolean;
+type TypeModel struct {
+    Name     string
+    Kind     string       // "interface", "type", "struct", "enum", "class"
+    Fields   []FieldModel
+    Exported bool
 }
 
-interface FieldModel {
-  name: string;
-  type: string;           // Type as string (e.g., "string", "number", "User")
-  optional: boolean;      // TypeScript optional (?)
-  nested: TypeModel | null; // If this field is a complex type, its model
-  depth: number;          // Nesting depth from root
+type FieldModel struct {
+    Name     string
+    Type     string      // Type as string (e.g., "string", "int", "User")
+    Optional bool        // TypeScript optional (?), Go pointer, Python Optional
+    Nested   *TypeModel  // If this field is a complex type, its model
+    Depth    int         // Nesting depth from root
+    JSONTag  string      // Go json tag or equivalent (e.g., `json:"user_id"`)
 }
 
-interface TestCaseModel {
-  name: string;
-  kind: "positive" | "negative" | "unknown";
-  /** Function(s) being tested (resolved from calls + imports) */
-  targetFunctions: string[];
-  assertions: AssertionModel[];
-  mocks: MockModel[];
-  startLine: number;
-  endLine: number;
+type TestCase struct {
+    Name       string
+    Kind       string      // "positive", "negative", "unknown"
+    TargetFns  []string    // Function(s) being tested (resolved from calls + imports)
+    Assertions []Assertion
+    Mocks      []Mock
+    StartLine  int
+    EndLine    int
 }
 
-interface AssertionModel {
-  /** The full assertion expression as source text */
-  expression: string;
-  /** The property chain being asserted (e.g., "result.data.items[0].name") */
-  targetPath: string;
-  /** Classification */
-  kind: "shallow" | "value" | "type" | "structure" | "error" | "matcher";
-  /** Maximum property depth reached */
-  depth: number;
-  /** Whether this constrains the type of the value */
-  constrainsType: boolean;
-  line: number;
+type Assertion struct {
+    Expression     string // The full assertion expression as source text
+    TargetPath     string // Property chain (e.g., "result.Data.Items[0].Name")
+    Kind           string // "shallow", "value", "type", "structure", "error", "matcher"
+    Depth          int    // Maximum property depth reached
+    ConstrainsType bool   // Whether this constrains the type of the value
+    Line           int
 }
 
-interface ErrorExitPoint {
-  line: number;
-  /** The error class/sentinel/message pattern */
-  errorIdentifier: string;
-  /** The condition that triggers this error (if in an if/guard) */
-  guardCondition: string | null;
+type ErrorExit struct {
+    Line            int
+    ErrorIdentifier string  // The error class/sentinel/message pattern
+    GuardCondition  string  // The condition that triggers this error (empty if unconditional)
 }
 
-interface MockModel {
-  /** What is being mocked */
-  target: string;
-  /** Scope: module-level, describe-level, test-level */
-  scope: "module" | "describe" | "test";
-  /** Whether cleanup (restore) is present */
-  hasCleanup: boolean;
-  line: number;
+type Mock struct {
+    Target     string // What is being mocked
+    Scope      string // "module", "describe", "test"
+    HasCleanup bool   // Whether cleanup (restore) is present
+    Line       int
 }
 ```
 
-### 7.2 TypeScript Adapter
+### 7.2 Go Adapter (Native)
 
-**Package:** `@stricture/adapter-typescript`
-**Parser:** [ts-morph](https://github.com/dsherret/ts-morph) (wraps TypeScript compiler API)
+**Parser:** `go/parser` + `go/types` from the Go standard library.
+
+Since Stricture is written in Go, the Go adapter has the richest analysis:
+- Full type resolution via `go/types` (follows aliases, generics, interfaces)
+- Test detection: `func Test*`, `t.Run()`, `t.Helper()`, `t.Cleanup()`
+- Import path analysis (Go module-aware, supports replace directives)
+- Error return analysis (multiple return values with `error` type)
+- JSON struct tag extraction for CTR-json-tag-match
+- Assertion pattern recognition: `testing`, `testify/assert`, `testify/require`, `is`
+
+### 7.3 TypeScript Adapter (tree-sitter)
+
+**Parser:** [tree-sitter-typescript](https://github.com/tree-sitter/tree-sitter-typescript) via go-tree-sitter bindings.
 
 Capabilities:
-- Full type resolution (follows type aliases, generics, intersections)
+- AST parsing for TypeScript and JavaScript (JSX/TSX supported)
+- Type extraction from interfaces, type aliases, and class declarations
 - Test framework detection: Jest, Vitest, Mocha, Node test runner
 - Import/export analysis with path resolution
 - Assertion pattern recognition for all major test frameworks
 - Mock/spy detection for Jest, Vitest, Sinon
 
-### 7.3 Go Adapter
+Note: tree-sitter provides structural parsing but not full type resolution (unlike `go/types` for Go). Type aliases and generics are extracted as strings. For most rules, this is sufficient — deep type resolution is a v0.2 enhancement if needed.
 
-**Package:** `@stricture/adapter-go`
-**Parser:** Parse `go` AST output via child process. The adapter calls `go` toolchain to produce a JSON AST representation, then maps it to `UnifiedFileModel`.
+### 7.4 Python Adapter (tree-sitter)
 
-Implementation strategy:
-1. Ship a small Go binary (`stricture-go-parser`) that uses `go/parser` + `go/types` to produce JSON AST
-2. The Node.js adapter spawns this binary and parses its JSON output
-3. Avoids trying to parse Go in JavaScript
+**Parser:** [tree-sitter-python](https://github.com/tree-sitter/tree-sitter-python) via go-tree-sitter bindings.
 
 Capabilities:
-- Full type resolution via `go/types`
-- Test detection: `func Test*`, `t.Run()`, `t.Helper()`
-- Import path analysis (Go module-aware)
-- Error return analysis (multiple return values with `error` type)
-- Assertion pattern recognition: `testing`, `testify/assert`, `testify/require`
+- AST parsing for Python 3.x
+- Type hint extraction (PEP 484, PEP 604)
+- Pydantic model detection and field extraction
+- Test framework detection: pytest, unittest
+- Import analysis (relative and absolute)
+- Decorator detection for framework-specific patterns (FastAPI, Django)
 
-### 7.4 Future Adapters
+### 7.5 Java Adapter (tree-sitter)
 
-The adapter interface is designed for community contribution:
+**Parser:** [tree-sitter-java](https://github.com/tree-sitter/tree-sitter-java) via go-tree-sitter bindings.
 
-```typescript
-interface LanguageAdapter {
-  /** Language identifier */
-  language: string;
+Capabilities:
+- AST parsing for Java 17+
+- Record and sealed interface detection
+- Annotation extraction (@JsonProperty, @Valid, @RestController)
+- Test framework detection: JUnit 5, TestNG
+- Import analysis with package resolution
+- Spring Boot / JAX-RS / Micronaut pattern detection
 
-  /** File extensions this adapter handles */
-  extensions: string[];
+### 7.6 Adapter Interface
 
-  /** Parse a file into UnifiedFileModel */
-  parse(filePath: string, source: string, config: AdapterConfig): Promise<UnifiedFileModel>;
+The adapter interface is designed for adding new languages:
 
-  /** Resolve import paths to absolute file paths */
-  resolveImport(importPath: string, fromFile: string): string | null;
+```go
+// LanguageAdapter parses source files into UnifiedFileModel.
+type LanguageAdapter interface {
+    // Language returns the adapter's language identifier.
+    Language() string
+
+    // Extensions returns file extensions this adapter handles.
+    Extensions() []string
+
+    // Parse converts a source file into a UnifiedFileModel.
+    Parse(path string, source []byte, config AdapterConfig) (*UnifiedFileModel, error)
+
+    // ResolveImport resolves an import path to an absolute file path.
+    // Returns empty string if the import cannot be resolved.
+    ResolveImport(importPath string, fromFile string) string
 }
 ```
 
@@ -1814,78 +1812,98 @@ interface LanguageAdapter {
 
 ## 8. Plugin System
 
-### 8.1 Plugin Interface
+### 8.1 YAML-Based Custom Rules
 
-Plugins are JavaScript/TypeScript files that export rule factories.
-
-```typescript
-// Example plugin: my-custom-rule.ts
-import { defineRule } from "stricture";
-
-export default defineRule({
-  id: "CUSTOM-my-rule",
-  category: "custom",
-  severity: "error",
-  description: "Ensures all API handlers log their entry",
-  why: "Observability: every API call should be traceable in logs",
-
-  // Which files this rule applies to
-  match: {
-    languages: ["typescript"],
-    pathPatterns: ["src/routes/**"],
-    isTestFile: false,
-  },
-
-  // Rule implementation
-  check(file: UnifiedFileModel, context: ProjectContext): Violation[] {
-    const violations: Violation[] = [];
-    for (const fn of file.functions) {
-      if (fn.exported && !hasLogStatement(fn, file.rawAST)) {
-        violations.push({
-          line: fn.startLine,
-          column: 0,
-          message: `Exported handler "${fn.name}" does not contain a log statement`,
-          fix: `Add "logger.info('${fn.name} called', { ... })" at the start of the function`,
-          suppress: `// stricture-disable-next-line CUSTOM-my-rule`,
-        });
-      }
-    }
-    return violations;
-  },
-
-  // Optional: auto-fix function
-  fix(file: UnifiedFileModel, violation: Violation): FixResult | null {
-    // Return null if fix is not safe
-    return {
-      range: { startLine: violation.line, startCol: 0, endLine: violation.line, endCol: 0 },
-      replacement: `  logger.info("${violation.data?.fnName} called");\n`,
-    };
-  },
-});
-```
-
-### 8.2 Plugin Loading
-
-Plugins are referenced in `.stricture.yml`:
+Most custom rules can be expressed declaratively in YAML without writing Go code. This covers the most common use cases: path-based import restrictions, naming patterns, required exports, and file structure rules.
 
 ```yaml
-plugins:
-  - "./plugins/my-custom-rule.ts"
-  - "@my-org/stricture-plugin-api-standards"
-  - name: "./plugins/conditional-rule.ts"
-    options:
-      logPrefix: "api"
+# .stricture.yml — Custom rules section
+custom_rules:
+  - id: "CUSTOM-handler-logging"
+    category: custom
+    severity: error
+    description: "Ensures all API handlers log their entry"
+    why: "Observability: every API call should be traceable in logs"
+    match:
+      languages: ["typescript", "go"]
+      paths: ["src/routes/**", "cmd/server/handlers/**"]
+      test_files: false
+    check:
+      # Require that exported functions contain a log statement
+      exported_functions_must_contain:
+        pattern: "logger\\.(info|debug|warn)|log\\.(Info|Debug|Warn)|slog\\."
+        message: "Exported handler \"{function}\" does not contain a log statement"
+        suggestion: "Add a log statement at the start of the function"
+
+  - id: "CUSTOM-no-fmt-print"
+    category: custom
+    severity: warn
+    description: "Disallow fmt.Print in production code"
+    match:
+      languages: ["go"]
+      paths: ["cmd/**", "internal/**"]
+      exclude_paths: ["**_test.go"]
+    check:
+      must_not_contain:
+        pattern: "fmt\\.Print(f|ln)?\\("
+        message: "Use structured logging instead of fmt.Print"
 ```
 
-### 8.3 Plugin API
+### 8.2 Go Plugin Interface (Advanced)
+
+For rules requiring complex analysis beyond YAML capabilities, users can write Go plugins compiled as shared libraries:
+
+```go
+// plugins/handler-logging/rule.go
+package main
+
+import "github.com/stricture/stricture/pkg/rule"
+
+// Rule is the plugin entry point (exported symbol).
+var Rule = rule.Definition{
+    ID:          "CUSTOM-handler-logging",
+    Category:    "custom",
+    Severity:    "error",
+    Description: "Ensures all API handlers log their entry",
+    Match: rule.Match{
+        Languages:    []string{"go"},
+        PathPatterns: []string{"cmd/server/handlers/**"},
+    },
+    Check: func(file *rule.UnifiedFileModel, ctx *rule.ProjectContext) []rule.Violation {
+        var violations []rule.Violation
+        for _, fn := range file.Functions {
+            if fn.Exported && !containsLogCall(fn, file) {
+                violations = append(violations, rule.Violation{
+                    Line:    fn.StartLine,
+                    Message: fmt.Sprintf("Handler %q has no log statement", fn.Name),
+                })
+            }
+        }
+        return violations
+    },
+}
+```
+
+Build with: `go build -buildmode=plugin -o handler-logging.so ./plugins/handler-logging/`
+
+### 8.3 Plugin Loading
+
+```yaml
+# .stricture.yml
+plugins:
+  - "./plugins/handler-logging.so"           # Compiled Go plugin
+  - "github.com/my-org/stricture-plugins"    # Git-hosted plugin package
+```
+
+### 8.4 Plugin API
 
 Plugins receive:
 
 | Object | Contents |
 |--------|----------|
-| `file: UnifiedFileModel` | The parsed file being checked |
-| `context: ProjectContext` | Full project state: all files, dependency graph, config |
-| `helpers` | Utility functions: `findTestsFor(fn)`, `resolveType(name)`, `getImportChain(file)` |
+| `*UnifiedFileModel` | The parsed file being checked |
+| `*ProjectContext` | Full project state: all files, dependency graph, config |
+| Helper functions | `FindTestsFor(fn)`, `ResolveType(name)`, `GetImportChain(file)` |
 
 ---
 
@@ -1966,7 +1984,7 @@ Meta:
 ### 9.4 Example Output (Text Format)
 
 ```
-$ npx stricture src/ tests/
+$ stricture src/ tests/
 
   src/services/user.ts
     TQ-error-path-coverage  error  Function "createUser" has 3 error exits but only 1 is tested (33%)
@@ -2082,19 +2100,19 @@ Not all violations can be auto-fixed. Rules declare whether they support fixing:
 
 ```bash
 # Show what would change (safe — no files modified)
-npx stricture --fix-dry-run
+stricture --fix-dry-run
 
 # Apply all safe fixes
-npx stricture --fix
+stricture --fix
 
 # Fix only specific rules
-npx stricture --fix --rule CONV-file-header
+stricture --fix --rule CONV-file-header
 ```
 
 ### 11.3 Fix Dry-Run Output
 
 ```
-$ npx stricture --fix-dry-run
+$ stricture --fix-dry-run
 
   src/utils/helpers.ts
     CONV-file-header  Would add:
@@ -2123,10 +2141,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npx stricture --format sarif --output stricture.sarif --changed
+      - name: Install Stricture
+        run: |
+          curl -fsSL https://github.com/stricture/stricture/releases/latest/download/stricture-linux-amd64 -o /usr/local/bin/stricture
+          chmod +x /usr/local/bin/stricture
+      - run: stricture --format sarif --output stricture.sarif --changed
       - uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: stricture.sarif
@@ -2137,7 +2156,7 @@ jobs:
 
 ```bash
 # .husky/pre-commit
-npx stricture --staged --quiet
+stricture --staged --quiet
 ```
 
 ### 12.3 GitLab CI
@@ -2145,7 +2164,7 @@ npx stricture --staged --quiet
 ```yaml
 stricture:
   script:
-    - npx stricture --format junit --output stricture-junit.xml
+    - stricture --format junit --output stricture-junit.xml
   artifacts:
     reports:
       junit: stricture-junit.xml
@@ -2286,7 +2305,7 @@ Each service's `.stricture.yml` references the manifest:
 # .stricture.yml in user-service repo
 
 extends:
-  - "@stricture/config-recommended"
+  - "stricture-config-recommended"
 
 # Reference the cross-service manifest
 manifest:
@@ -2515,15 +2534,21 @@ This requires manifest versioning and diff analysis between versions. It will le
 | **Cold start** | < 3s for 500 files | Acceptable for CI |
 | **Cached run** | < 1s for 500 files | AST cache avoids re-parsing unchanged files |
 | **Incremental (--changed)** | < 2s for 20 changed files | Fast enough for pre-commit |
-| **Memory** | < 500MB for 10,000 files | Reasonable for CI runners |
+| **Memory** | < 500MB for 10,000 files | `GOMEMLIMIT=500MiB stricture` on a 10K file repo |
 | **Per-file** | < 50ms per file | With all rules enabled |
+
+### Implementation Notes
+
+**Written in Go** for performance and single-binary distribution. Tree-sitter (via go-tree-sitter) handles TypeScript, Python, and Java parsing. Go files are parsed natively via `go/parser` + `go/types`.
 
 ### Caching Strategy
 
 - AST cache stored in `.stricture-cache/` (gitignored)
+- Cache format: gob-encoded `UnifiedFileModel` per file
 - Cache key: file content hash + adapter version
 - Cache invalidation: file content change or adapter version bump
 - ProjectContext (dependency graph) rebuilt on any file change in the project
+- Parallel file processing via goroutine worker pool (default: `runtime.NumCPU()`)
 
 ---
 
@@ -2594,7 +2619,7 @@ This requires manifest versioning and diff analysis between versions. It will le
 | **Type coverage** | The percentage of a return type's fields whose assertions constrain the value's type. |
 | **UnifiedFileModel** | Stricture's language-agnostic representation of a parsed source file. |
 | **ProjectContext** | Cross-file analysis state including the full dependency graph and module map. |
-| **Language adapter** | A parser plugin that converts language-specific source into UnifiedFileModel. |
+| **Language adapter** | A parser module that converts language-specific source into UnifiedFileModel. Go uses `go/parser` natively; other languages use tree-sitter. |
 | **Boundary value** | An input at the edge of valid ranges: 0, 1, -1, empty string, empty array, MAX_INT. |
 | **Layer** | An architectural tier (e.g., handler, service, repository) with defined dependency rules. |
 | **Module boundary** | The public API surface of a directory, typically defined by its `index.ts` or package exports. |
@@ -2627,7 +2652,7 @@ This requires manifest versioning and diff analysis between versions. It will le
 
 ## Appendix B: Open Questions for Tech Spec Phase
 
-1. **Go adapter binary distribution:** Should `stricture-go-parser` be a pre-compiled binary per platform, or built from source on first run? Pre-compiled is faster but adds release complexity.
+1. **Binary distribution:** Cross-compile for linux/darwin/windows (amd64 + arm64). Use GoReleaser or custom build matrix? Homebrew tap? Install script? (Resolved: follow Gasoline's existing cross-platform npm/pypi binary distribution pattern.)
 
 2. **Monorepo support:** Should `.stricture.yml` support workspace-level configs that inherit from root? (Likely yes, design in tech spec.)
 
@@ -2635,7 +2660,7 @@ This requires manifest versioning and diff analysis between versions. It will le
 
 4. **Baseline / legacy mode:** For existing codebases with thousands of violations, should there be a `--baseline` mode that only reports new violations? (Likely yes.)
 
-5. **Custom test framework support:** How should users teach Stricture about non-standard assertion libraries? Plugin-level adapter, or config-level pattern matching?
+5. **Custom test framework support:** How should users teach Stricture about non-standard assertion libraries? YAML pattern definitions, or compiled Go plugin adapter?
 
 6. **Backwards compatibility detection:** Manifest diff analysis to detect breaking changes is planned for v0.3+. See §13.9. Key question: should `stricture audit --diff v1.0..v1.1` compare manifest versions, or should this be a separate command? Also: how to handle "intentionally breaking" changes (new required field with migration path)?
 
@@ -2643,4 +2668,6 @@ This requires manifest versioning and diff analysis between versions. It will le
 
 8. **Runtime trace volume:** `stricture trace` may need sampling for high-volume production traces. What sampling strategy? Statistical confidence thresholds?
 
-9. **Strictness detection heuristics:** How to detect validation in code that uses custom validation libraries (e.g., `joi`, `zod`, `go-playground/validator`)? Plugin-level adapter or built-in pattern matching?
+9. **Strictness detection heuristics:** How to detect validation in code that uses custom validation libraries (e.g., `joi`, `zod`, `go-playground/validator`)? tree-sitter query patterns or built-in pattern matching?
+
+10. **tree-sitter type resolution depth:** tree-sitter provides structural parsing but not full type resolution for TS/Python/Java. How deep does type resolution need to go for TQ and CTR rules? Can we get 90%+ accuracy from structural analysis alone, or do we need language server protocol (LSP) integration for edge cases?
