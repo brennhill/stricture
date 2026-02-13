@@ -113,6 +113,22 @@ func TestHelpExitsZero(t *testing.T) {
 	}
 }
 
+func TestNoArgsRunsDefaultLint(t *testing.T) {
+	tmp := t.TempDir()
+	target := filepath.Join(tmp, "bad.go")
+	if err := os.WriteFile(target, []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	stdout, stderr, code := runInDir(t, tmp)
+	if code != 1 {
+		t.Fatalf("no-args default lint exit code = %d, want 1\nstderr=%q\nstdout=%q", code, stderr, stdout)
+	}
+	if !strings.Contains(stdout, "CONV-file-header") {
+		t.Fatalf("default lint output should include violation, got %q", stdout)
+	}
+}
+
 func TestInvalidFlagExitsTwo(t *testing.T) {
 	_, _, code := run(t, "--nonexistent-flag")
 	if code != 2 {
