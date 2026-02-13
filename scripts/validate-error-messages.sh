@@ -142,8 +142,9 @@ extract_method_value() {
         grep 'return' | \
         sed -E 's/.*return[[:space:]]+"([^"]+)".*/\1/' | head -1)
 
-    # Verify we actually extracted a value (sed outputs the whole line if no match)
-    if echo "$value" | grep -q 'return'; then
+    # Verify we actually extracted a value.
+    # When sed fails, it may return the original source line containing `return "..."`.
+    if echo "$value" | grep -Eq 'return[[:space:]]*"'; then
         value=""
     fi
 

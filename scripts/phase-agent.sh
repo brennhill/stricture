@@ -121,11 +121,11 @@ next_phase_after() {
 run_command() {
     local phase="$1"
     local cmd="$2"
-    echo "[$(now_utc)] phase=${phase} run: $cmd" | tee -a "$LOG_FILE"
-    if ! (cd "$PROJECT_ROOT" && bash -lc "$cmd" >>"$LOG_FILE" 2>&1); then
-        LAST_ERROR="phase ${phase} failed command: ${cmd}"
-        STATUS="blocked"
-        save_state
+	echo "[$(now_utc)] phase=${phase} run: $cmd" | tee -a "$LOG_FILE"
+	if ! (cd "$PROJECT_ROOT" && eval "$cmd" >>"$LOG_FILE" 2>&1); then
+		LAST_ERROR="phase ${phase} failed command: ${cmd}"
+		STATUS="blocked"
+		save_state
         echo "BLOCKED: $LAST_ERROR"
         echo "See log: $LOG_FILE"
         return 1

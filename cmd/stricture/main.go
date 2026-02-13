@@ -17,7 +17,10 @@ import (
 	"github.com/stricture/stricture/internal/config"
 	"github.com/stricture/stricture/internal/lineage"
 	"github.com/stricture/stricture/internal/model"
+	"github.com/stricture/stricture/internal/rules/arch"
 	"github.com/stricture/stricture/internal/rules/conv"
+	"github.com/stricture/stricture/internal/rules/ctr"
+	"github.com/stricture/stricture/internal/rules/tq"
 	"gopkg.in/yaml.v3"
 )
 
@@ -776,12 +779,45 @@ func runValidateConfig(args []string) {
 // buildRegistry creates a RuleRegistry with all known rules.
 func buildRegistry() *model.RuleRegistry {
 	r := model.NewRuleRegistry()
+
+	// CONV
 	r.Register(&conv.FileNaming{})
 	r.Register(&conv.FileHeader{})
 	r.Register(&conv.ErrorFormat{})
 	r.Register(&conv.ExportNaming{})
 	r.Register(&conv.TestFileLocation{})
 	r.Register(&conv.RequiredExports{})
+
+	// ARCH
+	r.Register(&arch.DependencyDirection{})
+	r.Register(&arch.ImportBoundary{})
+	r.Register(&arch.NoCircularDeps{})
+	r.Register(&arch.MaxFileLines{})
+	r.Register(&arch.LayerViolation{})
+	r.Register(&arch.ModuleBoundary{})
+
+	// TQ
+	r.Register(&tq.NoShallowAssertions{})
+	r.Register(&tq.ReturnTypeVerified{})
+	r.Register(&tq.SchemaConformance{})
+	r.Register(&tq.ErrorPathCoverage{})
+	r.Register(&tq.AssertionDepth{})
+	r.Register(&tq.BoundaryTested{})
+	r.Register(&tq.MockScope{})
+	r.Register(&tq.TestIsolation{})
+	r.Register(&tq.NegativeCases{})
+	r.Register(&tq.TestNaming{})
+
+	// CTR
+	r.Register(&ctr.RequestShape{})
+	r.Register(&ctr.ResponseShape{})
+	r.Register(&ctr.StatusCodeHandling{})
+	r.Register(&ctr.SharedTypeSync{})
+	r.Register(&ctr.JSONTagMatch{})
+	r.Register(&ctr.DualTest{})
+	r.Register(&ctr.StrictnessParity{})
+	r.Register(&ctr.ManifestConformance{})
+
 	return r
 }
 
