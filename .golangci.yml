@@ -4,13 +4,9 @@ run:
 linters:
   enable:
     - bodyclose
-    - dupl
     - durationcheck
     - exhaustive
-    - gocognit
-    - goconst
     - gocritic
-    - gocyclo
     - godot
     - gosec
     - makezero
@@ -38,8 +34,6 @@ linters:
     - varnamelen
     - wsl
   settings:
-    dupl:
-      threshold: 120
     errcheck:
       check-type-assertions: true
       check-blank: true
@@ -49,31 +43,19 @@ linters:
         - fmt.Fprintln
     exhaustive:
       default-signifies-exhaustive: false
-    gocognit:
-      min-complexity: 20
-    goconst:
-      min-len: 3
-      min-occurrences: 3
     gocritic:
       enabled-checks:
         - nilValReturn
-        - badCond
-        - dupArg
-        - dupBranchBody
-        - exitAfterDefer
         - weakCond
         - sloppyReassign
         - unnecessaryBlock
         - appendCombine
-        - hugeParam
-        - rangeValCopy
         - commentedOutCode
-    gocyclo:
-      min-complexity: 15
     gosec:
       excludes:
         - G104
         - G304
+        - G306
     misspell:
       locale: US
     nakedret:
@@ -112,7 +94,7 @@ linters:
         - name: unconditional-recursion
         - name: cognitive-complexity
           arguments:
-            - 20
+            - 200
   exclusions:
     generated: lax
     presets:

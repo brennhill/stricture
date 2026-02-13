@@ -228,6 +228,6 @@ func TestParseWithOverrides_RejectsInvalidOverride(t *testing.T) {
 	}
 }
 
-func replaceToken(input string, old string, new string) string {
-	return strings.Replace(input, old, new, 1)
+func replaceToken(input string, old string, replacement string) string {
+	return strings.Replace(input, old, replacement, 1)
 }

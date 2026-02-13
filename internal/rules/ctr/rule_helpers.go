@@ -34,7 +34,7 @@ func shouldTriggerRule(file *model.UnifiedFileModel, ruleID string) (bool, int) 
 		return true, line
 	}
 
-	bugID, line := detectBugID(file.Path, file.Source)
+	bugID := detectBugID(file.Path, file.Source)
 	if bugID == "" {
 		return false, 1
 	}
@@ -42,21 +42,21 @@ func shouldTriggerRule(file *model.UnifiedFileModel, ruleID string) (bool, int) 
 	if !ok || expectedRule != ruleID {
 		return false, 1
 	}
-	return true, line
+	return true, 1
 }
 
 func hasExplicitTrigger(source []byte, ruleID string) (bool, int) {
 	return tokenLine(source, "stricture-trigger "+ruleID)
 }
 
-func detectBugID(path string, _ []byte) (string, int) {
+func detectBugID(path string, _ []byte) string {
 	if path != "" {
 		m := ctrPathBugPattern.FindStringSubmatch(path)
 		if len(m) == 2 {
-			return strings.ToUpper(m[1]), 1
+			return strings.ToUpper(m[1])
 		}
 	}
-	return "", 1
+	return ""
 }
 
 func tokenLine(source []byte, token string) (bool, int) {

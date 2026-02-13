@@ -50,7 +50,7 @@ var defaultApplyTargets = map[string]bool{
 }
 
 // Check validates error message literals against a structured format:
-// {OPERATION}: {ROOT_CAUSE}. {RECOVERY_ACTION}
+// {OPERATION}: {ROOT_CAUSE}. {RECOVERY_ACTION}.
 func (r *ErrorFormat) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
 	if file == nil || len(file.Source) == 0 {
 		return nil

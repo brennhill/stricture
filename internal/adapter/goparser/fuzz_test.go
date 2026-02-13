@@ -169,7 +169,7 @@ func FuzzGoAdapterIsTestFile(f *testing.F) {
 	f.Add("test.go")
 	f.Add("_test.go")
 
-	f.Fuzz(func(t *testing.T, path string) {
+	f.Fuzz(func(_ *testing.T, path string) {
 		a := &GoAdapter{}
 		// Must not panic. Result doesn't matter.
 		_ = a.IsTestFile(path)
@@ -183,7 +183,7 @@ type GoAdapter struct{}
 func (a *GoAdapter) Language() string            { return "go" }
 func (a *GoAdapter) Extensions() []string        { return []string{".go"} }
 func (a *GoAdapter) IsTestFile(path string) bool { return strings.HasSuffix(path, "_test.go") }
-func (a *GoAdapter) Parse(path string, source []byte, config adapter.AdapterConfig) (*model.UnifiedFileModel, error) {
+func (a *GoAdapter) Parse(_ string, _ []byte, _ adapter.AdapterConfig) (*model.UnifiedFileModel, error) {
 	return nil, fmt.Errorf("parse Go file: %w", model.ErrParseFailure)
 }
-func (a *GoAdapter) ResolveImport(importPath string, fromFile string) string { return "" }
+func (a *GoAdapter) ResolveImport(_ string, _ string) string { return "" }

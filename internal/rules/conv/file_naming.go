@@ -53,7 +53,7 @@ var languageDefaults = map[string]string{
 // FileNaming enforces file naming conventions (kebab-case, snake_case, etc.).
 type FileNaming struct{}
 
-func (r *FileNaming) ID() string               { return "CONV-file-naming" }
+func (r *FileNaming) ID() string                { return "CONV-file-naming" }
 func (r *FileNaming) Category() string          { return "conv" }
 func (r *FileNaming) Description() string       { return "Enforce file naming convention" }
 func (r *FileNaming) DefaultSeverity() string   { return "error" }
@@ -184,7 +184,7 @@ func convertToConvention(name string, convention string) string {
 // splitIntoWords splits a name into its component words by detecting boundaries:
 // - Hyphens (kebab-case)
 // - Underscores (snake_case)
-// - Case transitions (camelCase, PascalCase)
+// - Case transitions (camelCase, PascalCase).
 func splitIntoWords(name string) []string {
 	// First, split on explicit delimiters.
 	if strings.Contains(name, "-") {
@@ -214,7 +214,7 @@ func splitAndLower(name string, sep string) []string {
 // splitOnCaseTransitions splits camelCase or PascalCase into words.
 // "userService" -> ["user", "service"]
 // "HTTPClient" -> ["http", "client"]
-// "getAPIKey" -> ["get", "api", "key"]
+// "getAPIKey" -> ["get", "api", "key"].
 func splitOnCaseTransitions(name string) []string {
 	if name == "" {
 		return nil

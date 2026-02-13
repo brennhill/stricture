@@ -47,7 +47,7 @@ benchmark:
 validate:
 	./scripts/run-validation-set.sh
 
-ci: quality-gate benchmark validate
+ci: lint quality-gate benchmark validate
 
 quality-gate:
 	$(MAKE) build

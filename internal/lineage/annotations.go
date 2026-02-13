@@ -425,9 +425,9 @@ func parseSources(raw string, line int) ([]SourceRef, *ParseError) {
 func parseSourceRef(ref string, line int) (SourceRef, *ParseError) {
 	core := ref
 	queryRaw := ""
-	if q := strings.Index(ref, "?"); q >= 0 {
-		core = ref[:q]
-		queryRaw = ref[q+1:]
+	if before, after, ok := strings.Cut(ref, "?"); ok {
+		core = before
+		queryRaw = after
 	}
 
 	kindSplit := strings.SplitN(core, ":", 2)

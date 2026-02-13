@@ -4,9 +4,9 @@ package testutil
 import (
 	"testing"
 
-	"github.com/stricture/stricture/internal/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stricture/stricture/internal/model"
 )
 
 // AssertViolationCount checks that exactly n violations were produced.

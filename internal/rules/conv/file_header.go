@@ -21,7 +21,7 @@ func (r *FileHeader) Why() string {
 func (r *FileHeader) DefaultSeverity() string   { return "error" }
 func (r *FileHeader) NeedsProjectContext() bool { return false }
 
-func (r *FileHeader) Check(file *model.UnifiedFileModel, context *model.ProjectContext, config model.RuleConfig) []model.Violation {
+func (r *FileHeader) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
 	source := string(file.Source)
 	lines := strings.Split(source, "\n")
 	firstLine := ""

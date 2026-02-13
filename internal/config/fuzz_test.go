@@ -64,7 +64,7 @@ rules:
 		f.Add([]byte(seed))
 	}
 
-	f.Fuzz(func(t *testing.T, data []byte) {
+	f.Fuzz(func(_ *testing.T, data []byte) {
 		// Must not panic
 		_, _ = LoadFromBytes(data)
 	})

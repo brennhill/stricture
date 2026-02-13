@@ -19,6 +19,8 @@ type LanguageAdapter interface {
 }
 
 // AdapterConfig holds configuration for a language adapter.
+//
+//nolint:revive // AdapterConfig is intentionally explicit at package boundaries.
 type AdapterConfig struct {
 	IncludeComments bool
 	MaxFileSize     int64

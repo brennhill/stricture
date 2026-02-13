@@ -39,18 +39,18 @@ type ExportDecl struct {
 
 // FuncModel represents a function or method.
 type FuncModel struct {
-	Name        string
-	Receiver    string
-	Params      []ParamModel
-	Returns     []string
-	IsExported  bool
-	IsTest      bool
-	Calls       []string
-	ErrorExits  []ErrorExit
-	LineCount   int
-	Complexity  int
-	StartLine   int
-	EndLine     int
+	Name       string
+	Receiver   string
+	Params     []ParamModel
+	Returns    []string
+	IsExported bool
+	IsTest     bool
+	Calls      []string
+	ErrorExits []ErrorExit
+	LineCount  int
+	Complexity int
+	StartLine  int
+	EndLine    int
 }
 
 // ParamModel represents a function parameter.

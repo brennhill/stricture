@@ -107,11 +107,9 @@ func rewriteHeaderFilename(content []byte, newBase string) []byte {
 	if !strings.HasPrefix(firstLine, "// ") {
 		return content
 	}
-	remainder := ""
+	remainder := " — TODO: describe purpose"
 	if idx := strings.Index(firstLine, " — "); idx >= 0 {
 		remainder = firstLine[idx:]
-	} else {
-		remainder = " — TODO: describe purpose"
 	}
 	updatedFirst := "// " + newBase + remainder
 	if firstLineEnd == len(text) {
