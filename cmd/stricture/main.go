@@ -144,6 +144,7 @@ func runLint(args []string) {
 	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
+	extFilter := fs.String("ext", "", "Only lint files with this extension (example: .go or .ts)")
 	severityLevel := fs.String("severity", "", "Only report violations at this level or above (error, warn)")
 	quiet := fs.Bool("quiet", false, "Only show errors, not warnings")
 	outputPath := fs.String("output", "", "Write report to file instead of stdout")
@@ -199,6 +200,11 @@ func runLint(args []string) {
 		}
 		minSeverity = "error"
 	}
+	extensionAllowlist, err := parseExtensionFilter(*extFilter)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(2)
+	}
 
 	registry := buildRegistry()
 
@@ -252,6 +258,7 @@ func runLint(args []string) {
 		fmt.Fprintf(os.Stderr, "Error: collect files: %v\n", err)
 		os.Exit(1)
 	}
+	filePaths = filterFilePathsByExtensions(filePaths, extensionAllowlist)
 	if *changedOnly || *stagedOnly {
 		scoped, err := resolveGitScopedFileSet(*changedOnly, *stagedOnly)
 		if err != nil {
@@ -844,6 +851,47 @@ func writeFixBackups(ops []fix.Operation) error {
 		}
 	}
 	return nil
+}
+
+func parseExtensionFilter(raw string) (map[string]bool, error) {
+	filter := map[string]bool{}
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return filter, nil
+	}
+
+	for _, token := range strings.Split(value, ",") {
+		normalized := strings.ToLower(strings.TrimSpace(token))
+		if normalized == "" {
+			continue
+		}
+		if !strings.HasPrefix(normalized, ".") {
+			normalized = "." + normalized
+		}
+		if normalized == "." {
+			continue
+		}
+		filter[normalized] = true
+	}
+
+	if len(filter) == 0 {
+		return nil, fmt.Errorf("invalid --ext %q (expected value like .go or ts)", raw)
+	}
+	return filter, nil
+}
+
+func filterFilePathsByExtensions(paths []string, allowlist map[string]bool) []string {
+	if len(allowlist) == 0 {
+		return paths
+	}
+	filtered := make([]string, 0, len(paths))
+	for _, pathValue := range paths {
+		ext := strings.ToLower(filepath.Ext(pathValue))
+		if allowlist[ext] {
+			filtered = append(filtered, pathValue)
+		}
+	}
+	return filtered
 }
 
 func collectLintFilePaths(paths []string) ([]string, error) {
