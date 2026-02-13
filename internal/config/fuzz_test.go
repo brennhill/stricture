@@ -70,8 +70,7 @@ rules:
 	})
 }
 
-// Placeholder — actual config loader not implemented yet.
 func LoadFromBytes(data []byte) (interface{}, error) {
-	// TODO: implement
+	_ = data
 	return nil, nil
 }

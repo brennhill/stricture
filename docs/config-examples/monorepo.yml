@@ -1,0 +1,54 @@
+# monorepo.yml — For large monorepos with multiple packages.
+# Focuses on dependency direction and architecture boundaries.
+#
+# Usage: cp docs/config-examples/monorepo.yml .stricture.yml
+
+rules:
+  # Critical for monorepo health
+  ARCH-no-circular-deps: error
+  ARCH-dependency-direction: error
+  ARCH-layer-violation: error
+  ARCH-interface-boundary: error
+  ARCH-no-god-files: error
+  ARCH-no-orphan-files: error
+
+  # Test quality
+  TQ-no-shallow-assertions: error
+  TQ-return-type-verified: error
+  TQ-error-path-coverage: warn
+  TQ-test-isolation: error
+  TQ-no-mock-leaks: error
+  TQ-ai-pattern-detection: warn
+
+  # Convention for consistency across packages
+  CONV-file-naming: error
+  CONV-file-header: error
+  CONV-error-format: error
+  CONV-max-file-length: error
+  CONV-required-exports: error
+  CONV-naming-consistency: error
+
+  # Contract rules for internal APIs
+  CTR-field-coverage: error
+  CTR-type-match: error
+  CTR-required-fields: error
+
+  # Less critical
+  TQ-schema-conformance: warn
+  TQ-assertion-count: warn
+  TQ-no-snapshot-abuse: warn
+  TQ-boundary-coverage: warn
+  CTR-enum-sync: warn
+  CTR-versioned-endpoints: off  # Internal APIs may not need versioning
+  CTR-error-contract: warn
+  CTR-auth-scope: off
+  CTR-rate-limit-documented: off
+
+options:
+  CONV-max-file-length:
+    max: 600
+  ARCH-dependency-direction:
+    allowed_directions:
+      - "cmd/* -> internal/*"
+      - "internal/* -> pkg/*"
+      - "pkg/* -> (stdlib)"

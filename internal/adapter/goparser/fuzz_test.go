@@ -9,6 +9,8 @@
 package goparser
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stricture/stricture/internal/adapter"
@@ -151,8 +153,8 @@ func こんにちは() string { return "世界" }`,
 
 		// Line numbers must be positive
 		for i, imp := range result.Imports {
-			if imp.Line < 1 {
-				t.Errorf("Import[%d] has invalid line %d", i, imp.Line)
+			if imp.StartLine < 1 {
+				t.Errorf("Import[%d] has invalid line %d", i, imp.StartLine)
 			}
 		}
 	})
@@ -178,11 +180,10 @@ func FuzzGoAdapterIsTestFile(f *testing.F) {
 // This struct exists so the fuzz tests compile.
 type GoAdapter struct{}
 
-func (a *GoAdapter) Language() string   { return "go" }
-func (a *GoAdapter) Extensions() []string { return []string{".go"} }
-func (a *GoAdapter) IsTestFile(path string) bool { return false }
+func (a *GoAdapter) Language() string            { return "go" }
+func (a *GoAdapter) Extensions() []string        { return []string{".go"} }
+func (a *GoAdapter) IsTestFile(path string) bool { return strings.HasSuffix(path, "_test.go") }
 func (a *GoAdapter) Parse(path string, source []byte, config adapter.AdapterConfig) (*model.UnifiedFileModel, error) {
-	// TODO: implement
-	return nil, nil
+	return nil, fmt.Errorf("parse Go file: %w", model.ErrParseFailure)
 }
 func (a *GoAdapter) ResolveImport(importPath string, fromFile string) string { return "" }

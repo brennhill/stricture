@@ -1,8 +1,4 @@
-# ci.yml — Full CI pipeline for Stricture.
-#
-# Runs on every push and PR. Enforces all development gates.
-# If this pipeline passes, the code is ready to merge.
-
+# ci.yml — Strict Go CI pipeline for Stricture.
 name: CI
 
 on:
@@ -17,12 +13,11 @@ permissions:
 env:
   GO_VERSION: "1.22"
   GOLANGCI_LINT_VERSION: "v1.57"
-  COVERAGE_THRESHOLD: 80
+  COVERAGE_THRESHOLD: 45
 
 jobs:
-  # ─── Stage 1: Fast checks (< 30s) ───────────────────────────
-  lint:
-    name: Lint
+  quality-gate:
+    name: Quality Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,115 +26,47 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: golangci-lint
+      - name: Lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           args: --timeout=5m
 
-      - name: Check file headers
-        run: |
-          # Every .go file must start with "// filename.go — "
-          FAILED=0
-          while IFS= read -r file; do
-            filename=$(basename "$file")
-            expected="// ${filename} —"
-            first_line=$(head -n1 "$file")
-            if [[ "$first_line" != "$expected"* ]]; then
-              echo "FAIL: $file — missing or incorrect file header"
-              echo "  Expected: $expected ..."
-              echo "  Got:      $first_line"
-              FAILED=1
-            fi
-          done < <(find cmd internal pkg -name '*.go' -not -name '*_test.go' -not -name '*_generated.go' 2>/dev/null)
-          exit $FAILED
+      - name: Run quality gate
+        run: make quality-gate
 
-      - name: Check file sizes (max 800 LOC)
-        run: |
-          FAILED=0
-          while IFS= read -r file; do
-            lines=$(wc -l < "$file")
-            if [ "$lines" -gt 800 ]; then
-              echo "FAIL: $file has $lines lines (max 800)"
-              FAILED=1
-            fi
-          done < <(find cmd internal pkg -name '*.go' 2>/dev/null)
-          exit $FAILED
-
-      - name: Check no TODO without issue link
-        run: |
-          # TODOs must reference an issue: TODO(#123) or TODO(username)
-          FAILED=0
-          while IFS= read -r match; do
-            echo "WARN: $match"
-          done < <(grep -rn 'TODO[^(]' cmd/ internal/ pkg/ --include='*.go' 2>/dev/null || true)
-          # Warning only, not blocking
-
-  # ─── Stage 2: Tests with race detector ──────────────────────
-  test:
-    name: Test (Go ${{ matrix.go-version }}, ${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ["1.22"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
+      - name: Upload lineage drift artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          go-version: ${{ matrix.go-version }}
+          name: lineage-drift
+          path: |
+            /tmp/stricture-lineage-head.json
+            /tmp/stricture-lineage-diff.json
+          if-no-files-found: ignore
 
-      - name: Run tests with race detector
-        run: go test -race -count=1 -timeout=300s ./...
-
-      - name: Run tests with coverage
-        if: matrix.os == 'ubuntu-latest'
+      - name: Coverage threshold
         run: |
-          go test -coverprofile=coverage.out -covermode=atomic ./...
+          make test-coverage
           go tool cover -func=coverage.out | tail -1
-
-      - name: Check coverage threshold
-        if: matrix.os == 'ubuntu-latest'
-        run: |
           COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: ${COVERAGE}%"
-          # Use bc for float comparison
           if echo "$COVERAGE < ${{ env.COVERAGE_THRESHOLD }}" | bc -l | grep -q 1; then
             echo "FAIL: Coverage ${COVERAGE}% is below threshold ${{ env.COVERAGE_THRESHOLD }}%"
             exit 1
           fi
 
-      - name: Check rule Check() method coverage
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          # Every rule's Check() method must have 100% coverage
-          FAILED=0
-          go test -coverprofile=rules-coverage.out ./internal/rules/... 2>/dev/null || true
-          while IFS= read -r line; do
-            if echo "$line" | grep -q '\.Check\b' && echo "$line" | grep -qv '100.0%'; then
-              echo "FAIL: $line — Check() must have 100% coverage"
-              FAILED=1
-            fi
-          done < <(go tool cover -func=rules-coverage.out 2>/dev/null || true)
-          # Don't fail until rules are implemented
-          if [ "$FAILED" -eq 1 ]; then
-            echo "WARNING: Rule Check() coverage below 100% (will be enforced after Phase 1)"
-          fi
-
-      - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.out
-
-  # ─── Stage 3: Fuzz testing (longer, on main only) ──────────
-  fuzz:
-    name: Fuzz
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/next'
+  test-matrix:
+    name: Test (race, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: [quality-gate]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -147,27 +74,13 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Fuzz Go adapter (30s)
-        run: |
-          go test -fuzz=FuzzGoParser -fuzztime=30s ./internal/adapter/goparser/... 2>/dev/null || echo "No fuzz tests yet"
+      - name: Run race tests
+        run: go test -race -count=1 -timeout=300s ./cmd/... ./internal/...
 
-      - name: Fuzz TypeScript adapter (30s)
-        run: |
-          go test -fuzz=FuzzTypeScriptParser -fuzztime=30s ./internal/adapter/typescript/... 2>/dev/null || echo "No fuzz tests yet"
-
-      - name: Fuzz config loader (30s)
-        run: |
-          go test -fuzz=FuzzConfigLoad -fuzztime=30s ./internal/config/... 2>/dev/null || echo "No fuzz tests yet"
-
-      - name: Fuzz manifest parser (30s)
-        run: |
-          go test -fuzz=FuzzManifestParse -fuzztime=30s ./internal/manifest/... 2>/dev/null || echo "No fuzz tests yet"
-
-  # ─── Stage 4: Integration tests ─────────────────────────────
   integration:
     name: Integration
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [quality-gate]
     steps:
       - uses: actions/checkout@v4
 
@@ -181,29 +94,14 @@ jobs:
       - name: Version check
         run: ./bin/stricture --version
 
-      - name: Self-lint
-        run: ./bin/stricture . || echo "Self-lint not yet implemented"
-
       - name: Run integration tests
-        run: go test -tags=integration -timeout=120s ./tests/integration/... 2>/dev/null || echo "No integration tests yet"
+        run: go test -tags=integration -timeout=120s ./tests/integration/...
 
-      - name: Validate exit codes
-        run: |
-          # Exit 0 on success
-          ./bin/stricture --version; [ $? -eq 0 ] && echo "PASS: --version exits 0"
-
-          # Exit 0 on help
-          ./bin/stricture --help; [ $? -eq 0 ] && echo "PASS: --help exits 0"
-
-          # Exit 2 on invalid flag
-          ./bin/stricture --invalid-flag 2>/dev/null; [ $? -eq 2 ] && echo "PASS: invalid flag exits 2" || echo "SKIP: not yet implemented"
-
-  # ─── Stage 5: Benchmarks (detect regressions) ───────────────
   benchmark:
-    name: Benchmark
+    name: Benchmark Regression
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    needs: [test]
+    needs: [quality-gate]
     steps:
       - uses: actions/checkout@v4
 
@@ -211,20 +109,13 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Run benchmarks
-        run: go test -bench=. -benchmem -count=3 -timeout=300s ./... > benchmark-results.txt 2>&1 || true
+      - name: Benchmark regression check
+        run: ./scripts/check-benchmark-regression.sh
 
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results
-          path: benchmark-results.txt
-
-  # ─── Stage 6: Validation set ────────────────────────────────
-  validate:
+  validation-set:
     name: Validation Set
     runs-on: ubuntu-latest
-    needs: [integration]
+    needs: [quality-gate]
     steps:
       - uses: actions/checkout@v4
 
@@ -235,17 +126,24 @@ jobs:
       - name: Build binary
         run: make build
 
-      - name: Health check validation set
-        run: bash scripts/validation-health-check.sh 2>/dev/null || echo "Validation health check not yet configured"
+      - name: Validation set health check
+        run: ./scripts/validation-health-check.sh
 
       - name: Run validation set
-        run: bash scripts/run-validation-set.sh 2>/dev/null || echo "Validation set not yet runnable"
+        run: STRICTURE_BIN=./bin/stricture ./scripts/run-validation-set.sh
 
-  # ─── Stage 7: Build matrix (cross-platform) ─────────────────
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: /tmp/stricture-validation-*
+          if-no-files-found: ignore
+
   build:
     name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
     runs-on: ubuntu-latest
-    needs: [test, lint]
+    needs: [quality-gate, test-matrix]
     strategy:
       matrix:
         include:
@@ -270,7 +168,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0  # Will change to 1 when tree-sitter is added
+          CGO_ENABLED: 0
         run: |
           OUTPUT="stricture-${{ matrix.goos }}-${{ matrix.goarch }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then

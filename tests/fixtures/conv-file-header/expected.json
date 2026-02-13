@@ -1,0 +1,9 @@
+{
+  "description": "Golden fixtures for CONV-file-header",
+  "violations": [
+    {
+      "case": "fail-missing-header/source.ts",
+      "ruleId": "CONV-file-header"
+    }
+  ]
+}

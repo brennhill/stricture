@@ -1,0 +1,51 @@
+# microservices.yml — Optimized for API-driven microservice architectures.
+# Emphasizes contract rules (CTR) and architecture boundaries.
+#
+# Usage: cp docs/config-examples/microservices.yml .stricture.yml
+
+rules:
+  # Contract rules are critical for microservices
+  CTR-field-coverage: error
+  CTR-type-match: error
+  CTR-enum-sync: error
+  CTR-required-fields: error
+  CTR-versioned-endpoints: error
+  CTR-error-contract: error
+  CTR-auth-scope: error
+  CTR-rate-limit-documented: error
+
+  # Architecture boundaries matter
+  ARCH-no-circular-deps: error
+  ARCH-dependency-direction: error
+  ARCH-interface-boundary: error
+  ARCH-layer-violation: error
+  ARCH-no-god-files: warn
+  ARCH-no-orphan-files: warn
+
+  # Test quality for API tests
+  TQ-no-shallow-assertions: error
+  TQ-return-type-verified: error
+  TQ-error-path-coverage: error
+  TQ-boundary-coverage: error
+  TQ-schema-conformance: error
+
+  # Convention
+  CONV-file-naming: error
+  CONV-error-format: error
+  CONV-max-file-length: error
+
+  # Less critical for microservices
+  TQ-no-mock-leaks: warn
+  TQ-assertion-count: warn
+  TQ-no-snapshot-abuse: off
+  TQ-test-isolation: warn
+  TQ-ai-pattern-detection: warn
+  CONV-file-header: off
+  CONV-required-exports: warn
+  CONV-naming-consistency: warn
+
+options:
+  CONV-max-file-length:
+    max: 400  # Microservices should be small
+  CTR-versioned-endpoints:
+    require_version_prefix: true

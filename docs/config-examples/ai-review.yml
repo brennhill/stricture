@@ -1,0 +1,58 @@
+# ai-review.yml — Maximum test quality checks for AI-generated code review.
+# Use this when reviewing code written by AI assistants (Copilot, Cursor, Claude, etc.)
+# AI-generated code tends to have shallow assertions, mock leaks, and snapshot abuse.
+#
+# Usage: cp docs/config-examples/ai-review.yml .stricture.yml
+
+rules:
+  # AI code quality traps — ALL at error level
+  TQ-no-shallow-assertions: error
+  TQ-return-type-verified: error
+  TQ-schema-conformance: error
+  TQ-error-path-coverage: error
+  TQ-no-mock-leaks: error
+  TQ-assertion-count: error
+  TQ-no-snapshot-abuse: error
+  TQ-test-isolation: error
+  TQ-boundary-coverage: error
+  TQ-ai-pattern-detection: error  # Specifically designed for AI-generated tests
+
+  # Architecture — important
+  ARCH-no-circular-deps: error
+  ARCH-dependency-direction: warn
+  ARCH-no-god-files: error
+  ARCH-interface-boundary: warn
+  ARCH-layer-violation: warn
+  ARCH-no-orphan-files: warn
+
+  # Convention
+  CONV-file-naming: warn
+  CONV-file-header: warn
+  CONV-error-format: warn
+  CONV-max-file-length: error  # AI tends to generate long files
+  CONV-required-exports: off
+  CONV-naming-consistency: warn
+
+  # Contract — standard
+  CTR-field-coverage: error
+  CTR-type-match: error
+  CTR-enum-sync: warn
+  CTR-required-fields: error
+  CTR-versioned-endpoints: off
+  CTR-error-contract: warn
+  CTR-auth-scope: off
+  CTR-rate-limit-documented: off
+
+options:
+  CONV-max-file-length:
+    max: 300  # AI loves generating mega-files
+  TQ-assertion-count:
+    min: 2    # AI often has single-assertion tests
+    max: 10
+  TQ-ai-pattern-detection:
+    patterns:
+      - "snapshot_overuse"       # > 50% of assertions are snapshots
+      - "shallow_existence"     # toBeTruthy/toBeDefined without value check
+      - "missing_error_paths"   # Happy path only
+      - "mock_everything"       # Mock count > assertion count
+      - "copy_paste_tests"      # Tests share > 80% code

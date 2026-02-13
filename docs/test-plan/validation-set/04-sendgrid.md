@@ -1009,7 +1009,7 @@ export class SendGridClientB01 {
 
 **Expected violation:**
 ```
-CTR-error-path-coverage: fetch() call at line 14 has no try/catch or .catch() handler.
+TQ-error-path-coverage: fetch() call at line 14 has no try/catch or .catch() handler.
 Network-layer failures (TypeError, AbortError) will propagate as unhandled rejections.
 ```
 

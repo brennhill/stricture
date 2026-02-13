@@ -546,6 +546,8 @@ func TestCreateCharge(t *testing.T) {
 	}
 }
 
+```
+
 ---
 
 ## Bug Cases (B01-B15)

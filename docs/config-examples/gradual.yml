@@ -1,0 +1,48 @@
+# gradual.yml — Start with warnings, gradually increase strictness.
+# Use this when adopting Stricture on an existing codebase.
+#
+# Usage: cp docs/config-examples/gradual.yml .stricture.yml
+# Then: Change individual rules from "warn" to "error" as you fix violations.
+
+rules:
+  # Start with the most impactful rules as warnings
+  TQ-no-shallow-assertions: warn
+  TQ-return-type-verified: warn
+  TQ-error-path-coverage: warn
+  TQ-ai-pattern-detection: warn
+
+  # Architecture basics
+  ARCH-no-circular-deps: warn
+  ARCH-no-god-files: warn
+
+  # Convention basics
+  CONV-file-naming: warn
+  CONV-max-file-length: warn
+
+  # Everything else off initially
+  TQ-schema-conformance: off
+  TQ-no-mock-leaks: off
+  TQ-assertion-count: off
+  TQ-no-snapshot-abuse: off
+  TQ-test-isolation: off
+  TQ-boundary-coverage: off
+  ARCH-dependency-direction: off
+  ARCH-interface-boundary: off
+  ARCH-layer-violation: off
+  ARCH-no-orphan-files: off
+  CONV-file-header: off
+  CONV-error-format: off
+  CONV-required-exports: off
+  CONV-naming-consistency: off
+  CTR-field-coverage: off
+  CTR-type-match: off
+  CTR-enum-sync: off
+  CTR-required-fields: off
+  CTR-versioned-endpoints: off
+  CTR-error-contract: off
+  CTR-auth-scope: off
+  CTR-rate-limit-documented: off
+
+options:
+  CONV-max-file-length:
+    max: 800  # Generous limit to start

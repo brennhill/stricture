@@ -619,6 +619,7 @@ class TestStripeClientCreateCharge:
             assert "description" not in call_args[1]["data"]
             assert call_args[1]["headers"] is None
 
+```
 
 ---
 

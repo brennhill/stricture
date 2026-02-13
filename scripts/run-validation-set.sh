@@ -8,7 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VALIDATION_DIR="$PROJECT_ROOT/docs/test-plan/validation-set"
 TEMP_DIR="${TMPDIR:-/tmp}/stricture-validation-$$"
-STRICTURE="${STRICTURE_BIN:-npx stricture}"
+STRICTURE="${STRICTURE_BIN:-$PROJECT_ROOT/bin/stricture}"
+SINGLE_FILE=""
 
 # ── Colors ────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -133,7 +134,7 @@ run_validation() {
 
     # Find all source files (not yaml/yml)
     local source_files
-    source_files=$(find "$case_dir" -name "*.ts" -o -name "*.js" -o -name "*.go" -o -name "*.py" -o -name "*.java" 2>/dev/null)
+    source_files=$(find "$case_dir" -type f \( -name "*.ts" -o -name "*.js" -o -name "*.go" -o -name "*.py" -o -name "*.java" \) 2>/dev/null)
 
     if [ -z "$source_files" ]; then
         log_skip "$md_basename/$case_id — no source files extracted"
@@ -142,7 +143,7 @@ run_validation() {
 
     # Find manifest if present
     local manifest_file
-    manifest_file=$(find "$case_dir" -name "*.yml" -o -name "*.yaml" 2>/dev/null | head -1)
+    manifest_file=$(find "$case_dir" -type f \( -name "*.yml" -o -name "*.yaml" \) 2>/dev/null | head -1)
 
     local manifest_flag=""
     if [ -n "$manifest_file" ]; then
@@ -175,14 +176,14 @@ run_validation() {
         fi
 
         local has_expected_rule
-        has_expected_rule=$(echo "$output" | jq -r ".violations[] | select(.rule == \"$expected_rule\") | .rule" 2>/dev/null | head -1)
+        has_expected_rule=$(echo "$output" | jq -r ".violations[] | select(.ruleId == \"$expected_rule\" or .rule == \"$expected_rule\") | (.ruleId // .rule)" 2>/dev/null | head -1)
 
         if [ "$has_expected_rule" = "$expected_rule" ]; then
             log_pass "$md_basename/$case_id — detected $expected_rule"
         elif [ "$exit_code" -ne 0 ] && [ -z "$has_expected_rule" ]; then
             # Stricture found violations but not the expected rule
             local found_rules
-            found_rules=$(echo "$output" | jq -r '.violations[].rule' 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
+            found_rules=$(echo "$output" | jq -r '.violations[] | (.ruleId // .rule)' 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
             log_fail "$md_basename/$case_id — expected $expected_rule, got: ${found_rules:-none}"
         else
             log_fail "$md_basename/$case_id — expected $expected_rule, got 0 violations"
@@ -197,18 +198,27 @@ main() {
     echo -e "${BOLD}================================${NC}"
     echo ""
 
-    # Check if stricture is available
-    if ! command -v stricture &>/dev/null && [ "$STRICTURE" = "npx stricture" ]; then
-        echo -e "${YELLOW}Warning: 'stricture' not found in PATH. Using 'npx stricture'.${NC}"
-        echo -e "${YELLOW}Set STRICTURE_BIN to point to your Stricture binary.${NC}"
-        echo ""
+    # Check if configured binary is executable.
+    if [ ! -x "$STRICTURE" ]; then
+        if command -v "$STRICTURE" >/dev/null 2>&1; then
+            : # Command exists in PATH.
+        else
+            echo -e "${RED}Error: Stricture binary not found or not executable: ${STRICTURE}${NC}" >&2
+            echo -e "${YELLOW}Build it first with: make build${NC}" >&2
+            echo -e "${YELLOW}Or override path: STRICTURE_BIN=/path/to/stricture ./scripts/run-validation-set.sh${NC}" >&2
+            exit 1
+        fi
     fi
 
     mkdir -p "$TEMP_DIR"
 
-    # Process API validation files (01-12, 13-17)
+    # Process API validation files (01-12, 13-17), or a single file if requested.
     local api_files
-    api_files=$(find "$VALIDATION_DIR" -maxdepth 1 -name "[0-9][0-9]-*.md" | sort)
+    if [ -n "$SINGLE_FILE" ]; then
+        api_files="$SINGLE_FILE"
+    else
+        api_files=$(find "$VALIDATION_DIR" -maxdepth 1 -name "[0-9][0-9]-*.md" | sort)
+    fi
 
     for md_file in $api_files; do
         local basename
@@ -235,35 +245,37 @@ main() {
         done
     done
 
-    # Process architecture validation files (30-31)
-    for md_file in "$VALIDATION_DIR"/3[0-9]-*.md; do
-        [ -f "$md_file" ] || continue
-        local basename
-        basename=$(basename "$md_file" .md)
-        log_info "Processing $basename (ARCH rules)..."
+    if [ -z "$SINGLE_FILE" ]; then
+        # Process architecture validation files (30-31)
+        for md_file in "$VALIDATION_DIR"/3[0-9]-*.md; do
+            [ -f "$md_file" ] || continue
+            local basename
+            basename=$(basename "$md_file" .md)
+            log_info "Processing $basename (ARCH rules)..."
 
-        local extract_dir="$TEMP_DIR/$basename"
-        extract_code_blocks "$md_file" "$extract_dir"
+            local extract_dir="$TEMP_DIR/$basename"
+            extract_code_blocks "$md_file" "$extract_dir"
 
-        if [ -d "$extract_dir/PERFECT" ]; then
-            run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
-        fi
-    done
+            if [ -d "$extract_dir/PERFECT" ]; then
+                run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
+            fi
+        done
 
-    # Process test quality files (40-41)
-    for md_file in "$VALIDATION_DIR"/4[0-9]-*.md; do
-        [ -f "$md_file" ] || continue
-        local basename
-        basename=$(basename "$md_file" .md)
-        log_info "Processing $basename (TQ rules)..."
+        # Process test quality files (40-41)
+        for md_file in "$VALIDATION_DIR"/4[0-9]-*.md; do
+            [ -f "$md_file" ] || continue
+            local basename
+            basename=$(basename "$md_file" .md)
+            log_info "Processing $basename (TQ rules)..."
 
-        local extract_dir="$TEMP_DIR/$basename"
-        extract_code_blocks "$md_file" "$extract_dir"
+            local extract_dir="$TEMP_DIR/$basename"
+            extract_code_blocks "$md_file" "$extract_dir"
 
-        if [ -d "$extract_dir/PERFECT" ]; then
-            run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
-        fi
-    done
+            if [ -d "$extract_dir/PERFECT" ]; then
+                run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
+            fi
+        done
+    fi
 
     # ── Summary ───────────────────────────────────────────
     echo ""
@@ -318,8 +330,8 @@ case "${1:-}" in
         ;;
     --file)
         if [ -n "${2:-}" ]; then
+            SINGLE_FILE="$2"
             VALIDATION_DIR="$(dirname "$2")"
-            # Override to process only this file
         fi
         ;;
 esac

@@ -379,6 +379,8 @@ func (c *Client) ListIssues(ctx context.Context, owner, repo string, opts *ListI
 	return issues, pagination, nil
 }
 
+```
+
 ---
 
 ## BUGS

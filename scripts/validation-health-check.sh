@@ -66,14 +66,12 @@ for md_file in "$VALIDATION_DIR"/[0-9][0-9]-*.md "$VALIDATION_DIR"/[0-9][0-9][0-
     [ -f "$md_file" ] || continue
     basename=$(basename "$md_file" .md)
 
-    # Count opening and closing fences
-    open_fences=$(grep -c '^```[a-z]' "$md_file" 2>/dev/null || true)
-    close_fences=$(grep -c '^```$' "$md_file" 2>/dev/null || true)
-
-    if [ "$open_fences" -eq "$close_fences" ]; then
-        check_pass "$basename: $open_fences code blocks balanced"
+    # Count all fence markers and require an even number.
+    fence_markers=$(grep -c '^```' "$md_file" 2>/dev/null || true)
+    if [ $((fence_markers % 2)) -eq 0 ]; then
+        check_pass "$basename: $((fence_markers / 2)) code blocks balanced"
     else
-        check_fail "$basename: $open_fences opening fences vs $close_fences closing fences"
+        check_fail "$basename: odd fenced block marker count ($fence_markers)"
     fi
 done
 
@@ -125,7 +123,7 @@ fi
 echo ""
 echo -e "${BOLD}5. Contract ID Uniqueness${NC}"
 
-contract_ids=$(grep -h 'id:.*"' "$VALIDATION_DIR"/[0-1][0-9]-*.md 2>/dev/null | \
+contract_ids=$(grep -h '^[[:space:]]*-[[:space:]]*id:[[:space:]]*".*"' "$VALIDATION_DIR"/[0-1][0-9]-*.md 2>/dev/null | \
     sed 's/.*id:[[:space:]]*"\([^"]*\)".*/\1/' | sort)
 
 duplicates=$(echo "$contract_ids" | uniq -d)
@@ -238,7 +236,7 @@ echo -e "${BOLD}10. Rule Coverage Summary${NC}"
 covered=0
 uncovered_list=""
 for rule in "${valid_rules[@]}"; do
-    if grep -rq "$rule" "$VALIDATION_DIR"/*.md "$VALIDATION_DIR"/**/*.md 2>/dev/null; then
+    if grep -rq "$rule" "$VALIDATION_DIR" 2>/dev/null; then
         covered=$((covered + 1))
     else
         uncovered_list="$uncovered_list $rule"

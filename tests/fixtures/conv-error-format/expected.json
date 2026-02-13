@@ -1,0 +1,9 @@
+{
+  "description": "Golden fixtures for CONV-error-format",
+  "cases": [
+    {
+      "name": "fail-unstructured",
+      "ruleId": "CONV-error-format"
+    }
+  ]
+}

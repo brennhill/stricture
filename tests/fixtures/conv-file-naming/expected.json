@@ -1,0 +1,9 @@
+{
+  "description": "Golden fixtures for CONV-file-naming",
+  "violations": [
+    {
+      "case": "fail-bad-name/UserService.ts",
+      "ruleId": "CONV-file-naming"
+    }
+  ]
+}

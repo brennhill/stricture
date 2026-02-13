@@ -1,16 +1,26 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 lint benchmark validate ci clean install
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
 
 GOFLAGS ?=
+LINEAGE_MODE ?= block
+TEST_PKGS := ./cmd/... ./internal/...
+BENCH_PKGS := ./cmd/... ./internal/...
+PHASE1_PKGS := ./internal/config/... ./internal/adapter/goparser/... ./internal/rules/conv/... ./internal/reporter/... ./cmd/stricture/...
 
 build:
 	go build $(GOFLAGS) -o bin/stricture ./cmd/stricture
 
 test:
-	go test $(GOFLAGS) ./...
+	go test $(GOFLAGS) $(TEST_PKGS)
+
+test-race:
+	go test $(GOFLAGS) -race -count=1 -timeout=300s $(TEST_PKGS)
+
+test-coverage:
+	go test $(GOFLAGS) -coverprofile=coverage.out -covermode=atomic $(PHASE1_PKGS)
 
 test-phase1:
-	go test $(GOFLAGS) ./internal/config/... ./internal/adapter/goparser/... ./internal/rules/conv/... ./internal/reporter/... ./cmd/stricture/...
+	go test $(GOFLAGS) $(PHASE1_PKGS)
 
 test-phase2: test-phase1
 	go test $(GOFLAGS) ./internal/adapter/typescript/... ./internal/rules/arch/... ./internal/engine/...
@@ -28,12 +38,53 @@ lint:
 	golangci-lint run ./...
 
 benchmark:
-	go test $(GOFLAGS) -bench=. -benchmem ./...
+	go test $(GOFLAGS) -bench=. -benchmem $(BENCH_PKGS)
 
 validate:
 	./scripts/run-validation-set.sh
 
-ci: lint test benchmark validate
+ci: quality-gate benchmark validate
+
+quality-gate:
+	$(MAKE) build
+	$(MAKE) test-phase1
+	./scripts/check-lineage-drift.sh
+	./scripts/validate-gate.sh --phase 1
+	./scripts/validate-error-messages.sh
+	./scripts/check-rule-consistency.sh
+	./scripts/check-no-stubs.sh --phase 1
+	./scripts/check-invariant-tests.sh
+	./scripts/validation-health-check.sh
+
+check-rules:
+	./scripts/check-rule-consistency.sh
+
+check-stubs:
+	./scripts/check-no-stubs.sh --phase 1
+
+check-invariants:
+	./scripts/check-invariant-tests.sh
+
+check-benchmarks:
+	./scripts/check-benchmark-regression.sh
+
+lineage-export:
+	./scripts/export-lineage-artifact.sh
+
+lineage-diff:
+ifndef BASE
+	$(error BASE is required. Usage: make lineage-diff BASE=tests/lineage/baseline.json HEAD=tests/lineage/current.json)
+endif
+ifndef HEAD
+	$(error HEAD is required. Usage: make lineage-diff BASE=tests/lineage/baseline.json HEAD=tests/lineage/current.json)
+endif
+	go run ./cmd/stricture lineage-diff --base $(BASE) --head $(HEAD) --mode $(LINEAGE_MODE)
+
+check-lineage:
+	./scripts/check-lineage-drift.sh
+
+update-lineage-baseline:
+	./scripts/update-lineage-baseline.sh
 
 clean:
 	rm -rf bin/
@@ -41,3 +92,63 @@ clean:
 
 install:
 	go install $(GOFLAGS) ./cmd/stricture
+
+# --- Developer workflow targets ---
+
+# Scaffold a new rule: make scaffold-rule RULE=TQ-error-path-coverage
+scaffold-rule:
+ifndef RULE
+	$(error RULE is required. Usage: make scaffold-rule RULE=TQ-error-path-coverage)
+endif
+	./scripts/scaffold-rule.sh $(RULE)
+
+# Enforce TDD red phase for a single rule (tests must fail).
+tdd-red:
+ifndef RULE
+	$(error RULE is required. Usage: make tdd-red RULE=CONV-error-format)
+endif
+	./scripts/tdd-rule.sh --rule $(RULE) --stage red
+
+# Enforce TDD green phase for a single rule (tests must pass).
+tdd-green:
+ifndef RULE
+	$(error RULE is required. Usage: make tdd-green RULE=CONV-error-format)
+endif
+	./scripts/tdd-rule.sh --rule $(RULE) --stage green
+
+# Validate development gate prerequisites
+validate-gates:
+	./scripts/validate-gate.sh --all
+
+# Show rule implementation progress
+progress:
+	./scripts/track-progress.sh
+
+# Show progress with test results (slower)
+progress-test:
+	./scripts/track-progress.sh --test
+
+# Show progress as JSON
+progress-json:
+	./scripts/track-progress.sh --json
+
+# Validate error messages match catalog
+check-messages:
+	./scripts/validate-error-messages.sh
+
+# Add a regression fixture: make add-regression RULE=CONV-file-naming DESC="missed kebab-case"
+add-regression:
+ifndef RULE
+	$(error RULE is required. Usage: make add-regression RULE=CONV-file-naming DESC="description")
+endif
+ifndef DESC
+	$(error DESC is required. Usage: make add-regression RULE=CONV-file-naming DESC="description")
+endif
+	./scripts/add-regression.sh $(RULE) "$(DESC)"
+
+# Run all validations (gates + messages + health check)
+validate-all: validate-gates check-messages
+	./scripts/validation-health-check.sh
+
+# Quick check: lint + test phase 1 + validate messages
+quick-check: lint test-phase1 check-messages

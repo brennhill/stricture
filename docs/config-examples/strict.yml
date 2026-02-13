@@ -1,0 +1,52 @@
+# strict.yml — Maximum strictness for greenfield projects and AI-generated code.
+# Use this when starting fresh or when AI generates your code.
+#
+# Usage: cp docs/config-examples/strict.yml .stricture.yml
+
+rules:
+  # Test Quality — all enabled at error level
+  TQ-no-shallow-assertions: error
+  TQ-return-type-verified: error
+  TQ-schema-conformance: error
+  TQ-error-path-coverage: error
+  TQ-no-mock-leaks: error
+  TQ-assertion-count: error
+  TQ-no-snapshot-abuse: error
+  TQ-test-isolation: error
+  TQ-boundary-coverage: error
+  TQ-ai-pattern-detection: error
+
+  # Architecture — all enabled
+  ARCH-no-circular-deps: error
+  ARCH-dependency-direction: error
+  ARCH-no-god-files: error
+  ARCH-interface-boundary: error
+  ARCH-layer-violation: error
+  ARCH-no-orphan-files: warn
+
+  # Convention — all enabled
+  CONV-file-naming: error
+  CONV-file-header: error
+  CONV-error-format: error
+  CONV-max-file-length: error
+  CONV-required-exports: error
+  CONV-naming-consistency: error
+
+  # Contract — all enabled
+  CTR-field-coverage: error
+  CTR-type-match: error
+  CTR-enum-sync: error
+  CTR-required-fields: error
+  CTR-versioned-endpoints: error
+  CTR-error-contract: error
+  CTR-auth-scope: error
+  CTR-rate-limit-documented: warn
+
+options:
+  CONV-file-naming:
+    style: auto  # Detect per language
+  CONV-max-file-length:
+    max: 500
+  TQ-assertion-count:
+    min: 1
+    max: 15
