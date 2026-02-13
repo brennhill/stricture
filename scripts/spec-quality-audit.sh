@@ -117,7 +117,9 @@ main() {
 
     run_check "phase6-tests" "make test-phase6" || true
     run_check "integration-tests" "go test -tags=integration -timeout=120s ./tests/integration/..." || true
+    run_check "lint" "make lint" || true
     run_check "full-gates" "./scripts/validate-gate.sh --all" || true
+    run_check "validation-set-policy" "make validate" || true
     run_check "message-catalog-consistency" "./scripts/validate-error-messages.sh" || true
     run_check "rule-consistency" "./scripts/check-rule-consistency.sh" || true
     run_check "invariant-tests" "./scripts/check-invariant-tests.sh" || true
