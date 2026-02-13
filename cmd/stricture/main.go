@@ -760,12 +760,22 @@ func shouldSkipLintDir(dir string) bool {
 }
 
 func isLintSourceFile(path string) bool {
+	if isGeneratedSourceFile(path) {
+		return false
+	}
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".go", ".ts", ".tsx", ".js", ".jsx", ".py", ".java", ".kt", ".rs":
 		return true
 	default:
 		return false
 	}
+}
+
+func isGeneratedSourceFile(path string) bool {
+	name := strings.ToLower(filepath.Base(path))
+	return strings.Contains(name, ".generated.") ||
+		strings.HasSuffix(name, ".pb.go") ||
+		strings.HasSuffix(name, ".pb.ts")
 }
 
 func buildUnifiedFiles(paths []string) ([]*model.UnifiedFileModel, error) {
