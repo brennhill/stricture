@@ -57,13 +57,25 @@ EOF
 }
 
 load_state() {
-    # shellcheck disable=SC1090
-    source "$STATE_FILE"
-    CURRENT_PHASE="${CURRENT_PHASE:-3}"
-    STATUS="${STATUS:-idle}"
-    COMPLETED_PHASES="${COMPLETED_PHASES:-}"
-    LAST_ERROR="${LAST_ERROR:-}"
-    UPDATED_AT="${UPDATED_AT:-}"
+    CURRENT_PHASE=3
+    STATUS=idle
+    COMPLETED_PHASES=
+    LAST_ERROR=
+    UPDATED_AT=
+
+    if [ -f "$STATE_FILE" ]; then
+        while IFS='=' read -r key value; do
+            [ -z "$key" ] && continue
+            case "$key" in
+                CURRENT_PHASE) CURRENT_PHASE="$value" ;;
+                STATUS) STATUS="$value" ;;
+                COMPLETED_PHASES) COMPLETED_PHASES="$value" ;;
+                LAST_ERROR) LAST_ERROR="$value" ;;
+                UPDATED_AT) UPDATED_AT="$value" ;;
+                *) ;;
+            esac
+        done <"$STATE_FILE"
+    fi
 }
 
 save_state() {
