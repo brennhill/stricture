@@ -141,6 +141,7 @@ func runLint(args []string) {
 	fs := flag.NewFlagSet("lint", flag.ExitOnError)
 	format := fs.String("format", "text", "Output format (text, json, sarif, junit)")
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
+	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
 	severityLevel := fs.String("severity", "", "Only report violations at this level or above (error, warn)")
@@ -203,27 +204,29 @@ func runLint(args []string) {
 
 	cfg := config.Default()
 	resolvedConfigPath := resolveConfigPath(*configPath)
-	if loaded, err := config.Load(resolvedConfigPath); err == nil {
-		cfg = loaded
-	} else if !errors.Is(err, model.ErrConfigNotFound) {
-		fmt.Fprintf(os.Stderr, "Error: invalid config %s: %v\n", resolvedConfigPath, err)
-		os.Exit(1)
-	}
-
-	if len(cfg.Plugins) > 0 {
-		pluginPaths := resolvePluginPaths(resolvedConfigPath, cfg.Plugins)
-		pluginRules, err := plugins.Load(pluginPaths)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: load plugins: %v\n", err)
-			os.Exit(2)
+	if !*noConfig {
+		if loaded, err := config.Load(resolvedConfigPath); err == nil {
+			cfg = loaded
+		} else if !errors.Is(err, model.ErrConfigNotFound) {
+			fmt.Fprintf(os.Stderr, "Error: invalid config %s: %v\n", resolvedConfigPath, err)
+			os.Exit(1)
 		}
-		for _, r := range pluginRules {
-			registry.Register(r)
-		}
-	}
 
-	if unknown := config.UnknownRuleIDs(cfg, registry); len(unknown) > 0 {
-		fmt.Fprintf(os.Stderr, "Warning: ignoring %d unknown rule(s): %s\n", len(unknown), strings.Join(unknown, ", "))
+		if len(cfg.Plugins) > 0 {
+			pluginPaths := resolvePluginPaths(resolvedConfigPath, cfg.Plugins)
+			pluginRules, err := plugins.Load(pluginPaths)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: load plugins: %v\n", err)
+				os.Exit(2)
+			}
+			for _, r := range pluginRules {
+				registry.Register(r)
+			}
+		}
+
+		if unknown := config.UnknownRuleIDs(cfg, registry); len(unknown) > 0 {
+			fmt.Fprintf(os.Stderr, "Warning: ignoring %d unknown rule(s): %s\n", len(unknown), strings.Join(unknown, ", "))
+		}
 	}
 
 	selectedRules, err := resolveLintRules(registry, cfg, *rule, *category)
