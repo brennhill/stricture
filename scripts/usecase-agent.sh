@@ -128,6 +128,7 @@ run_agent() {
 
 	run_step "lineage-diff-usecases" "go run ./cmd/stricture lineage-diff --base '$BASELINE_PATH' --head '$CURRENT_PATH' --fail-on high --mode block"
 	run_compose_check_if_available
+	run_step "docker-compose-live-smoke" "./scripts/check-fake-apis-live.sh"
 
 	STATUS="complete"
 	LAST_ERROR=

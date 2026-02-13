@@ -24,6 +24,16 @@ From repository root:
 docker compose -f tests/fake-apis/docker-compose.yml up --build
 ```
 
+## Smoke check
+
+Run the live endpoint smoke check used by `usecase-agent`:
+
+```bash
+./scripts/check-fake-apis-live.sh
+```
+
+This exits `0` with a `SKIP:` message when Docker daemon or required local image is unavailable.
+
 ## Example calls
 
 ```bash
