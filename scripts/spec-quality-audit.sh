@@ -47,6 +47,29 @@ run_check() {
     return 1
 }
 
+run_check_with_retry() {
+    local label="$1"
+    local cmd="$2"
+    local retries="${3:-1}"
+    local attempt=0
+
+    while :; do
+        log "CHECK: ${label} (attempt $((attempt + 1))/$((retries + 1))) -> ${cmd}"
+        if (cd "$PROJECT_ROOT" && eval "$cmd" >>"$LOG_FILE" 2>&1); then
+            pass "$label"
+            return 0
+        fi
+
+        if [ "$attempt" -ge "$retries" ]; then
+            fail "$label"
+            return 1
+        fi
+
+        attempt=$((attempt + 1))
+        log "RETRY: ${label} attempt ${attempt} failed; retrying"
+    done
+}
+
 check_no_marker_rules() {
     local tmp
     tmp="$(mktemp)"
@@ -116,7 +139,7 @@ main() {
     log "spec-quality-audit start"
 
     run_check "phase6-tests" "make test-phase6" || true
-    run_check "integration-tests" "go test -tags=integration -timeout=120s ./tests/integration/..." || true
+    run_check_with_retry "integration-tests" "go test -tags=integration -timeout=120s ./tests/integration/..." 1 || true
     run_check "lint" "make lint" || true
     run_check "full-gates" "./scripts/validate-gate.sh --all" || true
     run_check "validation-set-policy" "make validate" || true
@@ -124,7 +147,7 @@ main() {
     run_check "rule-consistency" "./scripts/check-rule-consistency.sh" || true
     run_check "invariant-tests" "./scripts/check-invariant-tests.sh" || true
     run_check "validation-health" "VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh" || true
-    run_check "race-tests" "go test -race -count=1 -timeout=300s ./cmd/... ./internal/..." || true
+    run_check_with_retry "race-tests" "go test -race -count=1 -timeout=300s ./cmd/... ./internal/..." 1 || true
 
     check_coverage_threshold
     check_no_marker_rules

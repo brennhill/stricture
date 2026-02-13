@@ -62,7 +62,7 @@ quality-gate:
 	./scripts/check-rule-consistency.sh
 	./scripts/check-no-stubs.sh --phase 1
 	./scripts/check-invariant-tests.sh
-	./scripts/validation-health-check.sh
+	VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh
 
 check-rules:
 	./scripts/check-rule-consistency.sh
@@ -180,7 +180,7 @@ endif
 
 # Run all validations (gates + messages + health check)
 validate-all: validate-gates check-messages
-	./scripts/validation-health-check.sh
+	VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh
 
 # Quick check: lint + test phase 1 + validate messages
 quick-check: lint test-phase1 check-messages
