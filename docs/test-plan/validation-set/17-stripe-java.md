@@ -12,25 +12,26 @@
 ## Manifest Fragment
 
 ```yaml
-- id: stripe-java
-  language: java
-  framework: junit5
-  domain: payments
-  api_style: rest
-  endpoints:
-    - POST /v1/charges
-    - GET /v1/charges/:id
-    - GET /v1/charges (pagination)
-    - POST /v1/customers
-  features:
-    - java_records
-    - sealed_interfaces
-    - pattern_matching
-    - optional_handling
-    - http_client
-    - json_annotation
-    - parametrized_tests
-    - nested_test_classes
+contracts:
+  - id: stripe-java
+    language: java
+    framework: junit5
+    domain: payments
+    api_style: rest
+    endpoints:
+      - POST /v1/charges
+      - GET /v1/charges/:id
+      - GET /v1/charges (pagination)
+      - POST /v1/customers
+    features:
+      - java_records
+      - sealed_interfaces
+      - pattern_matching
+      - optional_handling
+      - http_client
+      - json_annotation
+      - parametrized_tests
+      - nested_test_classes
 ```
 
 ---

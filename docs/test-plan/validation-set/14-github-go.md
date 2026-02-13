@@ -5,21 +5,22 @@
 ## Manifest Fragment
 
 ```yaml
-repos_crud:
-  endpoints:
-    - GET /repos/:owner/:repo
-    - POST /orgs/:org/repos
-    - PATCH /repos/:owner/:repo
-  status_codes: [200, 201, 404, 422]
+contracts:
+  repos_crud:
+    endpoints:
+      - GET /repos/:owner/:repo
+      - POST /orgs/:org/repos
+      - PATCH /repos/:owner/:repo
+    status_codes: [200, 201, 404, 422]
 
-issues_list_create:
-  endpoints:
-    - GET /repos/:owner/:repo/issues
-    - POST /repos/:owner/:repo/issues
-    - PATCH /repos/:owner/:repo/issues/:number
-  pagination: link_header
-  per_page: [1, 100]
-  status_codes: [200, 201, 404, 422]
+  issues_list_create:
+    endpoints:
+      - GET /repos/:owner/:repo/issues
+      - POST /repos/:owner/:repo/issues
+      - PATCH /repos/:owner/:repo/issues/:number
+    pagination: link_header
+    per_page: [1, 100]
+    status_codes: [200, 201, 404, 422]
 ```
 
 ---

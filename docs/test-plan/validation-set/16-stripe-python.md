@@ -10,46 +10,42 @@
 
 ## Manifest Fragment
 
-```json
-{
-  "id": "16-stripe-python",
-  "language": "python",
-  "domain": "payments",
-  "test_count": 16,
-  "endpoints": [
-    "POST /v1/charges",
-    "GET /v1/charges/:id",
-    "GET /v1/charges",
-    "POST /webhook"
-  ],
-  "perfect_patterns": [
-    "pydantic_models_with_validators",
-    "httpx_client_with_error_handling",
-    "hmac_webhook_verification",
-    "generator_pagination",
-    "pytest_fixtures",
-    "pytest_parametrize",
-    "pytest_raises",
-    "type_hints_full_coverage"
-  ],
-  "bug_categories": [
-    "no_error_handling",
-    "unchecked_status_codes",
-    "weak_assertions",
-    "missing_exception_tests",
-    "incomplete_payloads",
-    "missing_model_fields",
-    "type_errors",
-    "incomplete_conditionals",
-    "missing_validators",
-    "missing_prefix_validation",
-    "float_arithmetic",
-    "missing_null_checks",
-    "no_hmac_verification",
-    "pagination_ignored",
-    "missing_idempotency"
-  ]
-}
+```yaml
+contracts:
+  - id: "16-stripe-python"
+    language: python
+    domain: payments
+    test_count: 16
+    endpoints:
+      - POST /v1/charges
+      - GET /v1/charges/:id
+      - GET /v1/charges
+      - POST /webhook
+    perfect_patterns:
+      - pydantic_models_with_validators
+      - httpx_client_with_error_handling
+      - hmac_webhook_verification
+      - generator_pagination
+      - pytest_fixtures
+      - pytest_parametrize
+      - pytest_raises
+      - type_hints_full_coverage
+    bug_categories:
+      - no_error_handling
+      - unchecked_status_codes
+      - weak_assertions
+      - missing_exception_tests
+      - incomplete_payloads
+      - missing_model_fields
+      - type_errors
+      - incomplete_conditionals
+      - missing_validators
+      - missing_prefix_validation
+      - float_arithmetic
+      - missing_null_checks
+      - no_hmac_verification
+      - pagination_ignored
+      - missing_idempotency
 ```
 
 ---

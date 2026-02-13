@@ -5,7 +5,7 @@
 ## Manifest Fragment
 
 ```yaml
-tests:
+contracts:
   - id: "15"
     name: "AWS S3 Presigned URLs (Go)"
     language: "go"
@@ -1087,4 +1087,3 @@ func (c *Client) UploadIfNotExistsBuggy(ctx context.Context, bucket, key string,
 **Why Stricture catches this:** `CTR-request-shape` detects check-then-act patterns without atomic operations. S3 supports conditional puts via `If-None-Match: "*"` (fails if object exists), but this implementation uses separate `HeadObject` → `PutObject` calls. Two concurrent uploads both pass the existence check and overwrite each other.
 
 ---
-

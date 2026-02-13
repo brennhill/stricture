@@ -121,7 +121,7 @@ main() {
     run_check "message-catalog-consistency" "./scripts/validate-error-messages.sh" || true
     run_check "rule-consistency" "./scripts/check-rule-consistency.sh" || true
     run_check "invariant-tests" "./scripts/check-invariant-tests.sh" || true
-    run_check "validation-health" "./scripts/validation-health-check.sh" || true
+    run_check "validation-health" "VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh" || true
     run_check "race-tests" "go test -race -count=1 -timeout=300s ./cmd/... ./internal/..." || true
 
     check_coverage_threshold

@@ -17,6 +17,7 @@ NC='\033[0m'
 ERRORS=0
 WARNINGS=0
 CHECKS=0
+FAIL_ON_WARNINGS="${VALIDATION_HEALTH_FAIL_ON_WARNINGS:-0}"
 
 check_pass() { echo -e "  ${GREEN}OK${NC}   $1"; CHECKS=$((CHECKS + 1)); }
 check_fail() { echo -e "  ${RED}FAIL${NC} $1"; ERRORS=$((ERRORS + 1)); CHECKS=$((CHECKS + 1)); }
@@ -262,6 +263,11 @@ echo ""
 if [ "$ERRORS" -gt 0 ]; then
     echo -e "${RED}Health check FAILED with $ERRORS errors.${NC}"
     exit 1
-else
-    echo -e "${GREEN}Health check PASSED.${NC}"
 fi
+
+if [ "$WARNINGS" -gt 0 ] && [ "$FAIL_ON_WARNINGS" = "1" ]; then
+    echo -e "${RED}Health check FAILED due to $WARNINGS warnings (strict mode).${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}Health check PASSED.${NC}"

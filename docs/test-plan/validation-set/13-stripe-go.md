@@ -5,66 +5,67 @@
 ## Manifest Fragment
 
 ```yaml
-stripe_payments:
-  base_url: https://api.stripe.com/v1
-  auth: bearer_token
+contracts:
+  stripe_payments:
+    base_url: https://api.stripe.com/v1
+    auth: bearer_token
 
-  operations:
-    create_charge:
-      method: POST
-      path: /charges
-      request:
-        amount: integer  # cents, min 50
-        currency: string  # lowercase ISO 4217
-        source: string  # tok_* or card_*
-        description: string?
-      response:
-        id: string  # ch_ prefix
-        amount: integer
-        currency: string
-        status: enum[succeeded, pending, failed]
-        created: integer  # unix timestamp
+    operations:
+      create_charge:
+        method: POST
+        path: /charges
+        request:
+          amount: integer  # cents, min 50
+          currency: string  # lowercase ISO 4217
+          source: string  # tok_* or card_*
+          description: string?
+        response:
+          id: string  # ch_ prefix
+          amount: integer
+          currency: string
+          status: enum[succeeded, pending, failed]
+          created: integer  # unix timestamp
 
-    get_charge:
-      method: GET
-      path: /charges/{id}
-      response:
-        id: string
-        amount: integer
-        currency: string
-        status: enum[succeeded, pending, failed]
+      get_charge:
+        method: GET
+        path: /charges/{id}
+        response:
+          id: string
+          amount: integer
+          currency: string
+          status: enum[succeeded, pending, failed]
 
-    list_charges:
-      method: GET
-      path: /charges
-      query:
-        limit: integer?  # max 100, default 10
-        starting_after: string?  # cursor
-      response:
-        object: "list"
-        data: array[charge]
-        has_more: boolean
+      list_charges:
+        method: GET
+        path: /charges
+        query:
+          limit: integer?  # max 100, default 10
+          starting_after: string?  # cursor
+        response:
+          object: "list"
+          data: array[charge]
+          has_more: boolean
 
-    create_customer:
-      method: POST
-      path: /customers
-      request:
-        email: string?
-        description: string?
-        source: string?
-      response:
-        id: string  # cus_ prefix
-        email: string?
-        created: integer
+      create_customer:
+        method: POST
+        path: /customers
+        request:
+          email: string?
+          description: string?
+          source: string?
+        response:
+          id: string  # cus_ prefix
+          email: string?
+          created: integer
 
-    webhook_event:
-      signature_header: Stripe-Signature
-      signature_algo: HMAC-SHA256
-      payload:
-        id: string  # evt_ prefix
-        type: string  # charge.succeeded, etc
-        data:
-          object: charge | customer
+      webhook_event:
+        signature_header: Stripe-Signature
+        signature_algo: HMAC-SHA256
+        payload:
+          id: string  # evt_ prefix
+          type: string  # charge.succeeded, etc
+          data:
+            object: charge | customer
 ```
 
 ---
