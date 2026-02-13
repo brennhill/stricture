@@ -17,7 +17,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+)
+
+var (
+	buildBinaryOnce sync.Once
+	buildBinaryPath string
+	buildBinaryErr  error
 )
 
 func projectRoot(t *testing.T) string {
@@ -35,20 +42,24 @@ func binaryPath(t *testing.T) string {
 	root := projectRoot(t)
 	bin := filepath.Join(root, "bin", "stricture")
 
-	if _, err := os.Stat(bin); err == nil {
-		return bin
-	}
+	buildBinaryOnce.Do(func() {
+		cmd := exec.Command("go", "build", "-o", bin, "./cmd/stricture")
+		cmd.Dir = root
+		if out, err := cmd.CombinedOutput(); err != nil {
+			buildBinaryErr = fmt.Errorf("build stricture binary: %w\n%s", err, string(out))
+			return
+		}
+		if _, err := os.Stat(bin); err != nil {
+			buildBinaryErr = fmt.Errorf("stricture binary missing after build: %w", err)
+			return
+		}
+		buildBinaryPath = bin
+	})
 
-	cmd := exec.Command("go", "build", "-o", bin, "./cmd/stricture")
-	cmd.Dir = root
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("build stricture binary: %v\n%s", err, string(out))
+	if buildBinaryErr != nil {
+		t.Fatalf("%v", buildBinaryErr)
 	}
-
-	if _, err := os.Stat(bin); err != nil {
-		t.Fatalf("stricture binary missing after build: %v", err)
-	}
-	return bin
+	return buildBinaryPath
 }
 
 // run executes the stricture binary with the given args and returns stdout, stderr, and exit code.
@@ -95,6 +106,42 @@ func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, 
 }
 
 // === Exit code tests ===
+
+func TestBinaryPathRebuildsWhenExistingBinaryIsInvalid(t *testing.T) {
+	root := projectRoot(t)
+	bin := filepath.Join(root, "bin", "stricture")
+
+	original, readErr := os.ReadFile(bin)
+	hadOriginal := readErr == nil
+	if readErr != nil && !os.IsNotExist(readErr) {
+		t.Fatalf("read existing binary: %v", readErr)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(bin), 0o755); err != nil {
+		t.Fatalf("create bin dir: %v", err)
+	}
+	if err := os.WriteFile(bin, []byte("not-a-valid-binary"), 0o755); err != nil {
+		t.Fatalf("write invalid binary: %v", err)
+	}
+	defer func() {
+		if hadOriginal {
+			_ = os.WriteFile(bin, original, 0o755)
+			return
+		}
+		_ = os.Remove(bin)
+	}()
+	buildBinaryOnce = sync.Once{}
+	buildBinaryPath = ""
+	buildBinaryErr = nil
+
+	stdout, stderr, code := run(t, "--version")
+	if code != 0 {
+		t.Fatalf("version should still run after rebuild (exit=%d)\nstderr=%q\nstdout=%q", code, stderr, stdout)
+	}
+	if !strings.Contains(stdout, "stricture version") {
+		t.Fatalf("version output should include marker, got %q", stdout)
+	}
+}
 
 func TestVersionExitsZero(t *testing.T) {
 	stdout, _, code := run(t, "--version")
