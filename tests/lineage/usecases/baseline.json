@@ -47,7 +47,7 @@
       ],
       "flow": "from @CommerceCore mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/cart_pricing_waterfall",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 5
     },
     {
@@ -86,7 +86,7 @@
       ],
       "flow": "from @CommerceCore normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/catalog_attribute_enrichment",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 10
     },
     {
@@ -125,7 +125,7 @@
       ],
       "flow": "from @CommerceCore normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/checkout_risk_gate",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 6
     },
     {
@@ -174,7 +174,7 @@
       ],
       "flow": "from @CommerceCore mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/inventory_reservation_health",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 7
     },
     {
@@ -213,7 +213,7 @@
       ],
       "flow": "from @CommerceCore normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/loyalty_balance_reconciliation",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 12
     },
     {
@@ -262,7 +262,7 @@
       ],
       "flow": "from @CommerceCore mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/promotion_eligibility_resolution",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 11
     },
     {
@@ -311,7 +311,7 @@
       ],
       "flow": "from @CommerceCore mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/return_policy_eligibility",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 9
     },
     {
@@ -360,7 +360,7 @@
       ],
       "flow": "from @CommerceCore mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/seller_policy_attestation",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 13
     },
     {
@@ -399,7 +399,7 @@
       ],
       "flow": "from @CommerceCore normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/shipping_quote_selection",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 8
     },
     {
@@ -438,7 +438,7 @@
       ],
       "flow": "from @CommerceCore normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/tax_estimate_trace",
-      "file_path": "tests/fixtures/lineage-usecases/ecommerce_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/ecommerce_flows.go",
       "line": 14
     },
     {
@@ -477,7 +477,7 @@
       ],
       "flow": "from @LedgerCore normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/card_token_lifecycle",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 14
     },
     {
@@ -516,7 +516,7 @@
       ],
       "flow": "from @LedgerCore normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/chargeback_case_resolution",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 8
     },
     {
@@ -555,7 +555,7 @@
       ],
       "flow": "from @LedgerCore normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/fraud_score_explanation",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 6
     },
     {
@@ -594,7 +594,7 @@
       ],
       "flow": "from @LedgerCore normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/invoice_factoring_eligibility",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 12
     },
     {
@@ -643,7 +643,7 @@
       ],
       "flow": "from @LedgerCore mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/kyc_profile_consistency",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 11
     },
     {
@@ -682,7 +682,7 @@
       ],
       "flow": "from @LedgerCore normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/liquidity_buffer_projection",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 10
     },
     {
@@ -731,7 +731,7 @@
       ],
       "flow": "from @LedgerCore mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/payment_authorization_decision",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 5
     },
     {
@@ -780,7 +780,7 @@
       ],
       "flow": "from @LedgerCore mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/sanctions_screening_signal",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 9
     },
     {
@@ -829,7 +829,7 @@
       ],
       "flow": "from @LedgerCore mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/settlement_reconciliation",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 7
     },
     {
@@ -878,7 +878,7 @@
       ],
       "flow": "from @LedgerCore mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/treasury_exposure_rollup",
-      "file_path": "tests/fixtures/lineage-usecases/fintech_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/fintech_flows.go",
       "line": 13
     },
     {
@@ -917,7 +917,7 @@
       ],
       "flow": "from @GovernanceCore normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/audit_finding_status",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 8
     },
     {
@@ -966,7 +966,7 @@
       ],
       "flow": "from @GovernanceCore mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/board_vote_tally",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 5
     },
     {
@@ -1015,7 +1015,7 @@
       ],
       "flow": "from @GovernanceCore mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/control_attestation_snapshot",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 7
     },
     {
@@ -1064,7 +1064,7 @@
       ],
       "flow": "from @GovernanceCore mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/disclosure_readiness_signal",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 13
     },
     {
@@ -1103,7 +1103,7 @@
       ],
       "flow": "from @GovernanceCore normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/entity_hierarchy_alignment",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 12
     },
     {
@@ -1152,7 +1152,7 @@
       ],
       "flow": "from @GovernanceCore mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/insider_window_enforcement",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 11
     },
     {
@@ -1191,7 +1191,7 @@
       ],
       "flow": "from @GovernanceCore normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/policy_acknowledgement_state",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 6
     },
     {
@@ -1230,7 +1230,7 @@
       ],
       "flow": "from @GovernanceCore normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/procurement_approval_chain",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 10
     },
     {
@@ -1279,7 +1279,7 @@
       ],
       "flow": "from @GovernanceCore mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/risk_register_residual_score",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 9
     },
     {
@@ -1318,7 +1318,7 @@
       ],
       "flow": "from @GovernanceCore normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/whistleblower_case_tracking",
-      "file_path": "tests/fixtures/lineage-usecases/governance_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/governance_flows.go",
       "line": 14
     },
     {
@@ -1367,7 +1367,7 @@
       ],
       "flow": "from @LogisticsCore mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/carrier_capacity_balancing",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 9
     },
     {
@@ -1416,7 +1416,7 @@
       ],
       "flow": "from @LogisticsCore mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/cold_chain_compliance",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 11
     },
     {
@@ -1465,7 +1465,7 @@
       ],
       "flow": "from @LogisticsCore mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/customs_clearance_status",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 7
     },
     {
@@ -1504,7 +1504,7 @@
       ],
       "flow": "from @LogisticsCore normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/delivery_exception_triage",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 8
     },
     {
@@ -1543,7 +1543,7 @@
       ],
       "flow": "from @LogisticsCore normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/fleet_maintenance_window",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 14
     },
     {
@@ -1582,7 +1582,7 @@
       ],
       "flow": "from @LogisticsCore normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/proof_of_delivery_digest",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 12
     },
     {
@@ -1631,7 +1631,7 @@
       ],
       "flow": "from @LogisticsCore mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/reverse_logistics_refund",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 13
     },
     {
@@ -1670,7 +1670,7 @@
       ],
       "flow": "from @LogisticsCore normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/route_risk_assessment",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 6
     },
     {
@@ -1719,7 +1719,7 @@
       ],
       "flow": "from @LogisticsCore mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/shipment_eta_projection",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 5
     },
     {
@@ -1758,7 +1758,7 @@
       ],
       "flow": "from @LogisticsCore normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/warehouse_slot_optimization",
-      "file_path": "tests/fixtures/lineage-usecases/logistics_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/logistics_flows.go",
       "line": 10
     },
     {
@@ -1807,7 +1807,7 @@
       ],
       "flow": "from @MediaCore mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/ad_break_targeting",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 7
     },
     {
@@ -1856,7 +1856,7 @@
       ],
       "flow": "from @MediaCore mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/audience_segment_refresh",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 11
     },
     {
@@ -1905,7 +1905,7 @@
       ],
       "flow": "from @MediaCore mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/creator_payout_rollup",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 9
     },
     {
@@ -1954,7 +1954,7 @@
       ],
       "flow": "from @MediaCore mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/moderation_flag_resolution",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 13
     },
     {
@@ -1993,7 +1993,7 @@
       ],
       "flow": "from @MediaCore normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/partner_feed_alignment",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 14
     },
     {
@@ -2032,7 +2032,7 @@
       ],
       "flow": "from @MediaCore normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/recommendation_ranking_trace",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 12
     },
     {
@@ -2071,7 +2071,7 @@
       ],
       "flow": "from @MediaCore normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/rights_window_enforcement",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 10
     },
     {
@@ -2110,7 +2110,7 @@
       ],
       "flow": "from @MediaCore normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/royalty_statement_projection",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 8
     },
     {
@@ -2149,7 +2149,7 @@
       ],
       "flow": "from @MediaCore normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/stream_quality_signal",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 6
     },
     {
@@ -2198,7 +2198,7 @@
       ],
       "flow": "from @MediaCore mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/track_metadata_unification",
-      "file_path": "tests/fixtures/lineage-usecases/media_flows.go",
+      "file_path": "/Users/brenn/dev/super-lint/tests/fixtures/lineage-usecases/media_flows.go",
       "line": 5
     }
   ]

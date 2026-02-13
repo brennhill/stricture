@@ -1,0 +1,207 @@
+[
+  {
+    "id": "ecommerce_01_cart_pricing_waterfall",
+    "domain": "ecommerce",
+    "workflow": "cart_pricing_waterfall",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/cart-pricing-waterfall",
+    "field_id": "response_ecommerce_cart_pricing_waterfall",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Cart Pricing Waterfall workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_02_checkout_risk_gate",
+    "domain": "ecommerce",
+    "workflow": "checkout_risk_gate",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/checkout-risk-gate",
+    "field_id": "response_ecommerce_checkout_risk_gate",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Checkout Risk Gate workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_03_inventory_reservation_health",
+    "domain": "ecommerce",
+    "workflow": "inventory_reservation_health",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/inventory-reservation-health",
+    "field_id": "response_ecommerce_inventory_reservation_health",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Inventory Reservation Health workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_04_shipping_quote_selection",
+    "domain": "ecommerce",
+    "workflow": "shipping_quote_selection",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/shipping-quote-selection",
+    "field_id": "response_ecommerce_shipping_quote_selection",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Shipping Quote Selection workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_05_return_policy_eligibility",
+    "domain": "ecommerce",
+    "workflow": "return_policy_eligibility",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/return-policy-eligibility",
+    "field_id": "response_ecommerce_return_policy_eligibility",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Return Policy Eligibility workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_06_catalog_attribute_enrichment",
+    "domain": "ecommerce",
+    "workflow": "catalog_attribute_enrichment",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/catalog-attribute-enrichment",
+    "field_id": "response_ecommerce_catalog_attribute_enrichment",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Catalog Attribute Enrichment workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_07_promotion_eligibility_resolution",
+    "domain": "ecommerce",
+    "workflow": "promotion_eligibility_resolution",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/promotion-eligibility-resolution",
+    "field_id": "response_ecommerce_promotion_eligibility_resolution",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Promotion Eligibility Resolution workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_08_loyalty_balance_reconciliation",
+    "domain": "ecommerce",
+    "workflow": "loyalty_balance_reconciliation",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/loyalty-balance-reconciliation",
+    "field_id": "response_ecommerce_loyalty_balance_reconciliation",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Loyalty Balance Reconciliation workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_09_seller_policy_attestation",
+    "domain": "ecommerce",
+    "workflow": "seller_policy_attestation",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/seller-policy-attestation",
+    "field_id": "response_ecommerce_seller_policy_attestation",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Seller Policy Attestation workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "ecommerce_10_tax_estimate_trace",
+    "domain": "ecommerce",
+    "workflow": "tax_estimate_trace",
+    "service": "CommerceGateway",
+    "endpoint": "GET /api/v1/ecommerce/tax-estimate-trace",
+    "field_id": "response_ecommerce_tax_estimate_trace",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Tax Estimate Trace workflow for ecommerce with contract lineage, drift checks, and escalation context."
+  }
+]

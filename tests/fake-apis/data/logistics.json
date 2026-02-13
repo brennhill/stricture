@@ -1,0 +1,207 @@
+[
+  {
+    "id": "logistics_01_shipment_eta_projection",
+    "domain": "logistics",
+    "workflow": "shipment_eta_projection",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/shipment-eta-projection",
+    "field_id": "response_logistics_shipment_eta_projection",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Shipment Eta Projection workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_02_route_risk_assessment",
+    "domain": "logistics",
+    "workflow": "route_risk_assessment",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/route-risk-assessment",
+    "field_id": "response_logistics_route_risk_assessment",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Route Risk Assessment workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_03_customs_clearance_status",
+    "domain": "logistics",
+    "workflow": "customs_clearance_status",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/customs-clearance-status",
+    "field_id": "response_logistics_customs_clearance_status",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Customs Clearance Status workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_04_delivery_exception_triage",
+    "domain": "logistics",
+    "workflow": "delivery_exception_triage",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/delivery-exception-triage",
+    "field_id": "response_logistics_delivery_exception_triage",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Delivery Exception Triage workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_05_carrier_capacity_balancing",
+    "domain": "logistics",
+    "workflow": "carrier_capacity_balancing",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/carrier-capacity-balancing",
+    "field_id": "response_logistics_carrier_capacity_balancing",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Carrier Capacity Balancing workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_06_warehouse_slot_optimization",
+    "domain": "logistics",
+    "workflow": "warehouse_slot_optimization",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/warehouse-slot-optimization",
+    "field_id": "response_logistics_warehouse_slot_optimization",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Warehouse Slot Optimization workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_07_cold_chain_compliance",
+    "domain": "logistics",
+    "workflow": "cold_chain_compliance",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/cold-chain-compliance",
+    "field_id": "response_logistics_cold_chain_compliance",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Cold Chain Compliance workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_08_proof_of_delivery_digest",
+    "domain": "logistics",
+    "workflow": "proof_of_delivery_digest",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/proof-of-delivery-digest",
+    "field_id": "response_logistics_proof_of_delivery_digest",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Proof Of Delivery Digest workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_09_reverse_logistics_refund",
+    "domain": "logistics",
+    "workflow": "reverse_logistics_refund",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/reverse-logistics-refund",
+    "field_id": "response_logistics_reverse_logistics_refund",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Reverse Logistics Refund workflow for logistics with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "logistics_10_fleet_maintenance_window",
+    "domain": "logistics",
+    "workflow": "fleet_maintenance_window",
+    "service": "LogisticsGateway",
+    "endpoint": "GET /api/v1/logistics/fleet-maintenance-window",
+    "field_id": "response_logistics_fleet_maintenance_window",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Fleet Maintenance Window workflow for logistics with contract lineage, drift checks, and escalation context."
+  }
+]

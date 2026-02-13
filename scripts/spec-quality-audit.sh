@@ -7,10 +7,13 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 STATE_DIR="$PROJECT_ROOT/.overseer-agent"
 LOG_FILE="$STATE_DIR/spec-quality-audit.log"
 COVERAGE_FILE="$STATE_DIR/coverage.out"
+GOCACHE_DIR="$PROJECT_ROOT/.cache/go-build"
 MIN_COVERAGE="${OVERSEER_MIN_COVERAGE:-84}"
 COVERAGE_PKGS="${OVERSEER_COVERAGE_PKGS:-./internal/adapter/java/... ./internal/adapter/python/... ./internal/adapter/typescript/... ./internal/config/... ./internal/fix/... ./internal/lineage/... ./internal/manifest/... ./internal/plugins/... ./internal/rules/arch/... ./internal/rules/conv/... ./internal/rules/ctr/... ./internal/rules/tq/... ./internal/suppression/...}"
 
 mkdir -p "$STATE_DIR"
+mkdir -p "$GOCACHE_DIR"
+export GOCACHE="$GOCACHE_DIR"
 : >"$LOG_FILE"
 
 FAIL_COUNT=0
@@ -149,6 +152,7 @@ main() {
     run_check "invariant-tests" "./scripts/check-invariant-tests.sh" || true
     run_check "shell-syntax" "./scripts/check-bash-syntax.sh" || true
     run_check "tree-sitter-pinning" "./scripts/check-tree-sitter-pinning.sh" || true
+    run_check "usecase-examples" "./scripts/usecase-agent.sh run" || true
     run_check "validation-health" "VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh" || true
     run_check_with_retry "race-tests" "go test -race -count=1 -timeout=300s ./cmd/... ./internal/..." 1 || true
 

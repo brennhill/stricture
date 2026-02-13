@@ -1,0 +1,70 @@
+services:
+  logistics-api:
+    image: golang:1.22
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    environment:
+      DOMAIN: logistics
+      SERVICE_NAME: LogisticsGateway
+      FLOW_FILE: /workspace/tests/fake-apis/data/logistics.json
+      PORT: "18081"
+    command: ["go", "run", "./tests/fake-apis/cmd/fake-api"]
+    ports:
+      - "18081:18081"
+
+  fintech-api:
+    image: golang:1.22
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    environment:
+      DOMAIN: fintech
+      SERVICE_NAME: FintechGateway
+      FLOW_FILE: /workspace/tests/fake-apis/data/fintech.json
+      PORT: "18082"
+    command: ["go", "run", "./tests/fake-apis/cmd/fake-api"]
+    ports:
+      - "18082:18082"
+
+  media-api:
+    image: golang:1.22
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    environment:
+      DOMAIN: media
+      SERVICE_NAME: MediaGateway
+      FLOW_FILE: /workspace/tests/fake-apis/data/media.json
+      PORT: "18083"
+    command: ["go", "run", "./tests/fake-apis/cmd/fake-api"]
+    ports:
+      - "18083:18083"
+
+  ecommerce-api:
+    image: golang:1.22
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    environment:
+      DOMAIN: ecommerce
+      SERVICE_NAME: CommerceGateway
+      FLOW_FILE: /workspace/tests/fake-apis/data/ecommerce.json
+      PORT: "18084"
+    command: ["go", "run", "./tests/fake-apis/cmd/fake-api"]
+    ports:
+      - "18084:18084"
+
+  governance-api:
+    image: golang:1.22
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    environment:
+      DOMAIN: governance
+      SERVICE_NAME: GovernanceHub
+      FLOW_FILE: /workspace/tests/fake-apis/data/governance.json
+      PORT: "18085"
+    command: ["go", "run", "./tests/fake-apis/cmd/fake-api"]
+    ports:
+      - "18085:18085"

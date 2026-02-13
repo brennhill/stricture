@@ -1,0 +1,207 @@
+[
+  {
+    "id": "fintech_01_payment_authorization_decision",
+    "domain": "fintech",
+    "workflow": "payment_authorization_decision",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/payment-authorization-decision",
+    "field_id": "response_fintech_payment_authorization_decision",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Payment Authorization Decision workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_02_fraud_score_explanation",
+    "domain": "fintech",
+    "workflow": "fraud_score_explanation",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/fraud-score-explanation",
+    "field_id": "response_fintech_fraud_score_explanation",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Fraud Score Explanation workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_03_settlement_reconciliation",
+    "domain": "fintech",
+    "workflow": "settlement_reconciliation",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/settlement-reconciliation",
+    "field_id": "response_fintech_settlement_reconciliation",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Settlement Reconciliation workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_04_chargeback_case_resolution",
+    "domain": "fintech",
+    "workflow": "chargeback_case_resolution",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/chargeback-case-resolution",
+    "field_id": "response_fintech_chargeback_case_resolution",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Chargeback Case Resolution workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_05_sanctions_screening_signal",
+    "domain": "fintech",
+    "workflow": "sanctions_screening_signal",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/sanctions-screening-signal",
+    "field_id": "response_fintech_sanctions_screening_signal",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Sanctions Screening Signal workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_06_liquidity_buffer_projection",
+    "domain": "fintech",
+    "workflow": "liquidity_buffer_projection",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/liquidity-buffer-projection",
+    "field_id": "response_fintech_liquidity_buffer_projection",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Liquidity Buffer Projection workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_07_kyc_profile_consistency",
+    "domain": "fintech",
+    "workflow": "kyc_profile_consistency",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/kyc-profile-consistency",
+    "field_id": "response_fintech_kyc_profile_consistency",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Kyc Profile Consistency workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_08_invoice_factoring_eligibility",
+    "domain": "fintech",
+    "workflow": "invoice_factoring_eligibility",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/invoice-factoring-eligibility",
+    "field_id": "response_fintech_invoice_factoring_eligibility",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Invoice Factoring Eligibility workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_09_treasury_exposure_rollup",
+    "domain": "fintech",
+    "workflow": "treasury_exposure_rollup",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/treasury-exposure-rollup",
+    "field_id": "response_fintech_treasury_exposure_rollup",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Treasury Exposure Rollup workflow for fintech with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "fintech_10_card_token_lifecycle",
+    "domain": "fintech",
+    "workflow": "card_token_lifecycle",
+    "service": "FintechGateway",
+    "endpoint": "GET /api/v1/fintech/card-token-lifecycle",
+    "field_id": "response_fintech_card_token_lifecycle",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Card Token Lifecycle workflow for fintech with contract lineage, drift checks, and escalation context."
+  }
+]

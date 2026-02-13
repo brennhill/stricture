@@ -1,0 +1,121 @@
+systems:
+  - id: LogisticsGateway
+    name: LogisticsGateway Service
+    owner_team: team.logistics
+    escalation:
+      - role: primary
+        name: Logistics Oncall
+        channel: pagerduty:logistics-oncall
+      - role: backup
+        name: Logistics Platform
+        channel: slack:#logistics-platform
+  - id: FintechGateway
+    name: FintechGateway Service
+    owner_team: team.fintech
+    escalation:
+      - role: primary
+        name: Fintech Oncall
+        channel: pagerduty:fintech-oncall
+      - role: backup
+        name: Fintech Platform
+        channel: slack:#fintech-platform
+  - id: MediaGateway
+    name: MediaGateway Service
+    owner_team: team.media
+    escalation:
+      - role: primary
+        name: Media Oncall
+        channel: pagerduty:media-oncall
+      - role: backup
+        name: Media Platform
+        channel: slack:#media-platform
+  - id: CommerceGateway
+    name: CommerceGateway Service
+    owner_team: team.ecommerce
+    escalation:
+      - role: primary
+        name: Ecommerce Oncall
+        channel: pagerduty:ecommerce-oncall
+      - role: backup
+        name: Ecommerce Platform
+        channel: slack:#ecommerce-platform
+  - id: GovernanceHub
+    name: GovernanceHub Service
+    owner_team: team.governance
+    escalation:
+      - role: primary
+        name: Governance Oncall
+        channel: pagerduty:governance-oncall
+      - role: backup
+        name: Governance Platform
+        channel: slack:#governance-platform
+  - id: LogisticsCore
+    name: LogisticsCore Core
+    owner_team: team.logistics-core
+    escalation:
+      - role: primary
+        name: Logistics Core Oncall
+        channel: pagerduty:logistics-core
+  - id: LedgerCore
+    name: LedgerCore Core
+    owner_team: team.fintech-core
+    escalation:
+      - role: primary
+        name: Fintech Core Oncall
+        channel: pagerduty:fintech-core
+  - id: MediaCore
+    name: MediaCore Core
+    owner_team: team.media-core
+    escalation:
+      - role: primary
+        name: Media Core Oncall
+        channel: pagerduty:media-core
+  - id: CommerceCore
+    name: CommerceCore Core
+    owner_team: team.ecommerce-core
+    escalation:
+      - role: primary
+        name: Ecommerce Core Oncall
+        channel: pagerduty:ecommerce-core
+  - id: GovernanceCore
+    name: GovernanceCore Core
+    owner_team: team.governance-core
+    escalation:
+      - role: primary
+        name: Governance Core Oncall
+        channel: pagerduty:governance-core
+  - id: fedex
+    name: Fedex External Provider
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Fedex Provider Ops
+        channel: slack:#provider-fedex
+  - id: stripe
+    name: Stripe External Provider
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Stripe Provider Ops
+        channel: slack:#provider-stripe
+  - id: spotify
+    name: Spotify External Provider
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Spotify Provider Ops
+        channel: slack:#provider-spotify
+  - id: shopify
+    name: Shopify External Provider
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Shopify Provider Ops
+        channel: slack:#provider-shopify
+  - id: sec
+    name: Sec External Provider
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Sec Provider Ops
+        channel: slack:#provider-sec

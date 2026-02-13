@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
 
 GOFLAGS ?=
 LINEAGE_MODE ?= block
@@ -64,6 +64,7 @@ quality-gate:
 	./scripts/check-invariant-tests.sh
 	./scripts/check-bash-syntax.sh
 	./scripts/check-tree-sitter-pinning.sh
+	./scripts/usecase-agent.sh run
 	VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh
 
 check-rules:
@@ -80,6 +81,9 @@ check-shell-syntax:
 
 check-tree-sitter-pinning:
 	./scripts/check-tree-sitter-pinning.sh
+
+check-usecase-examples:
+	./scripts/usecase-agent.sh run
 
 check-benchmarks:
 	./scripts/check-benchmark-regression.sh
@@ -122,6 +126,15 @@ overseer-agent-status:
 
 overseer-agent-reset:
 	./scripts/overseer-agent.sh reset
+
+usecase-agent:
+	./scripts/usecase-agent.sh run
+
+usecase-agent-status:
+	./scripts/usecase-agent.sh status
+
+usecase-agent-reset:
+	./scripts/usecase-agent.sh reset
 
 spec-quality-audit:
 	./scripts/spec-quality-audit.sh

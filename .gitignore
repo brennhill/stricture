@@ -6,4 +6,5 @@ phase1.out
 stricture
 .phase-agent/
 .overseer-agent/
+.usecase-agent/
 .cache/

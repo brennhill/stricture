@@ -65,3 +65,28 @@ Execution entrypoint:
 - One cycle: `./scripts/overseer-agent.sh once`
 - Status: `./scripts/overseer-agent.sh status`
 - Reset: `./scripts/overseer-agent.sh reset`
+
+## Usecase Agent
+
+Name: `usecase-agent`
+
+Purpose:
+- Build and validate realistic, combined lineage examples across:
+  - logistics
+  - fintech
+  - media
+  - ecommerce
+  - corporate governance
+- Keep generated catalog, fixture annotations, and fake API data synchronized.
+- Enforce at least 50 API flows with multi-use-case combinations per flow.
+
+Operating rules:
+- Regenerate artifacts from source definitions before validation.
+- Require lineage parsing and drift checks to pass.
+- Validate docker-compose configuration when Docker is available.
+- Avoid user interaction unless a non-recoverable local blocker occurs.
+
+Execution entrypoint:
+- Run: `./scripts/usecase-agent.sh run`
+- Status: `./scripts/usecase-agent.sh status`
+- Reset: `./scripts/usecase-agent.sh reset`

@@ -1,0 +1,207 @@
+[
+  {
+    "id": "media_01_track_metadata_unification",
+    "domain": "media",
+    "workflow": "track_metadata_unification",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/track-metadata-unification",
+    "field_id": "response_media_track_metadata_unification",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Track Metadata Unification workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_02_stream_quality_signal",
+    "domain": "media",
+    "workflow": "stream_quality_signal",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/stream-quality-signal",
+    "field_id": "response_media_stream_quality_signal",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Stream Quality Signal workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_03_ad_break_targeting",
+    "domain": "media",
+    "workflow": "ad_break_targeting",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/ad-break-targeting",
+    "field_id": "response_media_ad_break_targeting",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Ad Break Targeting workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_04_royalty_statement_projection",
+    "domain": "media",
+    "workflow": "royalty_statement_projection",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/royalty-statement-projection",
+    "field_id": "response_media_royalty_statement_projection",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Royalty Statement Projection workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_05_creator_payout_rollup",
+    "domain": "media",
+    "workflow": "creator_payout_rollup",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/creator-payout-rollup",
+    "field_id": "response_media_creator_payout_rollup",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Creator Payout Rollup workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_06_rights_window_enforcement",
+    "domain": "media",
+    "workflow": "rights_window_enforcement",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/rights-window-enforcement",
+    "field_id": "response_media_rights_window_enforcement",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Rights Window Enforcement workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_07_audience_segment_refresh",
+    "domain": "media",
+    "workflow": "audience_segment_refresh",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/audience-segment-refresh",
+    "field_id": "response_media_audience_segment_refresh",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Audience Segment Refresh workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_08_recommendation_ranking_trace",
+    "domain": "media",
+    "workflow": "recommendation_ranking_trace",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/recommendation-ranking-trace",
+    "field_id": "response_media_recommendation_ranking_trace",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Recommendation Ranking Trace workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_09_moderation_flag_resolution",
+    "domain": "media",
+    "workflow": "moderation_flag_resolution",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/moderation-flag-resolution",
+    "field_id": "response_media_moderation_flag_resolution",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Moderation Flag Resolution workflow for media with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "media_10_partner_feed_alignment",
+    "domain": "media",
+    "workflow": "partner_feed_alignment",
+    "service": "MediaGateway",
+    "endpoint": "GET /api/v1/media/partner-feed-alignment",
+    "field_id": "response_media_partner_feed_alignment",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Partner Feed Alignment workflow for media with contract lineage, drift checks, and escalation context."
+  }
+]

@@ -1,0 +1,207 @@
+[
+  {
+    "id": "governance_01_board_vote_tally",
+    "domain": "governance",
+    "workflow": "board_vote_tally",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/board-vote-tally",
+    "field_id": "response_governance_board_vote_tally",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Board Vote Tally workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_02_policy_acknowledgement_state",
+    "domain": "governance",
+    "workflow": "policy_acknowledgement_state",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/policy-acknowledgement-state",
+    "field_id": "response_governance_policy_acknowledgement_state",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Policy Acknowledgement State workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_03_control_attestation_snapshot",
+    "domain": "governance",
+    "workflow": "control_attestation_snapshot",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/control-attestation-snapshot",
+    "field_id": "response_governance_control_attestation_snapshot",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Control Attestation Snapshot workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_04_audit_finding_status",
+    "domain": "governance",
+    "workflow": "audit_finding_status",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/audit-finding-status",
+    "field_id": "response_governance_audit_finding_status",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Audit Finding Status workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_05_risk_register_residual_score",
+    "domain": "governance",
+    "workflow": "risk_register_residual_score",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/risk-register-residual-score",
+    "field_id": "response_governance_risk_register_residual_score",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Risk Register Residual Score workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_06_procurement_approval_chain",
+    "domain": "governance",
+    "workflow": "procurement_approval_chain",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/procurement-approval-chain",
+    "field_id": "response_governance_procurement_approval_chain",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Procurement Approval Chain workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_07_insider_window_enforcement",
+    "domain": "governance",
+    "workflow": "insider_window_enforcement",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/insider-window-enforcement",
+    "field_id": "response_governance_insider_window_enforcement",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Insider Window Enforcement workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_08_entity_hierarchy_alignment",
+    "domain": "governance",
+    "workflow": "entity_hierarchy_alignment",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/entity-hierarchy-alignment",
+    "field_id": "response_governance_entity_hierarchy_alignment",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Entity Hierarchy Alignment workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_09_disclosure_readiness_signal",
+    "domain": "governance",
+    "workflow": "disclosure_readiness_signal",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/disclosure-readiness-signal",
+    "field_id": "response_governance_disclosure_readiness_signal",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity",
+      "external_provider_drift"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "java"
+    ],
+    "description": "Disclosure Readiness Signal workflow for governance with contract lineage, drift checks, and escalation context."
+  },
+  {
+    "id": "governance_10_whistleblower_case_tracking",
+    "domain": "governance",
+    "workflow": "whistleblower_case_tracking",
+    "service": "GovernanceHub",
+    "endpoint": "GET /api/v1/governance/whistleblower-case-tracking",
+    "field_id": "response_governance_whistleblower_case_tracking",
+    "use_cases": [
+      "drift_blocking",
+      "escalation_chain",
+      "compliance_traceability",
+      "multilang_contract_parity"
+    ],
+    "languages": [
+      "go",
+      "typescript",
+      "python"
+    ],
+    "description": "Whistleblower Case Tracking workflow for governance with contract lineage, drift checks, and escalation context."
+  }
+]
