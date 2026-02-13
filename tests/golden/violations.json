@@ -1,0 +1,23 @@
+{
+  "description": "Expected violations for golden file testing. Shared input for all reporter golden files.",
+  "violations": [
+    {
+      "ruleId": "TQ-no-shallow-assertions",
+      "file": "bad.test.ts",
+      "line": 8,
+      "message": "Assertion 'toBeDefined()' only checks existence. Assert the actual value with toBe(), toEqual(), or toMatchObject()."
+    },
+    {
+      "ruleId": "TQ-no-shallow-assertions",
+      "file": "bad.test.ts",
+      "line": 9,
+      "message": "Assertion 'toBeTruthy()' only checks truthiness. Assert the actual value with toBe(), toEqual(), or toMatchObject()."
+    },
+    {
+      "ruleId": "TQ-negative-cases",
+      "file": "bad.test.ts",
+      "line": 6,
+      "message": "Function 'getUser' has no negative test cases. Add tests for error paths, invalid inputs, and edge cases."
+    }
+  ]
+}

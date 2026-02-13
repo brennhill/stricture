@@ -1,0 +1,28 @@
+{
+  "description": "Expected UnifiedFileModel fields that must match across all 4 adapters. Language-specific details (naming convention, syntax) may differ, but semantic content must be equivalent.",
+  "functions": [
+    {
+      "name_pattern": "[Gg]et[_]?[Uu]ser",
+      "exported": true,
+      "param_count": 1,
+      "has_return_type": true,
+      "error_exit_count": 1
+    },
+    {
+      "name_pattern": "[Cc]reate[_]?[Uu]ser",
+      "exported": true,
+      "param_count": 2,
+      "has_return_type": true,
+      "error_exit_count": 1
+    }
+  ],
+  "types": [
+    {
+      "name_pattern": "[Uu]ser",
+      "field_count": 3,
+      "field_names": ["id", "name", "email"]
+    }
+  ],
+  "import_count_min": 0,
+  "import_count_max": 2
+}

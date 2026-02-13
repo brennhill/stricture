@@ -1,0 +1,479 @@
+# error-catalog.yml — Error message catalog for Stricture linter
+#
+# This file defines the canonical error message template, explanation, suggestion,
+# and suppression syntax for every Stricture rule. LLMs building rule implementations
+# should reference this file to construct Violation structs with consistent messaging.
+#
+# Structure:
+#   - message: Template with {placeholders} for dynamic values
+#   - why: One sentence explaining the rule's purpose
+#   - suggestion: One sentence explaining how to fix violations
+#   - suppress: Comment syntax to disable the rule (language-specific)
+#   - examples: Minimal code patterns showing bad/good cases
+
+rules:
+  # =============================================================================
+  # TQ (Test Quality) — 10 rules
+  # =============================================================================
+
+  TQ-no-shallow-assertions:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Shallow assertion {assertion} only checks existence, replace with {specific_assertion} to verify value"
+    why: "Shallow assertions like toBeTruthy() pass for any non-null value and miss type/value bugs."
+    suggestion: "Replace {assertion} with specific assertions like toEqual(), toHaveLength(), or toMatchObject()."
+    suppress:
+      go: "// stricture-disable-next-line TQ-no-shallow-assertions"
+      ts: "// stricture-disable-next-line TQ-no-shallow-assertions"
+      python: "# stricture-disable-next-line TQ-no-shallow-assertions"
+    examples:
+      bad: "expect(result).toBeTruthy()"
+      good: "expect(result).toEqual({id: 123, name: 'test'})"
+
+  TQ-return-type-verified:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Return type has {total_fields} fields but test only asserts {asserted_fields}, missing: {missing_fields}"
+    why: "Partial assertions let unverified fields change type or break without test failures."
+    suggestion: "Add assertions for all fields: {missing_fields}."
+    suppress:
+      go: "// stricture-disable-next-line TQ-return-type-verified"
+      ts: "// stricture-disable-next-line TQ-return-type-verified"
+      python: "# stricture-disable-next-line TQ-return-type-verified"
+    examples:
+      bad: "expect(user.id).toBe(123) // missing name, email assertions"
+      good: "expect(user).toEqual({id: 123, name: 'alice', email: 'a@b.com'})"
+
+  TQ-schema-conformance:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Assertion on {field} checks existence but not type/value constraints (expected: {expected_type})"
+    why: "Existence checks pass for wrong types, allowing type regressions."
+    suggestion: "Use type-specific matchers like toEqual(), toBeInstanceOf(), or toMatch() for {field}."
+    suppress:
+      go: "// stricture-disable-next-line TQ-schema-conformance"
+      ts: "// stricture-disable-next-line TQ-schema-conformance"
+      python: "# stricture-disable-next-line TQ-schema-conformance"
+    examples:
+      bad: "expect(response.status).toBeDefined()"
+      good: "expect(response.status).toBe(200)"
+
+  TQ-error-path-coverage:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Function has error exit at {location} but no test covers this path: {error_condition}"
+    why: "Untested error paths fail silently in production when error handling breaks."
+    suggestion: "Add test case that triggers {error_condition} and verifies error behavior."
+    suppress:
+      go: "// stricture-disable-next-line TQ-error-path-coverage"
+      ts: "// stricture-disable-next-line TQ-error-path-coverage"
+      python: "# stricture-disable-next-line TQ-error-path-coverage"
+    examples:
+      bad: "if (count < 0) return error // no test for count < 0"
+      good: "test('rejects negative count', () => expect(() => fn(-1)).toThrow())"
+
+  TQ-assertion-depth:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Nested object {path} is not asserted, only parent {parent_path} is checked"
+    why: "Shallow assertions on parent objects miss changes to nested field types or values."
+    suggestion: "Add assertions for nested fields like {path}.{field}."
+    suppress:
+      go: "// stricture-disable-next-line TQ-assertion-depth"
+      ts: "// stricture-disable-next-line TQ-assertion-depth"
+      python: "# stricture-disable-next-line TQ-assertion-depth"
+    examples:
+      bad: "expect(response).toBeDefined() // missing response.data.items check"
+      good: "expect(response.data.items).toHaveLength(3)"
+
+  TQ-boundary-tested:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Function accepts {param_type} but tests only cover {tested_values}, missing boundary: {missing_boundary}"
+    why: "Boundary values (0, empty, max) expose off-by-one errors and edge case bugs."
+    suggestion: "Add test cases for {missing_boundary} values of {param_type}."
+    suppress:
+      go: "// stricture-disable-next-line TQ-boundary-tested"
+      ts: "// stricture-disable-next-line TQ-boundary-tested"
+      python: "# stricture-disable-next-line TQ-boundary-tested"
+    examples:
+      bad: "test('handles array', () => fn([1,2,3])) // missing empty array case"
+      good: "test('handles empty array', () => expect(fn([])).toEqual([]))"
+
+  TQ-mock-scope:
+    category: tq
+    severity: error
+    fixable: true
+    message: "Mock {mock_name} created at {scope} is not cleaned up, causing test pollution"
+    why: "Unscoped mocks leak into other tests and cause non-deterministic failures."
+    suggestion: "Move mock to beforeEach/afterEach or use test-scoped mock utilities."
+    suppress:
+      go: "// stricture-disable-next-line TQ-mock-scope"
+      ts: "// stricture-disable-next-line TQ-mock-scope"
+      python: "# stricture-disable-next-line TQ-mock-scope"
+    examples:
+      bad: "jest.spyOn(api, 'fetch').mockResolvedValue(data) // no restore"
+      good: "afterEach(() => jest.restoreAllMocks())"
+
+  TQ-test-isolation:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Test {test_name} mutates shared state {state_name} without cleanup, breaking isolation"
+    why: "Shared mutable state creates test order dependencies and non-deterministic failures."
+    suggestion: "Use beforeEach to reset {state_name} or make test data immutable."
+    suppress:
+      go: "// stricture-disable-next-line TQ-test-isolation"
+      ts: "// stricture-disable-next-line TQ-test-isolation"
+      python: "# stricture-disable-next-line TQ-test-isolation"
+    examples:
+      bad: "globalCache.set('key', value) // mutates global state"
+      good: "beforeEach(() => globalCache.clear())"
+
+  TQ-negative-cases:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Function {function_name} has {positive_tests} positive tests but {negative_tests} negative tests (expected at least 1)"
+    why: "Functions that only test success paths fail to verify error handling and validation."
+    suggestion: "Add test cases for invalid inputs, error conditions, and edge cases for {function_name}."
+    suppress:
+      go: "// stricture-disable-next-line TQ-negative-cases"
+      ts: "// stricture-disable-next-line TQ-negative-cases"
+      python: "# stricture-disable-next-line TQ-negative-cases"
+    examples:
+      bad: "test('creates user', () => expect(createUser(data)).toBeTruthy())"
+      good: "test('rejects invalid email', () => expect(() => createUser({email: 'bad'})).toThrow())"
+
+  TQ-test-naming:
+    category: tq
+    severity: error
+    fixable: false
+    message: "Test name '{test_name}' does not match pattern '{expected_pattern}', should describe behavior not implementation"
+    why: "Generic test names like 'works' or 'test1' make failures uninformative and hard to debug."
+    suggestion: "Rename to describe the specific behavior being tested, e.g., '{suggested_name}'."
+    suppress:
+      go: "// stricture-disable-next-line TQ-test-naming"
+      ts: "// stricture-disable-next-line TQ-test-naming"
+      python: "# stricture-disable-next-line TQ-test-naming"
+    examples:
+      bad: "test('it works', () => ...)"
+      good: "test('returns 404 when user not found', () => ...)"
+
+  # =============================================================================
+  # ARCH (Architecture) — 6 rules
+  # =============================================================================
+
+  ARCH-dependency-direction:
+    category: arch
+    severity: error
+    fixable: false
+    message: "Import from {target_layer} to {source_layer} violates dependency flow, allowed direction: {allowed_direction}"
+    why: "Reverse dependencies create circular coupling and make refactoring impossible."
+    suggestion: "Move shared code to {suggested_layer} or invert dependency using interfaces."
+    suppress:
+      go: "// stricture-disable-next-line ARCH-dependency-direction"
+      ts: "// stricture-disable-next-line ARCH-dependency-direction"
+      python: "# stricture-disable-next-line ARCH-dependency-direction"
+    examples:
+      bad: "import { dbClient } from '../ui/components' // UI importing from DB layer"
+      good: "import { dbClient } from '../data/client' // domain importing from data layer"
+
+  ARCH-import-boundary:
+    category: arch
+    severity: error
+    fixable: false
+    message: "Import from {source_module} to {target_module} crosses module boundary, modules: {allowed_modules}"
+    why: "Cross-module imports create tight coupling and prevent independent module evolution."
+    suggestion: "Access {target_module} through its public API or move shared code to a common package."
+    suppress:
+      go: "// stricture-disable-next-line ARCH-import-boundary"
+      ts: "// stricture-disable-next-line ARCH-import-boundary"
+      python: "# stricture-disable-next-line ARCH-import-boundary"
+    examples:
+      bad: "import { internal } from '../other-module/src/internal' // accessing internal"
+      good: "import { publicAPI } from '../other-module' // using public API"
+
+  ARCH-no-circular-deps:
+    category: arch
+    severity: error
+    fixable: false
+    message: "Circular dependency detected: {cycle_path}"
+    why: "Circular imports cause initialization order bugs and make code impossible to reason about."
+    suggestion: "Break cycle by extracting shared types to separate file or using dependency injection."
+    suppress:
+      go: "// stricture-disable-next-line ARCH-no-circular-deps"
+      ts: "// stricture-disable-next-line ARCH-no-circular-deps"
+      python: "# stricture-disable-next-line ARCH-no-circular-deps"
+    examples:
+      bad: "A imports B, B imports C, C imports A"
+      good: "A imports B, B imports C, C imports shared-types"
+
+  ARCH-max-file-lines:
+    category: arch
+    severity: error
+    fixable: false
+    message: "File has {actual_lines} lines, exceeds maximum {max_lines} (configured: {configured_max})"
+    why: "Large files are hard to understand, test, and modify, indicating poor separation of concerns."
+    suggestion: "Split into smaller files by responsibility, each under {max_lines} lines."
+    suppress:
+      go: "// stricture-disable-next-line ARCH-max-file-lines"
+      ts: "// stricture-disable-next-line ARCH-max-file-lines"
+      python: "# stricture-disable-next-line ARCH-max-file-lines"
+    examples:
+      bad: "// 1200 lines in single file with multiple responsibilities"
+      good: "// 3 files of 400 lines each, one responsibility per file"
+
+  ARCH-layer-violation:
+    category: arch
+    severity: error
+    fixable: false
+    message: "{source_layer} layer directly uses {target_layer} concern '{concern}', violates layer responsibility"
+    why: "Cross-layer responsibilities create tangled architecture and break separation of concerns."
+    suggestion: "Move {concern} to appropriate layer or use layer interface/abstraction."
+    suppress:
+      go: "// stricture-disable-next-line ARCH-layer-violation"
+      ts: "// stricture-disable-next-line ARCH-layer-violation"
+      python: "# stricture-disable-next-line ARCH-layer-violation"
+    examples:
+      bad: "// UI component directly executing SQL queries"
+      good: "// UI component calling domain service, service using repository"
+
+  ARCH-module-boundary:
+    category: arch
+    severity: error
+    fixable: false
+    message: "Access to {target_module} must go through public API, not direct import of {internal_path}"
+    why: "Direct access to module internals breaks encapsulation and prevents internal refactoring."
+    suggestion: "Import from {public_path} instead of {internal_path}."
+    suppress:
+      go: "// stricture-disable-next-line ARCH-module-boundary"
+      ts: "// stricture-disable-next-line ARCH-module-boundary"
+      python: "# stricture-disable-next-line ARCH-module-boundary"
+    examples:
+      bad: "import { helper } from 'module/internal/helper'"
+      good: "import { publicHelper } from 'module'"
+
+  # =============================================================================
+  # CONV (Convention) — 6 rules
+  # =============================================================================
+
+  CONV-file-naming:
+    category: conv
+    severity: error
+    fixable: true
+    message: "File name '{actual_name}' does not match convention '{expected_convention}', should be '{suggested_name}'"
+    why: "Inconsistent naming makes files hard to find and breaks tooling assumptions."
+    suggestion: "Rename to '{suggested_name}' using {expected_convention}."
+    suppress:
+      go: "// stricture-disable-next-line CONV-file-naming"
+      ts: "// stricture-disable-next-line CONV-file-naming"
+      python: "# stricture-disable-next-line CONV-file-naming"
+    examples:
+      bad: "userController.ts (should be kebab-case)"
+      good: "user-controller.ts"
+
+  CONV-file-header:
+    category: conv
+    severity: error
+    fixable: true
+    message: "File missing header comment, expected format: '// {filename} — {purpose}'"
+    why: "File headers provide immediate context about purpose and reduce time to understand code."
+    suggestion: "Add header comment at line 1 with format: '// {filename} — {purpose}'."
+    suppress:
+      go: "// stricture-disable-next-line CONV-file-header"
+      ts: "// stricture-disable-next-line CONV-file-header"
+      python: "# stricture-disable-next-line CONV-file-header"
+    examples:
+      bad: "// (no header)\nexport function doThing() {}"
+      good: "// user-service.ts — User CRUD operations.\nexport function doThing() {}"
+
+  CONV-error-format:
+    category: conv
+    severity: error
+    fixable: false
+    message: "Error message '{actual_message}' does not follow format: {{OPERATION}}: {{ROOT_CAUSE}}. {{RECOVERY_ACTION}}"
+    why: "Consistent error format makes logs searchable and tells users how to recover."
+    suggestion: "Rewrite as: '{suggested_message}'."
+    suppress:
+      go: "// stricture-disable-next-line CONV-error-format"
+      ts: "// stricture-disable-next-line CONV-error-format"
+      python: "# stricture-disable-next-line CONV-error-format"
+    examples:
+      bad: "throw new Error('something failed')"
+      good: "throw new Error('DATABASE_CONNECT: Connection refused. Verify host and port.')"
+
+  CONV-export-naming:
+    category: conv
+    severity: error
+    fixable: true
+    message: "Export '{actual_name}' does not follow convention '{expected_convention}', should be '{suggested_name}'"
+    why: "Inconsistent export names make imports confusing and break IDE autocomplete."
+    suggestion: "Rename to '{suggested_name}' following {expected_convention}."
+    suppress:
+      go: "// stricture-disable-next-line CONV-export-naming"
+      ts: "// stricture-disable-next-line CONV-export-naming"
+      python: "# stricture-disable-next-line CONV-export-naming"
+    examples:
+      bad: "export function CREATEUSER() {}"
+      good: "export function createUser() {}"
+
+  CONV-test-file-location:
+    category: conv
+    severity: error
+    fixable: true
+    message: "Test file '{test_file}' is in '{actual_location}', should be in '{expected_location}' per convention"
+    why: "Scattered test files make test discovery and coverage analysis unreliable."
+    suggestion: "Move test file to '{expected_location}'."
+    suppress:
+      go: "// stricture-disable-next-line CONV-test-file-location"
+      ts: "// stricture-disable-next-line CONV-test-file-location"
+      python: "# stricture-disable-next-line CONV-test-file-location"
+    examples:
+      bad: "src/user-service.test.ts (tests in src/)"
+      good: "test/user-service.test.ts (tests in test/)"
+
+  CONV-required-exports:
+    category: conv
+    severity: error
+    fixable: false
+    message: "Module '{module_name}' missing required export '{required_export}', expected in {module_type} modules"
+    why: "Missing required exports break module contracts and cause integration failures."
+    suggestion: "Add export for '{required_export}' in {module_name}."
+    suppress:
+      go: "// stricture-disable-next-line CONV-required-exports"
+      ts: "// stricture-disable-next-line CONV-required-exports"
+      python: "# stricture-disable-next-line CONV-required-exports"
+    examples:
+      bad: "// plugin module missing 'register()' function"
+      good: "export function register(app: App) {}"
+
+  # =============================================================================
+  # CTR (Contract) — 8 rules
+  # =============================================================================
+
+  CTR-request-shape:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Client sends {client_type} but server expects {server_type}, field mismatch: {mismatched_fields}"
+    why: "Request shape mismatches cause runtime errors or silent data loss when types don't align."
+    suggestion: "Update client to send {server_type} or update server to accept {client_type}."
+    suppress:
+      go: "// stricture-disable-next-line CTR-request-shape"
+      ts: "// stricture-disable-next-line CTR-request-shape"
+      python: "# stricture-disable-next-line CTR-request-shape"
+    examples:
+      bad: "client sends {id: string}, server expects {userId: number}"
+      good: "client sends {userId: number}, server expects {userId: number}"
+
+  CTR-response-shape:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Server returns {server_type} but client expects {client_type}, field mismatch: {mismatched_fields}"
+    why: "Response shape mismatches cause client crashes or incorrect data handling."
+    suggestion: "Update server to return {client_type} or update client to handle {server_type}."
+    suppress:
+      go: "// stricture-disable-next-line CTR-response-shape"
+      ts: "// stricture-disable-next-line CTR-response-shape"
+      python: "# stricture-disable-next-line CTR-response-shape"
+    examples:
+      bad: "server returns {count: string}, client expects {count: number}"
+      good: "server returns {count: number}, client expects {count: number}"
+
+  CTR-status-code-handling:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Server can return status {server_status_codes} but client only handles {client_status_codes}, missing: {unhandled_codes}"
+    why: "Unhandled status codes cause crashes or incorrect error handling in clients."
+    suggestion: "Add client handling for {unhandled_codes} or remove these status codes from server."
+    suppress:
+      go: "// stricture-disable-next-line CTR-status-code-handling"
+      ts: "// stricture-disable-next-line CTR-status-code-handling"
+      python: "# stricture-disable-next-line CTR-status-code-handling"
+    examples:
+      bad: "server returns 409 Conflict, client only checks 200 and 500"
+      good: "client handles 200, 400, 409, 500 matching server"
+
+  CTR-shared-type-sync:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Type '{type_name}' defined in {location_a} and {location_b} with different shapes: {differences}"
+    why: "Duplicate type definitions drift over time and cause contract violations."
+    suggestion: "Move '{type_name}' to shared types file and import from both locations."
+    suppress:
+      go: "// stricture-disable-next-line CTR-shared-type-sync"
+      ts: "// stricture-disable-next-line CTR-shared-type-sync"
+      python: "# stricture-disable-next-line CTR-shared-type-sync"
+    examples:
+      bad: "type User in client.ts and server.go differ"
+      good: "type User in shared-types.ts, imported by both"
+
+  CTR-json-tag-match:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Go struct '{struct_name}' JSON tag '{go_tag}' does not match TypeScript field '{ts_field}'"
+    why: "Mismatched JSON tags cause serialization failures or data loss across language boundaries."
+    suggestion: "Update Go tag to '{ts_field}' or update TypeScript field to '{go_tag}'."
+    suppress:
+      go: "// stricture-disable-next-line CTR-json-tag-match"
+      ts: "// stricture-disable-next-line CTR-json-tag-match"
+      python: "# stricture-disable-next-line CTR-json-tag-match"
+    examples:
+      bad: "Go: `json:\"user_id\"`, TS: userId"
+      good: "Go: `json:\"userId\"`, TS: userId"
+
+  CTR-dual-test:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Contract '{contract_name}' has test scenario '{scenario}' on {side_a} but not {side_b}"
+    why: "One-sided tests miss integration bugs where sides interpret contracts differently."
+    suggestion: "Add matching test scenario '{scenario}' to {side_b} tests."
+    suppress:
+      go: "// stricture-disable-next-line CTR-dual-test"
+      ts: "// stricture-disable-next-line CTR-dual-test"
+      python: "# stricture-disable-next-line CTR-dual-test"
+    examples:
+      bad: "server tests 'empty array' case, client does not"
+      good: "both server and client test 'empty array' case"
+
+  CTR-strictness-parity:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Field '{field_name}' is {client_strictness} on client but {server_strictness} on server"
+    why: "Strictness mismatches allow invalid data through one side that the other side rejects."
+    suggestion: "Make '{field_name}' {suggested_strictness} on both client and server."
+    suppress:
+      go: "// stricture-disable-next-line CTR-strictness-parity"
+      ts: "// stricture-disable-next-line CTR-strictness-parity"
+      python: "# stricture-disable-next-line CTR-strictness-parity"
+    examples:
+      bad: "client: email?: string, server: email: string (required)"
+      good: "client: email: string, server: email: string (both required)"
+
+  CTR-manifest-conformance:
+    category: ctr
+    severity: error
+    fixable: false
+    message: "Manifest declares {manifest_item} '{item_name}' but code {conformance_issue}"
+    why: "Manifest mismatches break tooling, deployment, and runtime discovery of handlers/routes."
+    suggestion: "{suggested_fix}"
+    suppress:
+      go: "// stricture-disable-next-line CTR-manifest-conformance"
+      ts: "// stricture-disable-next-line CTR-manifest-conformance"
+      python: "# stricture-disable-next-line CTR-manifest-conformance"
+    examples:
+      bad: "manifest lists POST /users, code only implements GET /users"
+      good: "manifest lists POST /users, code implements POST /users"

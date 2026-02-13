@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/stricture/stricture/output-schema",
+  "title": "Stricture JSON Output",
+  "description": "Schema for stricture --format json output. This schema is additive-only: new fields may be added, existing fields are never removed or renamed. See docs/API-STABILITY.md.",
+  "type": "object",
+  "required": ["violations", "summary"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version (currently '1')"
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/violation"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    }
+  },
+  "$defs": {
+    "violation": {
+      "type": "object",
+      "required": ["ruleId", "category", "severity", "file", "line", "message"],
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^(TQ|ARCH|CONV|CTR)-[a-z-]+$",
+          "description": "Rule identifier (e.g., 'TQ-no-shallow-assertions')"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["tq", "arch", "conv", "ctr"],
+          "description": "Rule category"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warn"],
+          "description": "Violation severity"
+        },
+        "file": {
+          "type": "string",
+          "description": "File path (relative to project root)"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "1-based line number"
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0-based column number"
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable violation message"
+        },
+        "why": {
+          "type": "string",
+          "description": "Why this rule exists (one sentence)"
+        },
+        "suggestion": {
+          "type": "string",
+          "description": "How to fix the violation"
+        },
+        "suppress": {
+          "type": "string",
+          "description": "Suppression comment syntax for this violation"
+        },
+        "fixable": {
+          "type": "boolean",
+          "description": "Whether auto-fix is available for this violation"
+        },
+        "context": {
+          "$ref": "#/$defs/violationContext"
+        }
+      }
+    },
+    "violationContext": {
+      "type": "object",
+      "description": "Additional structured context for tooling",
+      "properties": {
+        "functionName": { "type": "string" },
+        "returnType": { "type": "string" },
+        "fieldsAsserted": { "type": "array", "items": { "type": "string" } },
+        "fieldsMissing": { "type": "array", "items": { "type": "string" } },
+        "importPath": { "type": "string" },
+        "manifestField": { "type": "string" },
+        "manifestConstraint": { "type": "string" },
+        "codeConstraint": { "type": "string" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["filesChecked", "errors", "warnings"],
+      "properties": {
+        "filesChecked": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of files analyzed"
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of error-severity violations"
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of warning-severity violations"
+        },
+        "fixable": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of auto-fixable violations"
+        },
+        "elapsedMs": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total elapsed time in milliseconds"
+        }
+      }
+    }
+  }
+}

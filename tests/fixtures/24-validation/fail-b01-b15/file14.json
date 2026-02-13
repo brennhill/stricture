@@ -1,0 +1,4 @@
+{
+  "error": "ETAG_REQUIRED",
+  "message": "If-Match header is required"
+}

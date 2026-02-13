@@ -1,0 +1,51 @@
+# .pre-commit-config.yaml — Pre-commit hooks for Stricture.
+#
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Go formatting and imports
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+        args: ["-local", "github.com/stricture/stricture"]
+      - id: go-vet
+      - id: go-build
+
+  # General file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']  # Catch accidentally committed binaries
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']  # Force branching from main
+
+  # Detect secrets
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+      - id: gitleaks
+
+# Local hooks (run project-specific checks)
+  - repo: local
+    hooks:
+      - id: file-headers
+        name: Check Go file headers
+        entry: bash -c 'for f in "$@"; do bn=$(basename "$f"); expected="// ${bn} —"; head -n1 "$f" | grep -q "^${expected}" || { echo "FAIL: $f missing header"; exit 1; }; done'
+        language: system
+        files: '\.go$'
+        exclude: '_test\.go$|_generated\.go$'
+
+      - id: file-size
+        name: Check file size (max 800 LOC)
+        entry: bash -c 'for f in "$@"; do lines=$(wc -l < "$f"); if [ "$lines" -gt 800 ]; then echo "FAIL: $f has $lines lines (max 800)"; exit 1; fi; done'
+        language: system
+        files: '\.go$'

@@ -1,0 +1,177 @@
+# .golangci.yml — Aggressive linter configuration for Stricture.
+#
+# Philosophy: Stricture is a code quality tool. Its own code must be exemplary.
+# Every linter here catches a class of bug that has caused real production issues
+# in Go codebases. If a linter is noisy without being useful, disable it with
+# a comment explaining why.
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    # === Bug detection (highest priority) ===
+    - errcheck          # Unchecked errors — the #1 Go bug class
+    - govet             # Suspicious constructs (printf args, struct tags, etc.)
+    - staticcheck       # The gold standard of Go static analysis
+    - gosec             # Security-focused: SQL injection, hardcoded creds, weak crypto
+    - bodyclose         # Unclosed HTTP response bodies (resource leak)
+    - nilerr            # Returning nil when err != nil (silent error swallowing)
+    - nilnil            # Returning nil, nil — caller can't distinguish success from failure
+    - rowserrcheck      # Unchecked sql.Rows.Err()
+    - sqlclosecheck     # Unclosed sql.Rows
+    - durationcheck     # Incorrect time.Duration multiplication
+    - exportloopref     # Loop variable capture in goroutines
+    - makezero          # Append to non-zero-length slice (subtle prepend bugs)
+    - reassign          # Reassigning package-level variables
+
+    # === Correctness (catches logic errors) ===
+    - exhaustive        # Non-exhaustive switch on enum types — critical for rule dispatch
+    - gocritic          # Opinionated but catches real bugs (nilValReturn, badCond, etc.)
+    - revive            # Configurable linter — replaces golint
+    - unconvert         # Unnecessary type conversions
+    - unparam           # Unused function parameters
+    - wastedassign      # Assignments that are never read
+
+    # === Concurrency safety ===
+    - copylock          # Passing locks by value (via govet)
+
+    # === Code quality ===
+    - gocyclo           # Cyclomatic complexity (max 15)
+    - gocognit          # Cognitive complexity (max 20)
+    - nakedret          # Naked returns in long functions (confusing)
+    - prealloc          # Preallocate slices when size is known
+    - misspell          # Typos in comments and strings
+    - whitespace        # Unnecessary blank lines
+    - goimports         # Import grouping and ordering
+    - godot             # Comments must end with period
+    - tparallel         # Detect missing t.Parallel() in test subtests
+
+    # === Style consistency ===
+    - goconst           # Repeated strings that should be constants
+    - dupl              # Code duplication detection
+    - nolintlint        # Enforce //nolint comments have a reason
+
+  disable:
+    # These are too noisy or conflict with our patterns:
+    - wsl               # Too opinionated about whitespace
+    - gomnd             # Magic number detection — too noisy for rule thresholds
+    - funlen            # We enforce 800 LOC per file, not per function
+    - lll               # Line length limit — not useful for Go
+    - testpackage       # We use same-package tests for internal access
+    - ireturn           # We return interfaces intentionally (Rule, Reporter)
+    - varnamelen        # Short variable names are idiomatic Go
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      # These are safe to ignore in specific contexts:
+      - io.Copy          # Used in test helpers where error doesn't matter
+      - fmt.Fprintf      # Writing to stdout/stderr — can't recover from failure
+      - fmt.Fprintln
+
+  exhaustive:
+    default-signifies-exhaustive: false  # Force explicit handling of all enum values
+    check-generated: true
+
+  gocritic:
+    enabled-checks:
+      - nilValReturn        # Return nil for non-nil interface — common Go bug
+      - badCond              # Suspicious boolean condition
+      - dupArg               # Duplicate function arguments
+      - dupBranchBody        # Duplicate if/else branch bodies
+      - exitAfterDefer       # os.Exit after defer — defer won't run
+      - weakCond             # Condition that's always true/false
+      - sloppyReassign       # Reassign to different variable
+      - unnecessaryBlock     # Unnecessary code block
+      - appendCombine        # Can combine append calls
+      - hugeParam            # Pass large structs by pointer
+      - rangeValCopy         # Range over large value copies
+      - commentedOutCode     # Commented-out code should be deleted
+
+  gocyclo:
+    min-complexity: 15
+
+  gocognit:
+    min-complexity: 20
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  dupl:
+    threshold: 120  # Lines of duplicated code
+
+  nakedret:
+    max-func-lines: 10  # Only allow naked returns in tiny functions
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+        disabled: true  # We use file headers instead
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+      - name: waitgroup-by-value
+      - name: unconditional-recursion
+      - name: cognitive-complexity
+        arguments: [20]
+
+  gosec:
+    excludes:
+      - G104  # Unhandled errors — covered by errcheck
+      - G304  # File path from variable — we intentionally read user-specified paths
+
+  misspell:
+    locale: US
+
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+
+issues:
+  max-issues-per-linter: 0   # Report all issues
+  max-same-issues: 0         # Report all duplicates
+
+  exclude-rules:
+    # Test files get relaxed rules:
+    - path: _test\.go
+      linters:
+        - dupl          # Test cases are intentionally repetitive
+        - goconst       # Test strings don't need constants
+        - gocritic      # Test helpers use patterns that trigger false positives
+        - errcheck      # Test assertions handle errors differently
+
+    # Generated files:
+    - path: ".*_generated\\.go"
+      linters:
+        - all
+
+severity:
+  default-severity: error
+  rules:
+    - linters: [misspell, whitespace, godot]
+      severity: warning

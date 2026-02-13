@@ -1,0 +1,11 @@
+# Stricture configuration — Stricture lints itself.
+version: "1.0"
+rules:
+  CONV-file-naming: [error, { style: "snake_case" }]
+  CONV-file-header: [error, { pattern: "// {filename} — {purpose}" }]
+  CONV-error-format: [error, { pattern: "{OPERATION}: {ROOT_CAUSE}. {RECOVERY_ACTION}" }]
+  ARCH-max-file-lines: [error, { max: 800 }]
+  ARCH-no-circular-deps: error
+  ARCH-dependency-direction:
+    - error
+    - layers: ["cmd", "internal/engine", "internal/rules", "internal/adapter", "internal/model"]
