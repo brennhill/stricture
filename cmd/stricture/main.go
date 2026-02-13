@@ -170,6 +170,12 @@ func (f *repeatableFlag) Values() []string {
 
 // runLint is the default lint subcommand.
 func runLint(args []string) {
+	flagArgs, pathArgs, argErr := splitLintArgs(args)
+	if argErr != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", argErr)
+		os.Exit(2)
+	}
+
 	fs := flag.NewFlagSet("lint", flag.ExitOnError)
 	format := fs.String("format", "text", "Output format (text, json, sarif, junit)")
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
@@ -195,7 +201,7 @@ func runLint(args []string) {
 	fixBackup := fs.Bool("fix-backup", false, "When used with --fix, create .bak files before modifying sources")
 	cacheEnabled := fs.Bool("cache", false, "Enable caching (default behavior)")
 	noCache := fs.Bool("no-cache", false, "Disable caching")
-	_ = fs.Parse(args)
+	_ = fs.Parse(flagArgs)
 
 	if *fixApply && *fixDryRun {
 		fmt.Fprintln(os.Stderr, "Error: --fix and --fix-dry-run are mutually exclusive")
@@ -295,7 +301,7 @@ func runLint(args []string) {
 		os.Exit(2)
 	}
 
-	paths := fs.Args()
+	paths := pathArgs
 	if len(paths) == 0 {
 		paths = []string{"."}
 	}
@@ -710,6 +716,65 @@ func hasHelpFlag(args []string) bool {
 		}
 	}
 	return false
+}
+
+func splitLintArgs(args []string) ([]string, []string, error) {
+	valueFlags := map[string]bool{
+		"-format":          true,
+		"--format":         true,
+		"-config":          true,
+		"--config":         true,
+		"-rule":            true,
+		"--rule":           true,
+		"-category":        true,
+		"--category":       true,
+		"-ext":             true,
+		"--ext":            true,
+		"-severity":        true,
+		"--severity":       true,
+		"-concurrency":     true,
+		"--concurrency":    true,
+		"-output":          true,
+		"--output":         true,
+		"-max-violations":  true,
+		"--max-violations": true,
+		"-baseline":        true,
+		"--baseline":       true,
+	}
+
+	flagArgs := make([]string, 0, len(args))
+	pathArgs := make([]string, 0, len(args))
+	pathsOnly := false
+	for i := 0; i < len(args); i++ {
+		token := strings.TrimSpace(args[i])
+		if token == "" {
+			continue
+		}
+		if pathsOnly {
+			pathArgs = append(pathArgs, token)
+			continue
+		}
+		if token == "--" {
+			pathsOnly = true
+			continue
+		}
+		if strings.HasPrefix(token, "-") {
+			flagArgs = append(flagArgs, token)
+			if strings.Contains(token, "=") {
+				continue
+			}
+			if valueFlags[token] {
+				if i+1 >= len(args) {
+					return nil, nil, fmt.Errorf("flag %s requires a value", token)
+				}
+				i++
+				flagArgs = append(flagArgs, args[i])
+			}
+			continue
+		}
+		pathArgs = append(pathArgs, token)
+	}
+	return flagArgs, pathArgs, nil
 }
 
 func splitTraceArgs(args []string) (string, []string, error) {

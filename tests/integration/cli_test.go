@@ -129,6 +129,24 @@ func TestNoArgsRunsDefaultLint(t *testing.T) {
 	}
 }
 
+func TestLintParsesFlagsAfterPaths(t *testing.T) {
+	tmp := t.TempDir()
+	target := filepath.Join(tmp, "bad.go")
+	if err := os.WriteFile(target, []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	stdout, stderr, code := runInDir(t, tmp, ".", "--format", "json", "--rule", "CONV-file-header")
+	if code != 1 {
+		t.Fatalf("lint should honor flags after paths (exit=%d)\nstderr=%q\nstdout=%q", code, stderr, stdout)
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("output should be JSON when --format json follows path: %v\noutput=%q", err, stdout)
+	}
+}
+
 func TestInvalidFlagExitsTwo(t *testing.T) {
 	_, _, code := run(t, "--nonexistent-flag")
 	if code != 2 {
