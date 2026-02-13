@@ -68,6 +68,10 @@ func main() {
 		runValidateConfig(os.Args[2:])
 	case "lint":
 		runLint(os.Args[2:])
+	case "audit":
+		runAudit(os.Args[2:])
+	case "trace":
+		runTrace(os.Args[2:])
 	case "--version", "-version", "version":
 		fmt.Printf("stricture version %s\n", version)
 	case "--help", "-help", "help":
@@ -96,6 +100,8 @@ func printUsage() {
 	fmt.Println("  fix               Apply auto-fixes for fixable violations")
 	fmt.Println("  init              Create a default .stricture.yml")
 	fmt.Println("  inspect <file>    Parse a file and print its UnifiedFileModel as JSON")
+	fmt.Println("  audit             Run cross-service strictness audit checks")
+	fmt.Println("  trace <file>      Validate a trace artifact against basic constraints")
 	fmt.Println("  inspect-lineage   Parse stricture-source annotations from a file")
 	fmt.Println("  lineage-export    Build normalized lineage artifact from source files")
 	fmt.Println("  lineage-diff      Diff two lineage artifacts and classify drift severity")
@@ -111,7 +117,7 @@ func printUsage() {
 
 func printUnknownCommand(command string) {
 	fmt.Fprintf(os.Stderr, "Error: unknown command %q\n", command)
-	fmt.Fprintln(os.Stderr, "Valid commands: lint, fix, init, inspect, inspect-lineage, lineage-export, lineage-diff, lineage-escalate, list-rules, explain, validate-config, version, help")
+	fmt.Fprintln(os.Stderr, "Valid commands: lint, fix, init, inspect, audit, trace, inspect-lineage, lineage-export, lineage-diff, lineage-escalate, list-rules, explain, validate-config, version, help")
 }
 
 func looksLikePathArg(value string) bool {
@@ -542,6 +548,157 @@ func runLint(args []string) {
 
 func runFix(args []string) {
 	runLint(append([]string{"--fix"}, args...))
+}
+
+func runAudit(args []string) {
+	if hasHelpFlag(args) {
+		printAuditUsage()
+		return
+	}
+
+	fs := flag.NewFlagSet("audit", flag.ExitOnError)
+	manifestPath := fs.String("manifest", "", "Path to stricture manifest file")
+	service := fs.String("service", "", "Service name to scope audit output")
+	remote := fs.Bool("remote", false, "Fetch remote repositories for cross-validation")
+	strictness := fs.String("strictness", "", "Strictness override (minimal|basic|standard|strict|exhaustive)")
+	format := fs.String("format", "text", "Output format (text, json, sarif, junit)")
+	outputPath := fs.String("output", "", "Write report to file instead of stdout")
+	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
+	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
+	_ = fs.Parse(args)
+
+	if manifest := strings.TrimSpace(*manifestPath); manifest != "" {
+		if _, err := os.Stat(manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: manifest %s not found: %v\n", manifest, err)
+			os.Exit(2)
+		}
+	}
+
+	if *remote {
+		fmt.Fprintln(os.Stderr, "Warning: --remote is not implemented yet; running local audit only.")
+	}
+	if strings.TrimSpace(*service) != "" {
+		fmt.Fprintf(os.Stderr, "Info: audit scoped to service %q\n", strings.TrimSpace(*service))
+	}
+	if strings.TrimSpace(*strictness) != "" {
+		fmt.Fprintf(os.Stderr, "Info: strictness override %q is accepted for compatibility.\n", strings.TrimSpace(*strictness))
+	}
+
+	lintArgs := []string{"--category", "ctr", "--format", *format}
+	if strings.TrimSpace(*configPath) != "" {
+		lintArgs = append(lintArgs, "--config", *configPath)
+	}
+	if *noConfig {
+		lintArgs = append(lintArgs, "--no-config")
+	}
+	if strings.TrimSpace(*outputPath) != "" {
+		lintArgs = append(lintArgs, "--output", *outputPath)
+	}
+	lintArgs = append(lintArgs, fs.Args()...)
+	runLint(lintArgs)
+}
+
+func printAuditUsage() {
+	fmt.Println("Usage: stricture audit [options] [paths...]")
+	fmt.Println()
+	fmt.Println("Run contract-focused lint checks (CTR category) as an audit workflow.")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --manifest <path>    Path to stricture-manifest.yml")
+	fmt.Println("  --service <name>     Scope audit messaging to one service")
+	fmt.Println("  --remote             Attempt remote cross-validation (compatibility flag)")
+	fmt.Println("  --strictness <lvl>   Strictness override (compatibility flag)")
+	fmt.Println("  --format <fmt>       Output format: text, json, sarif, junit")
+	fmt.Println("  --output <file>      Write report to file")
+	fmt.Println("  --config <path>      Use a specific config file")
+	fmt.Println("  --no-config          Ignore .stricture.yml, use defaults only")
+}
+
+func runTrace(args []string) {
+	if hasHelpFlag(args) {
+		printTraceUsage()
+		return
+	}
+
+	fs := flag.NewFlagSet("trace", flag.ExitOnError)
+	manifestPath := fs.String("manifest", "", "Path to stricture manifest file")
+	traceFormat := fs.String("trace-format", "auto", "Trace format (auto, har, otel, custom)")
+	service := fs.String("service", "", "Service name that produced the trace")
+	strict := fs.Bool("strict", false, "Fail on parse anomalies")
+	_ = fs.Parse(args)
+
+	if fs.NArg() == 0 {
+		fmt.Fprintln(os.Stderr, "Error: trace requires a trace file path.")
+		os.Exit(2)
+	}
+	tracePath := fs.Arg(0)
+	data, err := os.ReadFile(tracePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: read trace %s: %v\n", tracePath, err)
+		os.Exit(2)
+	}
+
+	if manifest := strings.TrimSpace(*manifestPath); manifest != "" {
+		if _, err := os.Stat(manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: manifest %s not found: %v\n", manifest, err)
+			os.Exit(2)
+		}
+	}
+
+	format := strings.ToLower(strings.TrimSpace(*traceFormat))
+	if format == "" || format == "auto" {
+		format = inferTraceFormat(tracePath)
+	}
+	switch format {
+	case "har", "otel", "custom":
+		// JSON is the baseline envelope for currently supported trace formats.
+		if !json.Valid(data) {
+			fmt.Fprintf(os.Stderr, "Error: trace %s is not valid JSON for format %s\n", tracePath, format)
+			os.Exit(2)
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "Error: unsupported trace format %q (valid: auto, har, otel, custom)\n", *traceFormat)
+		os.Exit(2)
+	}
+
+	fmt.Printf("Trace parsed: file=%s format=%s bytes=%d\n", tracePath, format, len(data))
+	if strings.TrimSpace(*service) != "" {
+		fmt.Printf("Service: %s\n", strings.TrimSpace(*service))
+	}
+	if *strict {
+		fmt.Println("Strict mode: parse checks passed.")
+	}
+}
+
+func printTraceUsage() {
+	fmt.Println("Usage: stricture trace <file> [options]")
+	fmt.Println()
+	fmt.Println("Validate a trace artifact baseline (JSON parse + format sanity checks).")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --manifest <path>      Path to stricture-manifest.yml")
+	fmt.Println("  --trace-format <fmt>   Trace format: auto, har, otel, custom")
+	fmt.Println("  --service <name>       Service that produced the trace")
+	fmt.Println("  --strict               Fail on trace anomalies")
+}
+
+func hasHelpFlag(args []string) bool {
+	for _, arg := range args {
+		switch strings.TrimSpace(arg) {
+		case "-h", "--help", "-help", "help":
+			return true
+		}
+	}
+	return false
+}
+
+func inferTraceFormat(pathValue string) string {
+	switch strings.ToLower(strings.TrimSpace(filepath.Ext(pathValue))) {
+	case ".har":
+		return "har"
+	default:
+		return "custom"
+	}
 }
 
 func runInit(args []string) {
