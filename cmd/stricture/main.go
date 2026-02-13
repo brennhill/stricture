@@ -28,6 +28,7 @@ import (
 	"github.com/stricture/stricture/internal/config"
 	"github.com/stricture/stricture/internal/fix"
 	"github.com/stricture/stricture/internal/lineage"
+	manifestpkg "github.com/stricture/stricture/internal/manifest"
 	"github.com/stricture/stricture/internal/model"
 	"github.com/stricture/stricture/internal/plugins"
 	"github.com/stricture/stricture/internal/rules/arch"
@@ -568,9 +569,19 @@ func runAudit(args []string) {
 	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
 	_ = fs.Parse(args)
 
-	if manifest := strings.TrimSpace(*manifestPath); manifest != "" {
-		if _, err := os.Stat(manifest); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: manifest %s not found: %v\n", manifest, err)
+	strictnessValue := strings.ToLower(strings.TrimSpace(*strictness))
+	if strictnessValue != "" && !validStrictness(strictnessValue) {
+		fmt.Fprintf(os.Stderr, "Error: invalid strictness %q (valid: minimal, basic, standard, strict, exhaustive)\n", *strictness)
+		os.Exit(2)
+	}
+
+	manifest := strings.TrimSpace(*manifestPath)
+	if manifest == "" {
+		manifest = autoDetectManifestPath()
+	}
+	if manifest != "" {
+		if _, err := manifestpkg.Load(manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: manifest %s is invalid or unreadable: %v\n", manifest, err)
 			os.Exit(2)
 		}
 	}
@@ -581,8 +592,8 @@ func runAudit(args []string) {
 	if strings.TrimSpace(*service) != "" {
 		fmt.Fprintf(os.Stderr, "Info: audit scoped to service %q\n", strings.TrimSpace(*service))
 	}
-	if strings.TrimSpace(*strictness) != "" {
-		fmt.Fprintf(os.Stderr, "Info: strictness override %q is accepted for compatibility.\n", strings.TrimSpace(*strictness))
+	if strictnessValue != "" {
+		fmt.Fprintf(os.Stderr, "Info: strictness override %q is accepted.\n", strictnessValue)
 	}
 
 	lintArgs := []string{"--category", "ctr", "--format", *format}
@@ -621,27 +632,36 @@ func runTrace(args []string) {
 		return
 	}
 
+	tracePath, flagArgs, argErr := splitTraceArgs(args)
+	if argErr != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", argErr)
+		os.Exit(2)
+	}
+
 	fs := flag.NewFlagSet("trace", flag.ExitOnError)
 	manifestPath := fs.String("manifest", "", "Path to stricture manifest file")
 	traceFormat := fs.String("trace-format", "auto", "Trace format (auto, har, otel, custom)")
 	service := fs.String("service", "", "Service name that produced the trace")
 	strict := fs.Bool("strict", false, "Fail on parse anomalies")
-	_ = fs.Parse(args)
+	_ = fs.Parse(flagArgs)
 
-	if fs.NArg() == 0 {
+	if strings.TrimSpace(tracePath) == "" {
 		fmt.Fprintln(os.Stderr, "Error: trace requires a trace file path.")
 		os.Exit(2)
 	}
-	tracePath := fs.Arg(0)
 	data, err := os.ReadFile(tracePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: read trace %s: %v\n", tracePath, err)
 		os.Exit(2)
 	}
 
-	if manifest := strings.TrimSpace(*manifestPath); manifest != "" {
-		if _, err := os.Stat(manifest); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: manifest %s not found: %v\n", manifest, err)
+	manifest := strings.TrimSpace(*manifestPath)
+	if manifest == "" {
+		manifest = autoDetectManifestPath()
+	}
+	if manifest != "" {
+		if _, err := manifestpkg.Load(manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: manifest %s is invalid or unreadable: %v\n", manifest, err)
 			os.Exit(2)
 		}
 	}
@@ -656,6 +676,13 @@ func runTrace(args []string) {
 		if !json.Valid(data) {
 			fmt.Fprintf(os.Stderr, "Error: trace %s is not valid JSON for format %s\n", tracePath, format)
 			os.Exit(2)
+		}
+		if *strict {
+			var envelope map[string]interface{}
+			if err := json.Unmarshal(data, &envelope); err != nil || len(envelope) == 0 {
+				fmt.Fprintf(os.Stderr, "Error: strict trace validation failed for %s\n", tracePath)
+				os.Exit(2)
+			}
 		}
 	default:
 		fmt.Fprintf(os.Stderr, "Error: unsupported trace format %q (valid: auto, har, otel, custom)\n", *traceFormat)
@@ -693,12 +720,77 @@ func hasHelpFlag(args []string) bool {
 	return false
 }
 
+func splitTraceArgs(args []string) (string, []string, error) {
+	valueFlags := map[string]bool{
+		"-manifest":      true,
+		"--manifest":     true,
+		"-trace-format":  true,
+		"--trace-format": true,
+		"-service":       true,
+		"--service":      true,
+	}
+
+	tracePath := ""
+	flagArgs := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		token := strings.TrimSpace(args[i])
+		if token == "" {
+			continue
+		}
+		if strings.HasPrefix(token, "-") {
+			flagArgs = append(flagArgs, token)
+			if strings.Contains(token, "=") {
+				continue
+			}
+			if valueFlags[token] {
+				if i+1 >= len(args) {
+					return "", nil, fmt.Errorf("flag %s requires a value", token)
+				}
+				i++
+				flagArgs = append(flagArgs, args[i])
+			}
+			continue
+		}
+
+		if tracePath == "" {
+			tracePath = token
+			continue
+		}
+		return "", nil, fmt.Errorf("trace accepts exactly one file argument")
+	}
+	return tracePath, flagArgs, nil
+}
+
 func inferTraceFormat(pathValue string) string {
 	switch strings.ToLower(strings.TrimSpace(filepath.Ext(pathValue))) {
 	case ".har":
 		return "har"
 	default:
 		return "custom"
+	}
+}
+
+func autoDetectManifestPath() string {
+	candidates := []string{
+		"stricture-manifest.yml",
+		".stricture-manifest.yml",
+		"stricture-manifest.yaml",
+		".stricture-manifest.yaml",
+	}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func validStrictness(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "minimal", "basic", "standard", "strict", "exhaustive":
+		return true
+	default:
+		return false
 	}
 }
 
