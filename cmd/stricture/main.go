@@ -695,6 +695,7 @@ func writeFixBackups(ops []fix.Operation) error {
 func collectLintFilePaths(paths []string) ([]string, error) {
 	files := make([]string, 0)
 	seen := map[string]bool{}
+	projectRoot := currentProjectRoot()
 
 	for _, raw := range paths {
 		pathValue := strings.TrimSpace(raw)
@@ -709,6 +710,13 @@ func collectLintFilePaths(paths []string) ([]string, error) {
 
 		if !info.IsDir() {
 			if isLintSourceFile(pathValue) {
+				outside, err := symlinkResolvesOutsideProject(pathValue, projectRoot)
+				if err != nil {
+					return nil, err
+				}
+				if outside {
+					continue
+				}
 				canonical := filepath.ToSlash(pathValue)
 				if !seen[canonical] {
 					seen[canonical] = true
@@ -731,6 +739,13 @@ func collectLintFilePaths(paths []string) ([]string, error) {
 			if !isLintSourceFile(current) {
 				return nil
 			}
+			outside, err := symlinkResolvesOutsideProject(current, projectRoot)
+			if err != nil {
+				return err
+			}
+			if outside {
+				return nil
+			}
 
 			canonical := filepath.ToSlash(current)
 			if !seen[canonical] {
@@ -746,6 +761,61 @@ func collectLintFilePaths(paths []string) ([]string, error) {
 
 	sort.Strings(files)
 	return files, nil
+}
+
+func currentProjectRoot() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	abs, err := filepath.Abs(wd)
+	if err != nil {
+		return filepath.Clean(wd)
+	}
+	resolved, err := filepath.EvalSymlinks(abs)
+	if err == nil {
+		return filepath.Clean(resolved)
+	}
+	return filepath.Clean(abs)
+}
+
+func symlinkResolvesOutsideProject(pathValue string, projectRoot string) (bool, error) {
+	if strings.TrimSpace(projectRoot) == "" {
+		return false, nil
+	}
+
+	info, err := os.Lstat(pathValue)
+	if err != nil {
+		return false, err
+	}
+	if info.Mode()&os.ModeSymlink == 0 {
+		return false, nil
+	}
+
+	resolved, err := filepath.EvalSymlinks(pathValue)
+	if err != nil {
+		// Broken or inaccessible symlink should not be linted.
+		return true, nil
+	}
+	absResolved, err := filepath.Abs(resolved)
+	if err != nil {
+		return false, err
+	}
+	return !isPathWithinRoot(absResolved, projectRoot), nil
+}
+
+func isPathWithinRoot(pathValue string, root string) bool {
+	rel, err := filepath.Rel(root, pathValue)
+	if err != nil {
+		return false
+	}
+	if rel == "." {
+		return true
+	}
+	if rel == ".." {
+		return false
+	}
+	return !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
 func shouldSkipLintDir(dir string) bool {
