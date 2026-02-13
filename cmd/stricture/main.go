@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -174,6 +175,7 @@ func runLint(args []string) {
 	forceColor := fs.Bool("color", false, "Force color output in text format")
 	forceNoColor := fs.Bool("no-color", false, "Disable color output in text format")
 	verbose := fs.Bool("verbose", false, "Show rule timing and debug info")
+	concurrency := fs.Int("concurrency", runtime.NumCPU(), "Max parallel file processing")
 	outputPath := fs.String("output", "", "Write report to file instead of stdout")
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
@@ -219,6 +221,10 @@ func runLint(args []string) {
 	}
 	if *cacheEnabled && *noCache {
 		fmt.Fprintln(os.Stderr, "Error: --cache and --no-cache are mutually exclusive")
+		os.Exit(2)
+	}
+	if *concurrency < 1 {
+		fmt.Fprintln(os.Stderr, "Error: --concurrency must be >= 1")
 		os.Exit(2)
 	}
 	cacheActive := !*noCache
@@ -338,7 +344,7 @@ func runLint(args []string) {
 	}
 
 	start := time.Now()
-	violations := runLintRules(files, selectedRules, ctx, effectiveMaxViolations)
+	violations := runLintRules(files, selectedRules, ctx, effectiveMaxViolations, *concurrency)
 	baselineOpts := baselineOptions{BootstrapIfMissing: !*diffMode}
 	baselineInfo, err := applyBaseline(strings.TrimSpace(*baselinePath), &violations, baselineOpts)
 	if err != nil {
@@ -384,7 +390,7 @@ func runLint(args []string) {
 			for _, file := range files {
 				ctx.Files[file.Path] = file
 			}
-			violations = runLintRules(files, selectedRules, ctx, effectiveMaxViolations)
+			violations = runLintRules(files, selectedRules, ctx, effectiveMaxViolations, *concurrency)
 			baselineInfo, err = applyBaseline(strings.TrimSpace(*baselinePath), &violations, baselineOpts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -1290,7 +1296,7 @@ func looksLikeTestFile(pathValue string) bool {
 		strings.HasSuffix(name, "test.java")
 }
 
-func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int) []model.Violation {
+func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int, _ int) []model.Violation {
 	violations := make([]model.Violation, 0)
 	stop := false
 	for _, file := range files {
