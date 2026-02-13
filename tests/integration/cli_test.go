@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -314,9 +315,10 @@ func TestGoldenJSONOutput(t *testing.T) {
 		t.Fatalf("golden output file not found: %v", err)
 	}
 
-	// Compare as parsed JSON (ignore whitespace differences)
-	var got, want interface{}
-	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+	// Compare as parsed JSON after canonicalization:
+	// ignore dynamic elapsedMs and order violations deterministically.
+	var gotReport, wantReport map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &gotReport); err != nil {
 		t.Fatalf("parse output JSON: %v", err)
 	}
 
@@ -324,15 +326,72 @@ func TestGoldenJSONOutput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read golden file: %v", err)
 	}
-	if err := json.Unmarshal(expected, &want); err != nil {
+	if err := json.Unmarshal(expected, &wantReport); err != nil {
 		t.Fatalf("parse golden JSON: %v", err)
 	}
 
-	gotJSON, _ := json.Marshal(got)
-	wantJSON, _ := json.Marshal(want)
+	canonicalizeReport(gotReport)
+	canonicalizeReport(wantReport)
+
+	gotJSON, _ := json.Marshal(gotReport)
+	wantJSON, _ := json.Marshal(wantReport)
 	if string(gotJSON) != string(wantJSON) {
-		t.Errorf("JSON output differs from golden file")
+		t.Errorf("JSON output differs from golden file\n--- got ---\n%s\n--- want ---\n%s", string(gotJSON), string(wantJSON))
 	}
+}
+
+func canonicalizeReport(report map[string]interface{}) {
+	if report == nil {
+		return
+	}
+	if summary, ok := report["summary"].(map[string]interface{}); ok {
+		// elapsedMs is runtime-dependent and not useful for golden stability.
+		delete(summary, "elapsedMs")
+	}
+
+	violationsAny, ok := report["violations"].([]interface{})
+	if !ok {
+		return
+	}
+
+	violations := make([]map[string]interface{}, 0, len(violationsAny))
+	for _, item := range violationsAny {
+		v, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		violations = append(violations, v)
+	}
+
+	sort.SliceStable(violations, func(i, j int) bool {
+		return violationSortKey(violations[i]) < violationSortKey(violations[j])
+	})
+
+	normalized := make([]interface{}, 0, len(violations))
+	for _, v := range violations {
+		normalized = append(normalized, v)
+	}
+	report["violations"] = normalized
+}
+
+func violationSortKey(v map[string]interface{}) string {
+	return fmt.Sprintf(
+		"%v|%v|%v|%v|%v",
+		firstNonNil(v["RuleID"], v["ruleId"], v["rule"], v["rule_id"]),
+		firstNonNil(v["File"], v["file"], v["path"]),
+		firstNonNil(v["Line"], v["line"]),
+		firstNonNil(v["Column"], v["column"]),
+		firstNonNil(v["Message"], v["message"]),
+	)
+}
+
+func firstNonNil(values ...interface{}) interface{} {
+	for _, v := range values {
+		if v != nil {
+			return v
+		}
+	}
+	return ""
 }
 
 // === Concurrent safety test ===
