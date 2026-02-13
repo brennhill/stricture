@@ -183,7 +183,8 @@ func runLint(args []string) {
 	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
 	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
 	fixBackup := fs.Bool("fix-backup", false, "When used with --fix, create .bak files before modifying sources")
-	_ = fs.Bool("no-cache", false, "Disable caching")
+	cacheEnabled := fs.Bool("cache", false, "Enable caching (default behavior)")
+	noCache := fs.Bool("no-cache", false, "Disable caching")
 	_ = fs.Parse(args)
 
 	if *fixApply && *fixDryRun {
@@ -215,6 +216,14 @@ func runLint(args []string) {
 	if *forceColor && *forceNoColor {
 		fmt.Fprintln(os.Stderr, "Error: --color and --no-color are mutually exclusive")
 		os.Exit(2)
+	}
+	if *cacheEnabled && *noCache {
+		fmt.Fprintln(os.Stderr, "Error: --cache and --no-cache are mutually exclusive")
+		os.Exit(2)
+	}
+	cacheActive := !*noCache
+	if *cacheEnabled {
+		cacheActive = true
 	}
 	minSeverity := strings.ToLower(strings.TrimSpace(*severityLevel))
 	switch minSeverity {
@@ -311,7 +320,11 @@ func runLint(args []string) {
 		}
 		filePaths = filtered
 	}
-	verbosef(*verbose, "Verbose: using %d file(s) after scope filters; rules=%d\n", len(filePaths), len(selectedRules))
+	cacheState := "off"
+	if cacheActive {
+		cacheState = "on"
+	}
+	verbosef(*verbose, "Verbose: using %d file(s) after scope filters; rules=%d cache=%s\n", len(filePaths), len(selectedRules), cacheState)
 
 	files, err := buildUnifiedFiles(filePaths)
 	if err != nil {
