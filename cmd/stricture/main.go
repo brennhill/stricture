@@ -144,6 +144,7 @@ func runLint(args []string) {
 	category := fs.String("category", "", "Run all rules in a category")
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
+	diffMode := fs.Bool("diff", false, "When used with --baseline, include added/resolved diff details against baseline")
 	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
 	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
 	fixBackup := fs.Bool("fix-backup", false, "When used with --fix, create .bak files before modifying sources")
@@ -158,6 +159,10 @@ func runLint(args []string) {
 	}
 	if *fixBackup && !*fixApply {
 		fmt.Fprintln(os.Stderr, "Error: --fix-backup requires --fix")
+		os.Exit(2)
+	}
+	if *diffMode && strings.TrimSpace(*baselinePath) == "" {
+		fmt.Fprintln(os.Stderr, "Error: --diff requires --baseline")
 		os.Exit(2)
 	}
 
@@ -228,7 +233,8 @@ func runLint(args []string) {
 
 	start := time.Now()
 	violations := runLintRules(files, selectedRules, ctx, *maxViolations)
-	baselineInfo, err := applyBaseline(strings.TrimSpace(*baselinePath), &violations)
+	baselineOpts := baselineOptions{BootstrapIfMissing: !*diffMode}
+	baselineInfo, err := applyBaseline(strings.TrimSpace(*baselinePath), &violations, baselineOpts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
@@ -272,7 +278,7 @@ func runLint(args []string) {
 				ctx.Files[file.Path] = file
 			}
 			violations = runLintRules(files, selectedRules, ctx, *maxViolations)
-			baselineInfo, err = applyBaseline(strings.TrimSpace(*baselinePath), &violations)
+			baselineInfo, err = applyBaseline(strings.TrimSpace(*baselinePath), &violations, baselineOpts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(2)
@@ -316,6 +322,11 @@ func runLint(args []string) {
 		summary["baselineSuppressed"] = baselineInfo.Suppressed
 		summary["baselineBootstrapped"] = baselineInfo.Bootstrapped
 	}
+	if *diffMode {
+		summary["diffEnabled"] = true
+		summary["diffAdded"] = len(baselineInfo.Added)
+		summary["diffResolved"] = len(baselineInfo.Resolved)
+	}
 
 	switch *format {
 	case "json", "sarif", "junit":
@@ -330,6 +341,17 @@ func runLint(args []string) {
 				"suppressed":   baselineInfo.Suppressed,
 				"bootstrapped": baselineInfo.Bootstrapped,
 				"entryCount":   baselineInfo.EntryCount,
+			}
+		}
+		if *diffMode {
+			payload["diff"] = map[string]interface{}{
+				"enabled":  true,
+				"added":    baselineInfo.Added,
+				"resolved": baselineInfo.Resolved,
+				"summary": map[string]int{
+					"added":    len(baselineInfo.Added),
+					"resolved": len(baselineInfo.Resolved),
+				},
 			}
 		}
 		if *fixApply || *fixDryRun {
@@ -353,6 +375,9 @@ func runLint(args []string) {
 			} else if baselineInfo.Suppressed > 0 {
 				fmt.Printf("Baseline suppressed %d violation(s) from %s.\n", baselineInfo.Suppressed, baselineInfo.Path)
 			}
+		}
+		if *diffMode {
+			fmt.Printf("Diff: added=%d resolved=%d (baseline=%s)\n", len(baselineInfo.Added), len(baselineInfo.Resolved), baselineInfo.Path)
 		}
 		if *fixApply || *fixDryRun {
 			printFixSummary(fixOps, *fixDryRun)
@@ -415,6 +440,13 @@ type baselineState struct {
 	EntryCount   int
 	Suppressed   int
 	Bootstrapped bool
+	Entries      []baselineEntry
+	Added        []model.Violation
+	Resolved     []baselineEntry
+}
+
+type baselineOptions struct {
+	BootstrapIfMissing bool
 }
 
 type baselineFile struct {
@@ -430,7 +462,7 @@ type baselineEntry struct {
 	Message   string `json:"message"`
 }
 
-func applyBaseline(pathValue string, violations *[]model.Violation) (baselineState, error) {
+func applyBaseline(pathValue string, violations *[]model.Violation, options baselineOptions) (baselineState, error) {
 	state := baselineState{}
 	if strings.TrimSpace(pathValue) == "" {
 		return state, nil
@@ -446,6 +478,9 @@ func applyBaseline(pathValue string, violations *[]model.Violation) (baselineSta
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return state, fmt.Errorf("read baseline %s: %w", pathValue, err)
+		}
+		if !options.BootstrapIfMissing {
+			return state, fmt.Errorf("baseline %s does not exist (run once without --diff to bootstrap)", pathValue)
 		}
 
 		entries := make([]baselineEntry, 0, len(*violations))
@@ -490,6 +525,9 @@ func applyBaseline(pathValue string, violations *[]model.Violation) (baselineSta
 		state.EntryCount = len(entries)
 		state.Suppressed = len(*violations)
 		state.Bootstrapped = true
+		state.Entries = entries
+		state.Resolved = []baselineEntry{}
+		state.Added = []model.Violation{}
 		*violations = []model.Violation{}
 		return state, nil
 	}
@@ -504,6 +542,7 @@ func applyBaseline(pathValue string, violations *[]model.Violation) (baselineSta
 		lookup[baselineKeyFromEntry(entry)] = true
 	}
 
+	rawCurrent := append([]model.Violation(nil), (*violations)...)
 	filtered := make([]model.Violation, 0, len(*violations))
 	for _, v := range *violations {
 		if lookup[baselineKeyFromViolation(v)] {
@@ -514,8 +553,39 @@ func applyBaseline(pathValue string, violations *[]model.Violation) (baselineSta
 	}
 
 	state.EntryCount = len(doc.Entries)
+	state.Entries = append([]baselineEntry(nil), doc.Entries...)
+	state.Added = append([]model.Violation(nil), filtered...)
+	state.Resolved = baselineResolvedEntries(rawCurrent, doc.Entries)
 	*violations = filtered
 	return state, nil
+}
+
+func baselineResolvedEntries(current []model.Violation, entries []baselineEntry) []baselineEntry {
+	currentLookup := map[string]bool{}
+	for _, v := range current {
+		currentLookup[baselineKeyFromViolation(v)] = true
+	}
+
+	out := make([]baselineEntry, 0)
+	for _, entry := range entries {
+		if currentLookup[baselineKeyFromEntry(entry)] {
+			continue
+		}
+		out = append(out, entry)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].FilePath != out[j].FilePath {
+			return out[i].FilePath < out[j].FilePath
+		}
+		if out[i].StartLine != out[j].StartLine {
+			return out[i].StartLine < out[j].StartLine
+		}
+		if out[i].RuleID != out[j].RuleID {
+			return out[i].RuleID < out[j].RuleID
+		}
+		return out[i].Message < out[j].Message
+	})
+	return out
 }
 
 func baselineKeyFromEntry(entry baselineEntry) string {
