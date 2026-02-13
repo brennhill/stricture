@@ -145,8 +145,10 @@ main() {
     run_check "validation-set-policy" "make validate" || true
     run_check "message-catalog-consistency" "./scripts/validate-error-messages.sh" || true
     run_check "rule-consistency" "./scripts/check-rule-consistency.sh" || true
+    run_check "no-stubs-phase6" "./scripts/check-no-stubs.sh --phase 6" || true
     run_check "invariant-tests" "./scripts/check-invariant-tests.sh" || true
     run_check "shell-syntax" "./scripts/check-bash-syntax.sh" || true
+    run_check "tree-sitter-pinning" "./scripts/check-tree-sitter-pinning.sh" || true
     run_check "validation-health" "VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh" || true
     run_check_with_retry "race-tests" "go test -race -count=1 -timeout=300s ./cmd/... ./internal/..." 1 || true
 

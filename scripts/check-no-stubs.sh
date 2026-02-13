@@ -12,7 +12,7 @@ usage() {
     echo "  - TODO: implement"
     echo ""
     echo "Options:"
-    echo "  --phase N   Development phase scope (1-4). Default: 1"
+    echo "  --phase N   Development phase scope (1-6). Default: 1"
 }
 
 while [ $# -gt 0 ]; do
@@ -37,8 +37,8 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if ! [[ "$phase" =~ ^[1-4]$ ]]; then
-    echo "Error: phase must be 1, 2, 3, or 4" >&2
+if ! [[ "$phase" =~ ^[1-6]$ ]]; then
+    echo "Error: phase must be 1, 2, 3, 4, 5, or 6" >&2
     exit 1
 fi
 
@@ -58,6 +58,12 @@ if [ "$phase" -ge 3 ]; then
 fi
 if [ "$phase" -ge 4 ]; then
     paths+=("internal/manifest" "internal/rules/ctr")
+fi
+if [ "$phase" -ge 5 ]; then
+    paths+=("internal/adapter/python" "internal/adapter/java")
+fi
+if [ "$phase" -ge 6 ]; then
+    paths+=("internal/fix" "internal/plugins" "internal/suppression" "internal/lineage")
 fi
 
 existing_paths=()

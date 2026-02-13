@@ -11,9 +11,9 @@
 | Grammar | Module | Version | Last verified |
 |---------|--------|---------|---------------|
 | Go | `github.com/smacker/go-tree-sitter` | (native go/parser — no tree-sitter) | N/A |
-| TypeScript | `github.com/smacker/go-tree-sitter/typescript` | TBD (pin after Phase 2) | — |
-| Python | `github.com/smacker/go-tree-sitter/python` | TBD (pin after Phase 5) | — |
-| Java | `github.com/smacker/go-tree-sitter/java` | TBD (pin after Phase 5) | — |
+| TypeScript | `github.com/smacker/go-tree-sitter/typescript` | `v0.0.0-20240827094217-dd81d9e9be82` | 2026-02-13 |
+| Python | `github.com/smacker/go-tree-sitter/python` | `v0.0.0-20240827094217-dd81d9e9be82` | 2026-02-13 |
+| Java | `github.com/smacker/go-tree-sitter/java` | `v0.0.0-20240827094217-dd81d9e9be82` | 2026-02-13 |
 
 ## Pinning Protocol
 
