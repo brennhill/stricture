@@ -340,8 +340,6 @@ func TestGoldenJSONOutput(t *testing.T) {
 func TestConcurrentRuns(t *testing.T) {
 	// Run 5 instances of stricture simultaneously.
 	// They must not interfere with each other (cache corruption, etc.)
-	t.Parallel()
-
 	errs := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		go func() {
