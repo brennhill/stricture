@@ -558,6 +558,12 @@ func runAudit(args []string) {
 		return
 	}
 
+	flagArgs, pathArgs, argErr := splitAuditArgs(args)
+	if argErr != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", argErr)
+		os.Exit(2)
+	}
+
 	fs := flag.NewFlagSet("audit", flag.ExitOnError)
 	manifestPath := fs.String("manifest", "", "Path to stricture manifest file")
 	service := fs.String("service", "", "Service name to scope audit output")
@@ -567,7 +573,7 @@ func runAudit(args []string) {
 	outputPath := fs.String("output", "", "Write report to file instead of stdout")
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
-	_ = fs.Parse(args)
+	_ = fs.Parse(flagArgs)
 
 	strictnessValue := strings.ToLower(strings.TrimSpace(*strictness))
 	if strictnessValue != "" && !validStrictness(strictnessValue) {
@@ -606,7 +612,7 @@ func runAudit(args []string) {
 	if strings.TrimSpace(*outputPath) != "" {
 		lintArgs = append(lintArgs, "--output", *outputPath)
 	}
-	lintArgs = append(lintArgs, fs.Args()...)
+	lintArgs = append(lintArgs, pathArgs...)
 	runLint(lintArgs)
 }
 
@@ -745,6 +751,48 @@ func splitTraceArgs(args []string) (string, []string, error) {
 		return "", nil, fmt.Errorf("trace accepts exactly one file argument")
 	}
 	return tracePath, flagArgs, nil
+}
+
+func splitAuditArgs(args []string) ([]string, []string, error) {
+	valueFlags := map[string]bool{
+		"-manifest":    true,
+		"--manifest":   true,
+		"-service":     true,
+		"--service":    true,
+		"-strictness":  true,
+		"--strictness": true,
+		"-format":      true,
+		"--format":     true,
+		"-output":      true,
+		"--output":     true,
+		"-config":      true,
+		"--config":     true,
+	}
+
+	flagArgs := make([]string, 0, len(args))
+	pathArgs := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		token := strings.TrimSpace(args[i])
+		if token == "" {
+			continue
+		}
+		if strings.HasPrefix(token, "-") {
+			flagArgs = append(flagArgs, token)
+			if strings.Contains(token, "=") {
+				continue
+			}
+			if valueFlags[token] {
+				if i+1 >= len(args) {
+					return nil, nil, fmt.Errorf("flag %s requires a value", token)
+				}
+				i++
+				flagArgs = append(flagArgs, args[i])
+			}
+			continue
+		}
+		pathArgs = append(pathArgs, token)
+	}
+	return flagArgs, pathArgs, nil
 }
 
 func inferTraceFormat(pathValue string, data []byte) string {

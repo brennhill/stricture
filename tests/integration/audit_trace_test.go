@@ -130,6 +130,17 @@ func TestAuditRejectsInvalidStrictness(t *testing.T) {
 	}
 }
 
+func TestAuditParsesFlagsAfterPaths(t *testing.T) {
+	tmp := t.TempDir()
+	_, stderr, code := runInDir(t, tmp, "audit", ".", "--manifest", "missing-manifest.yml")
+	if code != 2 {
+		t.Fatalf("audit should honor --manifest even after path (exit=%d, want 2)", code)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "manifest") {
+		t.Fatalf("stderr should mention manifest, got %q", stderr)
+	}
+}
+
 func TestTraceHarValidationRequiresLogEnvelope(t *testing.T) {
 	tmp := t.TempDir()
 	tracePath := filepath.Join(tmp, "trace.har")
