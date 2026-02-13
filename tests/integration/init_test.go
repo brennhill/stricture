@@ -46,3 +46,24 @@ func TestInitRefusesOverwriteWithoutForce(t *testing.T) {
 		t.Fatalf("stderr should mention existing config, got %q", stderr)
 	}
 }
+
+func TestInitForceOverwritesExistingConfig(t *testing.T) {
+	tmp := t.TempDir()
+	cfgPath := filepath.Join(tmp, ".stricture.yml")
+	if err := os.WriteFile(cfgPath, []byte("version: \"old\"\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	_, stderr, code := runInDir(t, tmp, "init", "--force")
+	if code != 0 {
+		t.Fatalf("init --force exit code = %d, want 0\nstderr=%q", code, stderr)
+	}
+
+	after, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.Contains(string(after), "CONV-file-header") {
+		t.Fatalf("forced init should rewrite with default config, got %q", string(after))
+	}
+}

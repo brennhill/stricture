@@ -69,8 +69,14 @@ func main() {
 	case "--help", "-help", "help":
 		printUsage()
 	default:
-		// No subcommand: treat all args as lint targets.
-		runLint(os.Args[1:])
+		first := os.Args[1]
+		// No subcommand: treat all args as lint when first arg is a flag or likely path.
+		if strings.HasPrefix(first, "-") || looksLikePathArg(first) {
+			runLint(os.Args[1:])
+			return
+		}
+		printUnknownCommand(first)
+		os.Exit(2)
 	}
 }
 
@@ -96,6 +102,34 @@ func printUsage() {
 	fmt.Println("  help              Print this help message")
 	fmt.Println()
 	fmt.Println("Run 'stricture <command> --help' for details on a specific command.")
+}
+
+func printUnknownCommand(command string) {
+	fmt.Fprintf(os.Stderr, "Error: unknown command %q\n", command)
+	fmt.Fprintln(os.Stderr, "Valid commands: lint, fix, init, inspect, inspect-lineage, lineage-export, lineage-diff, lineage-escalate, list-rules, validate-config, version, help")
+}
+
+func looksLikePathArg(value string) bool {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return false
+	}
+	if strings.HasPrefix(v, ".") || strings.HasPrefix(v, "/") || strings.HasPrefix(v, "~") {
+		return true
+	}
+	if strings.Contains(v, string(filepath.Separator)) || strings.Contains(v, "/") {
+		return true
+	}
+	if strings.ContainsAny(v, "*?[]{}") {
+		return true
+	}
+	if strings.Contains(v, ".") {
+		return true
+	}
+	if _, err := os.Stat(v); err == nil {
+		return true
+	}
+	return false
 }
 
 // runLint is the default lint subcommand.

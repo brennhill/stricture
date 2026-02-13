@@ -8,7 +8,7 @@ STATE_DIR="$PROJECT_ROOT/.overseer-agent"
 LOG_FILE="$STATE_DIR/spec-quality-audit.log"
 COVERAGE_FILE="$STATE_DIR/coverage.out"
 MIN_COVERAGE="${OVERSEER_MIN_COVERAGE:-80}"
-COVERAGE_PKGS="${OVERSEER_COVERAGE_PKGS:-./internal/adapter/java/... ./internal/adapter/python/... ./internal/adapter/typescript/... ./internal/config/... ./internal/lineage/... ./internal/manifest/... ./internal/rules/arch/... ./internal/rules/conv/... ./internal/rules/ctr/... ./internal/rules/tq/...}"
+COVERAGE_PKGS="${OVERSEER_COVERAGE_PKGS:-./internal/adapter/java/... ./internal/adapter/python/... ./internal/adapter/typescript/... ./internal/config/... ./internal/fix/... ./internal/lineage/... ./internal/manifest/... ./internal/plugins/... ./internal/rules/arch/... ./internal/rules/conv/... ./internal/rules/ctr/... ./internal/rules/tq/... ./internal/suppression/...}"
 
 mkdir -p "$STATE_DIR"
 : >"$LOG_FILE"

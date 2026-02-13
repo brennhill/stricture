@@ -127,6 +127,16 @@ func TestInvalidFormatExitsTwo(t *testing.T) {
 	}
 }
 
+func TestUnknownSubcommandExitsTwo(t *testing.T) {
+	_, stderr, code := run(t, "foobar", "src/")
+	if code != 2 {
+		t.Fatalf("unknown subcommand exit code = %d, want 2", code)
+	}
+	if !strings.Contains(strings.ToLower(stderr), "unknown command") {
+		t.Fatalf("stderr should mention unknown command, got %q", stderr)
+	}
+}
+
 // === Output format tests ===
 
 func TestJSONOutputIsValidJSON(t *testing.T) {
