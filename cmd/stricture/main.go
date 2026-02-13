@@ -16,6 +16,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"text/tabwriter"
 	"time"
 	"unicode/utf8"
@@ -1453,7 +1454,15 @@ func looksLikeTestFile(pathValue string) bool {
 		strings.HasSuffix(name, "test.java")
 }
 
-func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int, _ int) []model.Violation {
+func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int, concurrency int) []model.Violation {
+	if concurrency <= 1 || len(files) <= 1 || maxViolations > 0 {
+		// Preserve exact fail-fast behavior when maxViolations is configured.
+		return runLintRulesSequential(files, rules, ctx, maxViolations)
+	}
+	return runLintRulesParallel(files, rules, ctx, concurrency)
+}
+
+func runLintRulesSequential(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int) []model.Violation {
 	violations := make([]model.Violation, 0)
 	stop := false
 	for _, file := range files {
@@ -1508,6 +1517,97 @@ func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *mode
 				}
 			}()
 		}
+	}
+	return violations
+}
+
+func runLintRulesParallel(files []*model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, concurrency int) []model.Violation {
+	workerCount := concurrency
+	if workerCount > len(files) {
+		workerCount = len(files)
+	}
+
+	jobs := make(chan *model.UnifiedFileModel)
+	results := make(chan []model.Violation, len(files))
+
+	var wg sync.WaitGroup
+	worker := func() {
+		defer wg.Done()
+		for file := range jobs {
+			results <- runLintRulesForFile(file, rules, ctx, 0)
+		}
+	}
+
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go worker()
+	}
+
+	for _, file := range files {
+		jobs <- file
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
+
+	violations := make([]model.Violation, 0)
+	for chunk := range results {
+		violations = append(violations, chunk...)
+	}
+	return violations
+}
+
+func runLintRulesForFile(file *model.UnifiedFileModel, rules []model.Rule, ctx *model.ProjectContext, maxViolations int) []model.Violation {
+	violations := make([]model.Violation, 0)
+	stop := false
+	policy := suppression.Compile(file.Source)
+	for _, rawRule := range rules {
+		if stop {
+			break
+		}
+		ruleCfg := model.RuleConfig{Severity: rawRule.DefaultSeverity(), Options: map[string]interface{}{}}
+		if withCfg, ok := rawRule.(lintRuleWithConfig); ok {
+			rawRule = withCfg.Rule
+			ruleCfg = withCfg.Config
+		}
+
+		func() {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					violations = append(violations, model.Violation{
+						RuleID:    rawRule.ID(),
+						Severity:  "error",
+						Message:   fmt.Sprintf("Rule panicked: %v", recovered),
+						FilePath:  file.Path,
+						StartLine: 1,
+					})
+					if maxViolations > 0 && len(violations) >= maxViolations {
+						stop = true
+					}
+				}
+			}()
+			rawViolations := rawRule.Check(file, ctx, ruleCfg)
+			for _, v := range rawViolations {
+				ruleID := strings.TrimSpace(v.RuleID)
+				if ruleID == "" {
+					ruleID = rawRule.ID()
+					v.RuleID = ruleID
+				}
+				line := v.StartLine
+				if line <= 0 {
+					line = 1
+				}
+				if policy.Suppressed(ruleID, line) {
+					continue
+				}
+				violations = append(violations, v)
+				if maxViolations > 0 && len(violations) >= maxViolations {
+					stop = true
+					break
+				}
+			}
+		}()
 	}
 	return violations
 }
