@@ -14,6 +14,7 @@ func TestTestFileLocation_Metadata(t *testing.T) {
 	assert.Equal(t, "CONV-test-file-location", rule.ID())
 	assert.Equal(t, "conv", rule.Category())
 	assert.Equal(t, "error", rule.DefaultSeverity())
+	assert.False(t, rule.NeedsProjectContext())
 	assert.NotEmpty(t, rule.Description())
 	assert.NotEmpty(t, rule.Why())
 }

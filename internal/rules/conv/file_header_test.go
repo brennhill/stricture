@@ -16,6 +16,18 @@ func TestFileHeader(t *testing.T) {
 	if rule.Category() != "conv" {
 		t.Errorf("Category() = %s, want conv", rule.Category())
 	}
+	if rule.DefaultSeverity() != "error" {
+		t.Errorf("DefaultSeverity() = %s, want error", rule.DefaultSeverity())
+	}
+	if rule.NeedsProjectContext() {
+		t.Errorf("NeedsProjectContext() = true, want false")
+	}
+	if rule.Description() == "" {
+		t.Errorf("Description() should not be empty")
+	}
+	if rule.Why() == "" {
+		t.Errorf("Why() should not be empty")
+	}
 
 	tests := []struct {
 		name      string
