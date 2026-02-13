@@ -143,6 +143,7 @@ func runLint(args []string) {
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
+	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
 	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
 	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
 	_ = fs.Bool("changed", false, "Lint only changed files")
@@ -222,6 +223,11 @@ func runLint(args []string) {
 
 	start := time.Now()
 	violations := runLintRules(files, selectedRules, ctx, *maxViolations)
+	baselineInfo, err := applyBaseline(strings.TrimSpace(*baselinePath), &violations)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(2)
+	}
 	elapsed := time.Since(start).Milliseconds()
 
 	fixOps := make([]fix.Operation, 0)
@@ -255,6 +261,11 @@ func runLint(args []string) {
 				ctx.Files[file.Path] = file
 			}
 			violations = runLintRules(files, selectedRules, ctx, *maxViolations)
+			baselineInfo, err = applyBaseline(strings.TrimSpace(*baselinePath), &violations)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(2)
+			}
 		}
 	}
 
@@ -289,6 +300,11 @@ func runLint(args []string) {
 		"warnings":        warnCount,
 		"elapsedMs":       elapsed,
 	}
+	if baselineInfo.Enabled {
+		summary["baselinePath"] = filepath.ToSlash(baselineInfo.Path)
+		summary["baselineSuppressed"] = baselineInfo.Suppressed
+		summary["baselineBootstrapped"] = baselineInfo.Bootstrapped
+	}
 
 	switch *format {
 	case "json", "sarif", "junit":
@@ -296,6 +312,14 @@ func runLint(args []string) {
 			"version":    "1",
 			"violations": violations,
 			"summary":    summary,
+		}
+		if baselineInfo.Enabled {
+			payload["baseline"] = map[string]interface{}{
+				"path":         filepath.ToSlash(baselineInfo.Path),
+				"suppressed":   baselineInfo.Suppressed,
+				"bootstrapped": baselineInfo.Bootstrapped,
+				"entryCount":   baselineInfo.EntryCount,
+			}
 		}
 		if *fixApply || *fixDryRun {
 			payload["fixes"] = renderFixOperations(fixOps)
@@ -312,6 +336,13 @@ func runLint(args []string) {
 			os.Exit(1)
 		}
 	default:
+		if baselineInfo.Enabled {
+			if baselineInfo.Bootstrapped {
+				fmt.Printf("Baseline created at %s with %d entry(s); existing violations suppressed.\n", baselineInfo.Path, baselineInfo.EntryCount)
+			} else if baselineInfo.Suppressed > 0 {
+				fmt.Printf("Baseline suppressed %d violation(s) from %s.\n", baselineInfo.Suppressed, baselineInfo.Path)
+			}
+		}
 		if *fixApply || *fixDryRun {
 			printFixSummary(fixOps, *fixDryRun)
 		}
@@ -365,6 +396,131 @@ func runInit(args []string) {
 	}
 
 	fmt.Printf("Created %s\n", target)
+}
+
+type baselineState struct {
+	Enabled      bool
+	Path         string
+	EntryCount   int
+	Suppressed   int
+	Bootstrapped bool
+}
+
+type baselineFile struct {
+	Version     string          `json:"version"`
+	GeneratedAt string          `json:"generatedAt"`
+	Entries     []baselineEntry `json:"entries"`
+}
+
+type baselineEntry struct {
+	RuleID    string `json:"ruleId"`
+	FilePath  string `json:"filePath"`
+	StartLine int    `json:"startLine"`
+	Message   string `json:"message"`
+}
+
+func applyBaseline(pathValue string, violations *[]model.Violation) (baselineState, error) {
+	state := baselineState{}
+	if strings.TrimSpace(pathValue) == "" {
+		return state, nil
+	}
+	if violations == nil {
+		return state, fmt.Errorf("internal baseline error: violations pointer is nil")
+	}
+
+	state.Enabled = true
+	state.Path = pathValue
+
+	data, err := os.ReadFile(pathValue)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return state, fmt.Errorf("read baseline %s: %w", pathValue, err)
+		}
+
+		entries := make([]baselineEntry, 0, len(*violations))
+		for _, v := range *violations {
+			entries = append(entries, baselineEntry{
+				RuleID:    strings.TrimSpace(v.RuleID),
+				FilePath:  filepath.ToSlash(v.FilePath),
+				StartLine: v.StartLine,
+				Message:   strings.TrimSpace(v.Message),
+			})
+		}
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].FilePath != entries[j].FilePath {
+				return entries[i].FilePath < entries[j].FilePath
+			}
+			if entries[i].StartLine != entries[j].StartLine {
+				return entries[i].StartLine < entries[j].StartLine
+			}
+			if entries[i].RuleID != entries[j].RuleID {
+				return entries[i].RuleID < entries[j].RuleID
+			}
+			return entries[i].Message < entries[j].Message
+		})
+
+		doc := baselineFile{
+			Version:     "1",
+			GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+			Entries:     entries,
+		}
+		encoded, err := json.MarshalIndent(doc, "", "  ")
+		if err != nil {
+			return state, fmt.Errorf("marshal baseline %s: %w", pathValue, err)
+		}
+		encoded = append(encoded, '\n')
+		if err := os.MkdirAll(filepath.Dir(pathValue), 0o755); err != nil {
+			return state, fmt.Errorf("create baseline directory for %s: %w", pathValue, err)
+		}
+		if err := os.WriteFile(pathValue, encoded, 0o644); err != nil {
+			return state, fmt.Errorf("write baseline %s: %w", pathValue, err)
+		}
+
+		state.EntryCount = len(entries)
+		state.Suppressed = len(*violations)
+		state.Bootstrapped = true
+		*violations = []model.Violation{}
+		return state, nil
+	}
+
+	var doc baselineFile
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return state, fmt.Errorf("parse baseline %s: %w", pathValue, err)
+	}
+
+	lookup := map[string]bool{}
+	for _, entry := range doc.Entries {
+		lookup[baselineKeyFromEntry(entry)] = true
+	}
+
+	filtered := make([]model.Violation, 0, len(*violations))
+	for _, v := range *violations {
+		if lookup[baselineKeyFromViolation(v)] {
+			state.Suppressed++
+			continue
+		}
+		filtered = append(filtered, v)
+	}
+
+	state.EntryCount = len(doc.Entries)
+	*violations = filtered
+	return state, nil
+}
+
+func baselineKeyFromEntry(entry baselineEntry) string {
+	return fmt.Sprintf("%s|%s|%d|%s",
+		strings.TrimSpace(entry.RuleID),
+		filepath.ToSlash(strings.TrimSpace(entry.FilePath)),
+		entry.StartLine,
+		strings.TrimSpace(entry.Message))
+}
+
+func baselineKeyFromViolation(v model.Violation) string {
+	return fmt.Sprintf("%s|%s|%d|%s",
+		strings.TrimSpace(v.RuleID),
+		filepath.ToSlash(strings.TrimSpace(v.FilePath)),
+		v.StartLine,
+		strings.TrimSpace(v.Message))
 }
 
 func resolveLintRules(registry *model.RuleRegistry, cfg *config.Config, singleRule string, category string) ([]model.Rule, error) {
