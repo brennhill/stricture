@@ -136,13 +136,37 @@ func looksLikePathArg(value string) bool {
 	return false
 }
 
+type repeatableFlag []string
+
+func (f *repeatableFlag) String() string {
+	return strings.Join(*f, ",")
+}
+
+func (f *repeatableFlag) Set(value string) error {
+	for _, token := range strings.Split(value, ",") {
+		trimmed := strings.TrimSpace(token)
+		if trimmed == "" {
+			continue
+		}
+		*f = append(*f, trimmed)
+	}
+	return nil
+}
+
+func (f *repeatableFlag) Values() []string {
+	out := make([]string, len(*f))
+	copy(out, *f)
+	return out
+}
+
 // runLint is the default lint subcommand.
 func runLint(args []string) {
 	fs := flag.NewFlagSet("lint", flag.ExitOnError)
 	format := fs.String("format", "text", "Output format (text, json, sarif, junit)")
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	noConfig := fs.Bool("no-config", false, "Ignore config file and use built-in defaults")
-	rule := fs.String("rule", "", "Run a single rule by ID")
+	var ruleFilters repeatableFlag
+	fs.Var(&ruleFilters, "rule", "Run a single rule by ID (can be repeated)")
 	category := fs.String("category", "", "Run all rules in a category")
 	extFilter := fs.String("ext", "", "Only lint files with this extension (example: .go or .ts)")
 	severityLevel := fs.String("severity", "", "Only report violations at this level or above (error, warn)")
@@ -235,7 +259,7 @@ func runLint(args []string) {
 		}
 	}
 
-	selectedRules, err := resolveLintRules(registry, cfg, *rule, *category)
+	selectedRules, err := resolveLintRules(registry, cfg, ruleFilters.Values(), *category)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
@@ -689,23 +713,35 @@ func baselineKeyFromViolation(v model.Violation) string {
 		strings.TrimSpace(v.Message))
 }
 
-func resolveLintRules(registry *model.RuleRegistry, cfg *config.Config, singleRule string, category string) ([]model.Rule, error) {
+func resolveLintRules(registry *model.RuleRegistry, cfg *config.Config, requestedRules []string, category string) ([]model.Rule, error) {
 	selected := make([]model.Rule, 0)
 	targetCategory := strings.ToLower(strings.TrimSpace(category))
 
-	var single model.Rule
-	if strings.TrimSpace(singleRule) != "" {
-		found, ok := registry.ByID(strings.TrimSpace(singleRule))
-		if !ok {
-			return nil, fmt.Errorf("unknown rule %q", singleRule)
+	ruleFilter := map[string]bool{}
+	for _, raw := range requestedRules {
+		id := strings.TrimSpace(raw)
+		if id == "" {
+			continue
 		}
-		single = found
+		if _, ok := registry.ByID(id); !ok {
+			return nil, fmt.Errorf("unknown rule %q", id)
+		}
+		ruleFilter[id] = true
 	}
+	hasRuleFilter := len(ruleFilter) > 0
 
 	candidates := make([]model.Rule, 0)
 	switch {
-	case single != nil:
-		candidates = append(candidates, single)
+	case hasRuleFilter:
+		ids := make([]string, 0, len(ruleFilter))
+		for id := range ruleFilter {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			r, _ := registry.ByID(id)
+			candidates = append(candidates, r)
+		}
 	case cfg != nil && len(cfg.Rules) > 0:
 		ids := make([]string, 0, len(cfg.Rules))
 		for id := range cfg.Rules {
@@ -722,7 +758,7 @@ func resolveLintRules(registry *model.RuleRegistry, cfg *config.Config, singleRu
 	}
 
 	for _, r := range candidates {
-		if single != nil && r.ID() != single.ID() {
+		if hasRuleFilter && !ruleFilter[r.ID()] {
 			continue
 		}
 		if targetCategory != "" && strings.ToLower(r.Category()) != targetCategory {
