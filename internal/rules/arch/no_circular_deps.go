@@ -20,7 +20,8 @@ func (r *NoCircularDeps) DefaultSeverity() string   { return "error" }
 func (r *NoCircularDeps) NeedsProjectContext() bool { return false }
 
 func (r *NoCircularDeps) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -36,7 +37,7 @@ func (r *NoCircularDeps) Check(file *model.UnifiedFileModel, _ *model.ProjectCon
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Break the cycle by extracting shared abstractions into a lower-level package.",
 			},

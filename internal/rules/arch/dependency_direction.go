@@ -22,7 +22,8 @@ func (r *DependencyDirection) DefaultSeverity() string   { return "error" }
 func (r *DependencyDirection) NeedsProjectContext() bool { return false }
 
 func (r *DependencyDirection) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func (r *DependencyDirection) Check(file *model.UnifiedFileModel, _ *model.Proje
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Move the dependency behind an interface so imports follow the allowed layer direction.",
 			},

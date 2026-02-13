@@ -22,7 +22,8 @@ func (r *ImportBoundary) DefaultSeverity() string   { return "error" }
 func (r *ImportBoundary) NeedsProjectContext() bool { return false }
 
 func (r *ImportBoundary) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func (r *ImportBoundary) Check(file *model.UnifiedFileModel, _ *model.ProjectCon
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Route access through the target module's published API package.",
 			},

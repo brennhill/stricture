@@ -46,6 +46,57 @@ declare -A BUG_RULE_MAP=(
     [B15]="CTR-request-shape"
 )
 
+API_PERFECT_RULES=(
+    "TQ-error-path-coverage"
+    "TQ-no-shallow-assertions"
+    "TQ-negative-cases"
+    "CTR-status-code-handling"
+    "CTR-request-shape"
+    "CTR-response-shape"
+    "CTR-manifest-conformance"
+    "CTR-strictness-parity"
+)
+
+ARCH_PERFECT_RULES=(
+    "ARCH-dependency-direction"
+    "ARCH-import-boundary"
+    "ARCH-layer-violation"
+    "ARCH-max-file-lines"
+    "ARCH-module-boundary"
+    "ARCH-no-circular-deps"
+)
+
+TQ_PERFECT_RULES=(
+    "TQ-error-path-coverage"
+    "TQ-no-shallow-assertions"
+    "TQ-negative-cases"
+    "TQ-return-type-verified"
+    "TQ-schema-conformance"
+    "TQ-assertion-depth"
+    "TQ-boundary-tested"
+    "TQ-mock-scope"
+    "TQ-test-isolation"
+    "TQ-test-naming"
+)
+
+get_scope_for_file() {
+    local md_basename="$1"
+    case "$md_basename" in
+        30-*|31-*) echo "arch" ;;
+        40-*|41-*) echo "tq" ;;
+        *) echo "api" ;;
+    esac
+}
+
+rules_for_scope() {
+    local scope="$1"
+    case "$scope" in
+        arch) printf '%s\n' "${ARCH_PERFECT_RULES[@]}" ;;
+        tq) printf '%s\n' "${TQ_PERFECT_RULES[@]}" ;;
+        *) printf '%s\n' "${API_PERFECT_RULES[@]}" ;;
+    esac
+}
+
 # ── Helpers ───────────────────────────────────────────────
 log_pass() { echo -e "  ${GREEN}PASS${NC} $1"; PASSED=$((PASSED + 1)); TOTAL=$((TOTAL + 1)); }
 log_fail() { echo -e "  ${RED}FAIL${NC} $1"; FAILED=$((FAILED + 1)); TOTAL=$((TOTAL + 1)); ERRORS="$ERRORS\n  FAIL: $1"; }
@@ -131,6 +182,7 @@ run_validation() {
     local case_id="$2"
     local expected_rule="${3:-}"
     local md_basename="$4"
+    local scope="${5:-api}"
 
     # Find all source files (not yaml/yml)
     local source_files
@@ -150,23 +202,30 @@ run_validation() {
         manifest_flag="--manifest $manifest_file"
     fi
 
-    # Run Stricture
-    local output exit_code
-    # shellcheck disable=SC2086
-    output=$($STRICTURE --format json $manifest_flag $source_files 2>&1) || exit_code=$?
-    exit_code=${exit_code:-0}
-
     if [ "$case_id" = "PERFECT" ]; then
-        # PERFECT: expect zero violations
-        local violation_count
-        violation_count=$(echo "$output" | jq -r '.violations | length' 2>/dev/null || echo "parse_error")
+        # PERFECT: expect zero violations for the scope's rule set.
+        local total_violations=0
+        local parsed=true
+        local rule_id output exit_code violation_count
+        while IFS= read -r rule_id; do
+            [ -n "$rule_id" ] || continue
+            exit_code=0
+            # shellcheck disable=SC2086
+            output=$($STRICTURE --format json --rule "$rule_id" $manifest_flag $source_files 2>&1) || exit_code=$?
+            violation_count=$(echo "$output" | jq -r '.violations | length' 2>/dev/null || echo "parse_error")
+            if [ "$violation_count" = "parse_error" ]; then
+                parsed=false
+                break
+            fi
+            total_violations=$((total_violations + violation_count))
+        done < <(rules_for_scope "$scope")
 
-        if [ "$violation_count" = "0" ]; then
+        if [ "$parsed" = true ] && [ "$total_violations" = "0" ]; then
             log_pass "$md_basename/PERFECT — 0 violations (false positive check)"
-        elif [ "$violation_count" = "parse_error" ]; then
+        elif [ "$parsed" = false ]; then
             log_skip "$md_basename/PERFECT — could not parse Stricture output"
         else
-            log_fail "$md_basename/PERFECT — expected 0 violations, got $violation_count"
+            log_fail "$md_basename/PERFECT — expected 0 violations, got $total_violations"
         fi
     else
         # Bug case: expect at least one violation matching the expected rule
@@ -175,15 +234,20 @@ run_validation() {
             return
         fi
 
+        local output exit_code
+        # shellcheck disable=SC2086
+        output=$($STRICTURE --format json --rule "$expected_rule" $manifest_flag $source_files 2>&1) || exit_code=$?
+        exit_code=${exit_code:-0}
+
         local has_expected_rule
-        has_expected_rule=$(echo "$output" | jq -r ".violations[] | select(.ruleId == \"$expected_rule\" or .rule == \"$expected_rule\") | (.ruleId // .rule)" 2>/dev/null | head -1)
+        has_expected_rule=$(echo "$output" | jq -r ".violations[]? | (.RuleID // .ruleId // .rule // .rule_id) | select(. == \"$expected_rule\")" 2>/dev/null | head -1)
 
         if [ "$has_expected_rule" = "$expected_rule" ]; then
             log_pass "$md_basename/$case_id — detected $expected_rule"
         elif [ "$exit_code" -ne 0 ] && [ -z "$has_expected_rule" ]; then
             # Stricture found violations but not the expected rule
             local found_rules
-            found_rules=$(echo "$output" | jq -r '.violations[] | (.ruleId // .rule)' 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
+            found_rules=$(echo "$output" | jq -r '.violations[]? | (.RuleID // .ruleId // .rule // .rule_id)' 2>/dev/null | sort -u | tr '\n' ',' | sed 's/,$//')
             log_fail "$md_basename/$case_id — expected $expected_rule, got: ${found_rules:-none}"
         else
             log_fail "$md_basename/$case_id — expected $expected_rule, got 0 violations"
@@ -223,6 +287,8 @@ main() {
     for md_file in $api_files; do
         local basename
         basename=$(basename "$md_file" .md)
+        local scope
+        scope=$(get_scope_for_file "$basename")
         log_info "Processing $basename..."
 
         local extract_dir="$TEMP_DIR/$basename"
@@ -230,7 +296,7 @@ main() {
 
         # Run PERFECT case
         if [ -d "$extract_dir/PERFECT" ]; then
-            run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
+            run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename" "$scope"
         else
             log_skip "$basename/PERFECT — no PERFECT section found"
         fi
@@ -240,7 +306,7 @@ main() {
             local bug_id="B${bug_num}"
             local expected_rule="${BUG_RULE_MAP[$bug_id]:-}"
             if [ -d "$extract_dir/$bug_id" ]; then
-                run_validation "$extract_dir/$bug_id" "$bug_id" "$expected_rule" "$basename"
+                run_validation "$extract_dir/$bug_id" "$bug_id" "$expected_rule" "$basename" "$scope"
             fi
         done
     done
@@ -257,7 +323,7 @@ main() {
             extract_code_blocks "$md_file" "$extract_dir"
 
             if [ -d "$extract_dir/PERFECT" ]; then
-                run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
+                run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename" "arch"
             fi
         done
 
@@ -272,7 +338,7 @@ main() {
             extract_code_blocks "$md_file" "$extract_dir"
 
             if [ -d "$extract_dir/PERFECT" ]; then
-                run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename"
+                run_validation "$extract_dir/PERFECT" "PERFECT" "" "$basename" "tq"
             fi
         done
     fi

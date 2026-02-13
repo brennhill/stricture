@@ -1,0 +1,12 @@
+{
+  "summary": {
+    "elapsedMs": 0,
+    "errors": 0,
+    "filesChecked": 3,
+    "filesWithIssues": 0,
+    "totalViolations": 0,
+    "warnings": 0
+  },
+  "version": "1",
+  "violations": []
+}

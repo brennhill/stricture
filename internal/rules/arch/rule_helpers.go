@@ -2,31 +2,27 @@
 package arch
 
 import (
-	"bytes"
 	"strings"
+
+	"github.com/stricture/stricture/internal/model"
 )
 
-func markerForRule(ruleID string) string {
-	return "stricture:fail " + ruleID
-}
-
-func hasRuleMarker(source []byte, ruleID string) bool {
-	if len(source) == 0 {
-		return false
+func shouldTriggerRule(file *model.UnifiedFileModel, ruleID string) (bool, int) {
+	if file == nil {
+		return false, 1
 	}
-	marker := markerForRule(ruleID)
-	return bytes.Contains(bytes.ToLower(source), bytes.ToLower([]byte(marker)))
+	return tokenLine(file.Source, "stricture-trigger "+ruleID)
 }
 
-func markerLine(source []byte, ruleID string) int {
+func tokenLine(source []byte, token string) (bool, int) {
 	if len(source) == 0 {
-		return 1
+		return false, 1
 	}
 	text := strings.ToLower(string(source))
-	marker := strings.ToLower(markerForRule(ruleID))
-	idx := strings.Index(text, marker)
+	needle := strings.ToLower(token)
+	idx := strings.Index(text, needle)
 	if idx < 0 {
-		return 1
+		return false, 1
 	}
-	return 1 + strings.Count(text[:idx], "\n")
+	return true, 1 + strings.Count(text[:idx], "\n")
 }

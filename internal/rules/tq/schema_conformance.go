@@ -22,7 +22,8 @@ func (r *SchemaConformance) DefaultSeverity() string   { return "error" }
 func (r *SchemaConformance) NeedsProjectContext() bool { return false }
 
 func (r *SchemaConformance) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func (r *SchemaConformance) Check(file *model.UnifiedFileModel, _ *model.Project
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Assert both type and business constraint for the field.",
 			},

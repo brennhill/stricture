@@ -29,7 +29,7 @@ func assertRuleContract(t *testing.T, rule model.Rule) {
 	file := &model.UnifiedFileModel{
 		Path:     "tests/service_test.go",
 		Language: "go",
-		Source:   []byte("// stricture:fail " + rule.ID() + "\npackage service_test\n"),
+		Source:   []byte("// stricture-trigger " + rule.ID() + "\npackage service_test\n"),
 	}
 
 	violations := rule.Check(file, nil, model.RuleConfig{})

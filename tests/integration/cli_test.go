@@ -12,6 +12,7 @@ package integration
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,22 +20,35 @@ import (
 	"testing"
 )
 
+func projectRoot(t *testing.T) string {
+	t.Helper()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	return filepath.Clean(filepath.Join(wd, "..", ".."))
+}
+
 // binaryPath returns the path to the stricture binary.
 func binaryPath(t *testing.T) string {
 	t.Helper()
-	// Look for binary relative to project root
-	candidates := []string{
-		"../../bin/stricture",
-		"bin/stricture",
+	root := projectRoot(t)
+	bin := filepath.Join(root, "bin", "stricture")
+
+	if _, err := os.Stat(bin); err == nil {
+		return bin
 	}
-	for _, c := range candidates {
-		abs, _ := filepath.Abs(c)
-		if _, err := os.Stat(abs); err == nil {
-			return abs
-		}
+
+	cmd := exec.Command("go", "build", "-o", bin, "./cmd/stricture")
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("build stricture binary: %v\n%s", err, string(out))
 	}
-	t.Skip("stricture binary not found — run 'make build' first")
-	return ""
+
+	if _, err := os.Stat(bin); err != nil {
+		t.Fatalf("stricture binary missing after build: %v", err)
+	}
+	return bin
 }
 
 // run executes the stricture binary with the given args and returns stdout, stderr, and exit code.
@@ -96,7 +110,7 @@ func TestInvalidFormatExitsTwo(t *testing.T) {
 func TestJSONOutputIsValidJSON(t *testing.T) {
 	stdout, _, code := run(t, "--format", "json", ".")
 	if code == 2 {
-		t.Skip("lint not yet implemented")
+		t.Fatalf("lint returned operational error (exit 2)")
 	}
 
 	// Must be valid JSON
@@ -118,7 +132,7 @@ func TestStdoutVsStderr(t *testing.T) {
 	// Results go to stdout, errors/diagnostics go to stderr
 	stdout, stderr, code := run(t, "--format", "json", ".")
 	if code == 2 {
-		t.Skip("lint not yet implemented")
+		t.Fatalf("lint returned operational error (exit 2)")
 	}
 
 	// Stdout should be parseable (JSON or text results)
@@ -138,9 +152,6 @@ func TestStdoutVsStderr(t *testing.T) {
 func TestSelfLint(t *testing.T) {
 	// Stricture must be able to lint its own codebase
 	_, _, code := run(t, ".")
-	if code == 2 {
-		t.Skip("lint not yet implemented")
-	}
 	if code != 0 {
 		t.Errorf("self-lint exit code = %d, want 0 (Stricture must pass its own rules)", code)
 	}
@@ -149,19 +160,19 @@ func TestSelfLint(t *testing.T) {
 // === Golden file tests ===
 
 func TestGoldenTextOutput(t *testing.T) {
-	goldenDir := "../../tests/golden/input"
+	goldenDir := filepath.Join(projectRoot(t), "tests", "golden", "input")
 	if _, err := os.Stat(goldenDir); err != nil {
-		t.Skip("golden input directory not found")
+		t.Fatalf("golden input directory not found: %v", err)
 	}
 
 	stdout, _, code := run(t, "--format", "text", goldenDir)
 	if code == 2 {
-		t.Skip("lint not yet implemented")
+		t.Fatalf("lint returned operational error (exit 2)")
 	}
 
-	goldenFile := "../../tests/golden/output-text.txt"
+	goldenFile := filepath.Join(projectRoot(t), "tests", "golden", "output-text.txt")
 	if _, err := os.Stat(goldenFile); err != nil {
-		t.Skip("golden output file not found — run scripts/update-golden.sh first")
+		t.Fatalf("golden output file not found: %v", err)
 	}
 
 	expected, err := os.ReadFile(goldenFile)
@@ -175,19 +186,19 @@ func TestGoldenTextOutput(t *testing.T) {
 }
 
 func TestGoldenJSONOutput(t *testing.T) {
-	goldenDir := "../../tests/golden/input"
+	goldenDir := filepath.Join(projectRoot(t), "tests", "golden", "input")
 	if _, err := os.Stat(goldenDir); err != nil {
-		t.Skip("golden input directory not found")
+		t.Fatalf("golden input directory not found: %v", err)
 	}
 
 	stdout, _, code := run(t, "--format", "json", goldenDir)
 	if code == 2 {
-		t.Skip("lint not yet implemented")
+		t.Fatalf("lint returned operational error (exit 2)")
 	}
 
-	goldenFile := "../../tests/golden/output.json"
+	goldenFile := filepath.Join(projectRoot(t), "tests", "golden", "output.json")
 	if _, err := os.Stat(goldenFile); err != nil {
-		t.Skip("golden output file not found — run scripts/update-golden.sh first")
+		t.Fatalf("golden output file not found: %v", err)
 	}
 
 	// Compare as parsed JSON (ignore whitespace differences)
@@ -223,7 +234,7 @@ func TestConcurrentRuns(t *testing.T) {
 		go func() {
 			_, _, code := run(t, "--version")
 			if code != 0 {
-				errs <- &exec.ExitError{}
+				errs <- fmt.Errorf("exit code %d", code)
 			} else {
 				errs <- nil
 			}

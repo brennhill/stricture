@@ -8,7 +8,7 @@ import "testing"
 func TestNoCacheFlagDoesNotCrash(t *testing.T) {
 	stdout1, stderr1, code1 := run(t, "--format", "json", "--no-cache", ".")
 	if code1 == 2 {
-		t.Skip("lint pipeline is not fully wired yet")
+		t.Fatalf("lint returned operational error (exit 2)")
 	}
 
 	stdout2, stderr2, code2 := run(t, "--format", "json", "--no-cache", ".")

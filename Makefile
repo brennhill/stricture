@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
 
 GOFLAGS ?=
 LINEAGE_MODE ?= block
@@ -94,6 +94,21 @@ phase-agent-status:
 
 phase-agent-reset:
 	./scripts/phase-agent.sh reset
+
+overseer-agent:
+	./scripts/overseer-agent.sh run
+
+overseer-agent-once:
+	./scripts/overseer-agent.sh once
+
+overseer-agent-status:
+	./scripts/overseer-agent.sh status
+
+overseer-agent-reset:
+	./scripts/overseer-agent.sh reset
+
+spec-quality-audit:
+	./scripts/spec-quality-audit.sh
 
 clean:
 	rm -rf bin/

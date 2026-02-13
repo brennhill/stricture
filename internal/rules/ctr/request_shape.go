@@ -22,7 +22,8 @@ func (r *RequestShape) DefaultSeverity() string   { return "error" }
 func (r *RequestShape) NeedsProjectContext() bool { return false }
 
 func (r *RequestShape) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func (r *RequestShape) Check(file *model.UnifiedFileModel, _ *model.ProjectConte
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Align client request payload fields and types with the server contract.",
 			},

@@ -22,7 +22,8 @@ func (r *SharedTypeSync) DefaultSeverity() string   { return "error" }
 func (r *SharedTypeSync) NeedsProjectContext() bool { return false }
 
 func (r *SharedTypeSync) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func (r *SharedTypeSync) Check(file *model.UnifiedFileModel, _ *model.ProjectCon
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Consolidate shared types or enforce generation from a single source.",
 			},

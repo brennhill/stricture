@@ -29,7 +29,7 @@ func assertRuleContract(t *testing.T, rule model.Rule) {
 	file := &model.UnifiedFileModel{
 		Path:     "contracts/user.ts",
 		Language: "typescript",
-		Source:   []byte("// stricture:fail " + rule.ID() + "\nexport type User = {}\n"),
+		Source:   []byte("// stricture-trigger " + rule.ID() + "\nexport type User = {}\n"),
 	}
 
 	violations := rule.Check(file, nil, model.RuleConfig{})

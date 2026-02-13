@@ -36,3 +36,32 @@ Escalation threshold (the only time to ask user):
 - Missing/contradictory product requirement.
 - External dependency or credential that cannot be resolved locally.
 - Destructive or policy-sensitive action not already approved.
+
+## Overseer Agent
+
+Name: `overseer-agent`
+
+Purpose:
+- Keep issuing a "what's next" directive until the tool is complete.
+- If tests/checks fail, direct the next action to fix code quality and failing checks.
+- If tests/checks pass, require a deeper spec-vs-tests-vs-code quality audit and keep raising the bar.
+
+Operating rules:
+- Runtime budget defaults to 5 hours per overseer run.
+- Loop until completion or timeout, without asking the user for routine confirmations.
+- Prompt the user only for truly blocking questions that cannot be resolved locally.
+- Persist state so progress survives interruptions.
+
+Completion criteria:
+- `make ci` passes.
+- `./scripts/spec-quality-audit.sh` passes with zero deficiencies.
+
+What "done" means:
+- Tests pass, validation gates pass, and the audit reports no spec/tests/code quality gaps.
+- The final prompt still requests an independent high-bar review pass (top-1% quality objective).
+
+Execution entrypoint:
+- Run loop: `./scripts/overseer-agent.sh run`
+- One cycle: `./scripts/overseer-agent.sh once`
+- Status: `./scripts/overseer-agent.sh status`
+- Reset: `./scripts/overseer-agent.sh reset`

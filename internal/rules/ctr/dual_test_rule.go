@@ -20,7 +20,8 @@ func (r *DualTest) DefaultSeverity() string   { return "error" }
 func (r *DualTest) NeedsProjectContext() bool { return false }
 
 func (r *DualTest) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -36,7 +37,7 @@ func (r *DualTest) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, 
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Add mirrored contract scenario coverage on both client and server.",
 			},

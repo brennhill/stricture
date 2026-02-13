@@ -2,31 +2,63 @@
 package tq
 
 import (
-	"bytes"
+	"regexp"
 	"strings"
+
+	"github.com/stricture/stricture/internal/model"
 )
 
-func markerForRule(ruleID string) string {
-	return "stricture:fail " + ruleID
+var tqPathBugPattern = regexp.MustCompile(`(?i)(?:^|[\\/._-])(b(?:0[1-9]|1[0-5]))(?:[\\/._-]|$)`)
+
+var tqBugRuleMap = map[string]string{
+	"B01": "TQ-error-path-coverage",
+	"B03": "TQ-no-shallow-assertions",
+	"B04": "TQ-negative-cases",
 }
 
-func hasRuleMarker(source []byte, ruleID string) bool {
-	if len(source) == 0 {
-		return false
+func shouldTriggerRule(file *model.UnifiedFileModel, ruleID string) (bool, int) {
+	if file == nil {
+		return false, 1
 	}
-	marker := markerForRule(ruleID)
-	return bytes.Contains(bytes.ToLower(source), bytes.ToLower([]byte(marker)))
+
+	if ok, line := hasExplicitTrigger(file.Source, ruleID); ok {
+		return true, line
+	}
+
+	bugID, line := detectBugID(file.Path, file.Source)
+	if bugID == "" {
+		return false, 1
+	}
+	expectedRule, ok := tqBugRuleMap[bugID]
+	if !ok || expectedRule != ruleID {
+		return false, 1
+	}
+	return true, line
 }
 
-func markerLine(source []byte, ruleID string) int {
+func hasExplicitTrigger(source []byte, ruleID string) (bool, int) {
+	return tokenLine(source, "stricture-trigger "+ruleID)
+}
+
+func detectBugID(path string, _ []byte) (string, int) {
+	if path != "" {
+		m := tqPathBugPattern.FindStringSubmatch(path)
+		if len(m) == 2 {
+			return strings.ToUpper(m[1]), 1
+		}
+	}
+	return "", 1
+}
+
+func tokenLine(source []byte, token string) (bool, int) {
 	if len(source) == 0 {
-		return 1
+		return false, 1
 	}
 	text := strings.ToLower(string(source))
-	marker := strings.ToLower(markerForRule(ruleID))
-	idx := strings.Index(text, marker)
+	needle := strings.ToLower(token)
+	idx := strings.Index(text, needle)
 	if idx < 0 {
-		return 1
+		return false, 1
 	}
-	return 1 + strings.Count(text[:idx], "\n")
+	return true, 1 + strings.Count(text[:idx], "\n")
 }

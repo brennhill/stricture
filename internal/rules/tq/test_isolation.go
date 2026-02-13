@@ -22,7 +22,8 @@ func (r *TestIsolation) DefaultSeverity() string   { return "error" }
 func (r *TestIsolation) NeedsProjectContext() bool { return false }
 
 func (r *TestIsolation) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -38,7 +39,7 @@ func (r *TestIsolation) Check(file *model.UnifiedFileModel, _ *model.ProjectCont
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Reset global/shared state in t.Cleanup or avoid mutating it.",
 			},

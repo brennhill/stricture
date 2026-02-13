@@ -20,7 +20,8 @@ func (r *ErrorPathCoverage) DefaultSeverity() string   { return "error" }
 func (r *ErrorPathCoverage) NeedsProjectContext() bool { return false }
 
 func (r *ErrorPathCoverage) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -36,7 +37,7 @@ func (r *ErrorPathCoverage) Check(file *model.UnifiedFileModel, _ *model.Project
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Add a negative-path test that triggers and validates this error condition.",
 			},

@@ -20,7 +20,8 @@ func (r *TestNaming) DefaultSeverity() string   { return "error" }
 func (r *TestNaming) NeedsProjectContext() bool { return false }
 
 func (r *TestNaming) Check(file *model.UnifiedFileModel, _ *model.ProjectContext, config model.RuleConfig) []model.Violation {
-	if file == nil || !hasRuleMarker(file.Source, r.ID()) {
+	triggered, line := shouldTriggerRule(file, r.ID())
+	if !triggered {
 		return nil
 	}
 
@@ -36,7 +37,7 @@ func (r *TestNaming) Check(file *model.UnifiedFileModel, _ *model.ProjectContext
 			Severity:  severity,
 			Message:   message,
 			FilePath:  file.Path,
-			StartLine: markerLine(file.Source, r.ID()),
+			StartLine: line,
 			Context: &model.ViolationContext{
 				SuggestedFix: "Rename tests to describe observable behavior and expected outcome.",
 			},
