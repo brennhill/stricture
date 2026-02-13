@@ -76,3 +76,49 @@ func TestBaselineRejectsMalformedFile(t *testing.T) {
 		t.Fatalf("stderr should explain malformed baseline file")
 	}
 }
+
+func TestBaselineWithMaxViolationsStillReportsNewFindings(t *testing.T) {
+	tmp := t.TempDir()
+	aPath := filepath.Join(tmp, "a.ts")
+	bPath := filepath.Join(tmp, "b.ts")
+	if err := os.WriteFile(aPath, []byte("export const a = 1;\n"), 0o644); err != nil {
+		t.Fatalf("write a.ts: %v", err)
+	}
+	if err := os.WriteFile(bPath, []byte("export const b = 1;\n"), 0o644); err != nil {
+		t.Fatalf("write b.ts: %v", err)
+	}
+
+	baselinePath := filepath.Join(tmp, ".stricture-baseline.json")
+	_, stderr, code := runInDir(t, tmp, "--format", "json", "--rule", "CONV-file-header", "--baseline", baselinePath, ".")
+	if code != 0 {
+		t.Fatalf("baseline bootstrap failed: code=%d stderr=%q", code, stderr)
+	}
+
+	cPath := filepath.Join(tmp, "c.ts")
+	if err := os.WriteFile(cPath, []byte("export const c = 1;\n"), 0o644); err != nil {
+		t.Fatalf("write c.ts: %v", err)
+	}
+
+	stdout, stderr, code := runInDir(t, tmp, "--format", "json", "--rule", "CONV-file-header", "--baseline", baselinePath, "--max-violations", "1", ".")
+	if code != 1 {
+		t.Fatalf("expected new violation to be reported with exit 1, got code=%d stderr=%q stdout=%q", code, stderr, stdout)
+	}
+
+	var result struct {
+		Violations []struct {
+			FilePath string `json:"filePath"`
+		} `json:"violations"`
+		Summary struct {
+			TotalViolations float64 `json:"totalViolations"`
+		} `json:"summary"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &result); err != nil {
+		t.Fatalf("unmarshal JSON output: %v\noutput=%q", err, stdout)
+	}
+	if len(result.Violations) != 1 || int(result.Summary.TotalViolations) != 1 {
+		t.Fatalf("expected one new violation with max-violations=1, got len=%d total=%v", len(result.Violations), result.Summary.TotalViolations)
+	}
+	if filepath.Base(result.Violations[0].FilePath) != "c.ts" {
+		t.Fatalf("expected c.ts as new violation, got %q", result.Violations[0].FilePath)
+	}
+}

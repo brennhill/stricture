@@ -213,6 +213,13 @@ func runLint(args []string) {
 	if len(paths) == 0 {
 		paths = []string{"."}
 	}
+	baselineConfigured := strings.TrimSpace(*baselinePath) != ""
+	effectiveMaxViolations := *maxViolations
+	if baselineConfigured {
+		// Baseline filtering happens after rule evaluation; disabling early stop avoids
+		// missing non-baselined findings when initial matches are all suppressed.
+		effectiveMaxViolations = 0
+	}
 
 	filePaths, err := collectLintFilePaths(paths)
 	if err != nil {
@@ -232,7 +239,7 @@ func runLint(args []string) {
 	}
 
 	start := time.Now()
-	violations := runLintRules(files, selectedRules, ctx, *maxViolations)
+	violations := runLintRules(files, selectedRules, ctx, effectiveMaxViolations)
 	baselineOpts := baselineOptions{BootstrapIfMissing: !*diffMode}
 	baselineInfo, err := applyBaseline(strings.TrimSpace(*baselinePath), &violations, baselineOpts)
 	if err != nil {
@@ -277,7 +284,7 @@ func runLint(args []string) {
 			for _, file := range files {
 				ctx.Files[file.Path] = file
 			}
-			violations = runLintRules(files, selectedRules, ctx, *maxViolations)
+			violations = runLintRules(files, selectedRules, ctx, effectiveMaxViolations)
 			baselineInfo, err = applyBaseline(strings.TrimSpace(*baselinePath), &violations, baselineOpts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -295,6 +302,9 @@ func runLint(args []string) {
 		}
 		return violations[i].RuleID < violations[j].RuleID
 	})
+	if *maxViolations > 0 && len(violations) > *maxViolations {
+		violations = violations[:*maxViolations]
+	}
 
 	filesWithIssues := map[string]bool{}
 	errorCount := 0
