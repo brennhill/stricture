@@ -171,6 +171,9 @@ func runLint(args []string) {
 	extFilter := fs.String("ext", "", "Only lint files with this extension (example: .go or .ts)")
 	severityLevel := fs.String("severity", "", "Only report violations at this level or above (error, warn)")
 	quiet := fs.Bool("quiet", false, "Only show errors, not warnings")
+	forceColor := fs.Bool("color", false, "Force color output in text format")
+	forceNoColor := fs.Bool("no-color", false, "Disable color output in text format")
+	verbose := fs.Bool("verbose", false, "Show rule timing and debug info")
 	outputPath := fs.String("output", "", "Write report to file instead of stdout")
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
@@ -207,6 +210,10 @@ func runLint(args []string) {
 	}
 	if *maxViolations < 0 {
 		fmt.Fprintln(os.Stderr, "Error: --max-violations must be >= 0")
+		os.Exit(2)
+	}
+	if *forceColor && *forceNoColor {
+		fmt.Fprintln(os.Stderr, "Error: --color and --no-color are mutually exclusive")
 		os.Exit(2)
 	}
 	minSeverity := strings.ToLower(strings.TrimSpace(*severityLevel))
@@ -283,6 +290,7 @@ func runLint(args []string) {
 		os.Exit(1)
 	}
 	filePaths = filterFilePathsByExtensions(filePaths, extensionAllowlist)
+	verbosef(*verbose, "Verbose: collected %d candidate file(s)\n", len(filePaths))
 	if *changedOnly || *stagedOnly {
 		scoped, err := resolveGitScopedFileSet(*changedOnly, *stagedOnly)
 		if err != nil {
@@ -303,6 +311,7 @@ func runLint(args []string) {
 		}
 		filePaths = filtered
 	}
+	verbosef(*verbose, "Verbose: using %d file(s) after scope filters; rules=%d\n", len(filePaths), len(selectedRules))
 
 	files, err := buildUnifiedFiles(filePaths)
 	if err != nil {
@@ -416,8 +425,10 @@ func runLint(args []string) {
 		summary["diffAdded"] = len(baselineInfo.Added)
 		summary["diffResolved"] = len(baselineInfo.Resolved)
 	}
+	verbosef(*verbose, "Verbose: lint complete in %dms (violations=%d errors=%d warnings=%d)\n", elapsed, len(violations), errorCount, warnCount)
 
 	var report []byte
+	colorEnabled := shouldUseColor(*forceColor, *forceNoColor, strings.TrimSpace(*outputPath))
 	switch *format {
 	case "json", "sarif", "junit":
 		payload := map[string]interface{}{
@@ -478,7 +489,9 @@ func runLint(args []string) {
 			fmt.Fprintln(&out, "No violations found.")
 		} else {
 			for _, v := range violations {
-				fmt.Fprintf(&out, "%s:%d: %s %s: %s\n", v.FilePath, v.StartLine, strings.ToUpper(v.Severity), v.RuleID, v.Message)
+				severityLabel := strings.ToUpper(v.Severity)
+				severityLabel = colorizeSeverityLabel(v.Severity, severityLabel, colorEnabled)
+				fmt.Fprintf(&out, "%s:%d: %s %s: %s\n", v.FilePath, v.StartLine, severityLabel, v.RuleID, v.Message)
 			}
 		}
 		fmt.Fprintf(&out, "Summary: files=%d issues=%d violations=%d errors=%d warnings=%d elapsedMs=%d\n",
@@ -887,6 +900,48 @@ func writeFixBackups(ops []fix.Operation) error {
 		}
 	}
 	return nil
+}
+
+func verbosef(enabled bool, format string, args ...interface{}) {
+	if !enabled {
+		return
+	}
+	fmt.Fprintf(os.Stderr, format, args...)
+}
+
+func shouldUseColor(forceColor bool, forceNoColor bool, outputPath string) bool {
+	if forceNoColor {
+		return false
+	}
+	if forceColor {
+		return true
+	}
+	if strings.TrimSpace(outputPath) != "" {
+		return false
+	}
+	term := strings.ToLower(strings.TrimSpace(os.Getenv("TERM")))
+	if term == "" || term == "dumb" {
+		return false
+	}
+	info, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return info.Mode()&os.ModeCharDevice != 0
+}
+
+func colorizeSeverityLabel(rawSeverity string, label string, enabled bool) string {
+	if !enabled {
+		return label
+	}
+	switch strings.ToLower(strings.TrimSpace(rawSeverity)) {
+	case "error":
+		return "\x1b[31m" + label + "\x1b[0m"
+	case "warn", "warning":
+		return "\x1b[33m" + label + "\x1b[0m"
+	default:
+		return label
+	}
 }
 
 func parseExtensionFilter(raw string) (map[string]bool, error) {
