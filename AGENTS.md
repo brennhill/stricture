@@ -83,7 +83,10 @@ Purpose:
 Operating rules:
 - Regenerate artifacts from source definitions before validation.
 - Require lineage parsing and drift checks to pass.
+- Run fake API unit tests on every usecase-agent cycle.
 - Validate docker-compose configuration when Docker is available.
+- Run live docker-compose smoke checks when Docker daemon and cached base image are available.
+- Treat unavailable Docker runtime as non-blocking and continue with explicit `SKIP` output.
 - Avoid user interaction unless a non-recoverable local blocker occurs.
 
 Execution entrypoint:
