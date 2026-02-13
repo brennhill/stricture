@@ -143,6 +143,8 @@ func runLint(args []string) {
 	configPath := fs.String("config", ".stricture.yml", "Path to configuration file")
 	rule := fs.String("rule", "", "Run a single rule by ID")
 	category := fs.String("category", "", "Run all rules in a category")
+	severityLevel := fs.String("severity", "", "Only report violations at this level or above (error, warn)")
+	quiet := fs.Bool("quiet", false, "Only show errors, not warnings")
 	outputPath := fs.String("output", "", "Write report to file instead of stdout")
 	maxViolations := fs.Int("max-violations", 0, "Stop after N violations (0 = unlimited)")
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
@@ -180,6 +182,21 @@ func runLint(args []string) {
 	if *maxViolations < 0 {
 		fmt.Fprintln(os.Stderr, "Error: --max-violations must be >= 0")
 		os.Exit(2)
+	}
+	minSeverity := strings.ToLower(strings.TrimSpace(*severityLevel))
+	switch minSeverity {
+	case "", "warn", "error":
+		// Valid values.
+	default:
+		fmt.Fprintf(os.Stderr, "Error: invalid severity %q (valid: error, warn)\n", *severityLevel)
+		os.Exit(2)
+	}
+	if *quiet {
+		if minSeverity != "" && minSeverity != "error" {
+			fmt.Fprintln(os.Stderr, "Error: --quiet cannot be combined with --severity=warn")
+			os.Exit(2)
+		}
+		minSeverity = "error"
 	}
 
 	registry := buildRegistry()
@@ -272,6 +289,7 @@ func runLint(args []string) {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(2)
 	}
+	violations = filterViolationsBySeverity(violations, minSeverity)
 	elapsed := time.Since(start).Milliseconds()
 
 	fixOps := make([]fix.Operation, 0)
@@ -316,6 +334,7 @@ func runLint(args []string) {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				os.Exit(2)
 			}
+			violations = filterViolationsBySeverity(violations, minSeverity)
 		}
 	}
 
@@ -1173,6 +1192,33 @@ func runLintRules(files []*model.UnifiedFileModel, rules []model.Rule, ctx *mode
 		}
 	}
 	return violations
+}
+
+func filterViolationsBySeverity(violations []model.Violation, minSeverity string) []model.Violation {
+	threshold := strings.ToLower(strings.TrimSpace(minSeverity))
+	if threshold == "" {
+		return violations
+	}
+	minRank := severityRank(threshold)
+	filtered := make([]model.Violation, 0, len(violations))
+	for _, v := range violations {
+		if severityRank(v.Severity) >= minRank {
+			filtered = append(filtered, v)
+		}
+	}
+	return filtered
+}
+
+func severityRank(severity string) int {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "warn", "warning":
+		return 1
+	case "error":
+		return 2
+	default:
+		// Unknown severities are treated as errors to avoid accidental suppression.
+		return 2
+	}
 }
 
 func resolveConfigPath(configPath string) string {
