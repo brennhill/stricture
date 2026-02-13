@@ -69,8 +69,3 @@ rules:
 		_, _ = LoadFromBytes(data)
 	})
 }
-
-func LoadFromBytes(data []byte) (interface{}, error) {
-	_ = data
-	return nil, nil
-}

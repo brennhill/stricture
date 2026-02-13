@@ -101,6 +101,8 @@ External provider:
   - `stricture lineage-export --out tests/lineage/current.json .`
 - Diff artifacts:
   - `stricture lineage-diff --base tests/lineage/baseline.json --head tests/lineage/current.json --fail-on medium --mode block`
+- CI helper (uses baseline + head artifact generation):
+  - `LINEAGE_MODE=warn ./scripts/check-lineage-drift.sh`
 - Resolve emergency chain for bad data at a service:
   - `stricture lineage-escalate --service ServiceY --artifact tests/lineage/current.json --systems docs/config-examples/lineage-systems.yml`
 

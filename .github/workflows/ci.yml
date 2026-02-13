@@ -14,6 +14,9 @@ env:
   GO_VERSION: "1.22"
   GOLANGCI_LINT_VERSION: "v1.57"
   COVERAGE_THRESHOLD: 45
+  # Soak period: drift is reported but does not block CI until switched to "block".
+  # Target switch date: March 15, 2026.
+  LINEAGE_MODE: "warn"
 
 jobs:
   quality-gate:

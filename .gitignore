@@ -1,3 +1,6 @@
 bin/
 .stricture-cache/
 *.exe
+coverage.out
+phase1.out
+stricture
