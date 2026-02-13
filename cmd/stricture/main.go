@@ -146,6 +146,7 @@ func runLint(args []string) {
 	baselinePath := fs.String("baseline", "", "Path to baseline file (existing violations are suppressed; missing file bootstraps baseline)")
 	fixApply := fs.Bool("fix", false, "Apply auto-fixes for fixable violations")
 	fixDryRun := fs.Bool("fix-dry-run", false, "Show what --fix would change without modifying files")
+	fixBackup := fs.Bool("fix-backup", false, "When used with --fix, create .bak files before modifying sources")
 	_ = fs.Bool("changed", false, "Lint only changed files")
 	_ = fs.Bool("staged", false, "Lint only staged files")
 	_ = fs.Bool("no-cache", false, "Disable caching")
@@ -153,6 +154,10 @@ func runLint(args []string) {
 
 	if *fixApply && *fixDryRun {
 		fmt.Fprintln(os.Stderr, "Error: --fix and --fix-dry-run are mutually exclusive")
+		os.Exit(2)
+	}
+	if *fixBackup && !*fixApply {
+		fmt.Fprintln(os.Stderr, "Error: --fix-backup requires --fix")
 		os.Exit(2)
 	}
 
@@ -240,6 +245,12 @@ func runLint(args []string) {
 		fixOps = planned
 
 		if *fixApply && len(fixOps) > 0 {
+			if *fixBackup {
+				if err := writeFixBackups(fixOps); err != nil {
+					fmt.Fprintf(os.Stderr, "Error: create fix backups: %v\n", err)
+					os.Exit(1)
+				}
+			}
 			if err := fix.Apply(fixOps); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: apply fixes: %v\n", err)
 				os.Exit(1)
@@ -642,6 +653,43 @@ func printFixSummary(ops []fix.Operation, dryRun bool) {
 	for _, op := range ops {
 		fmt.Printf("  - [%s] %s\n", op.RuleID, op.Description)
 	}
+}
+
+func writeFixBackups(ops []fix.Operation) error {
+	paths := map[string]bool{}
+	for _, op := range ops {
+		switch op.Kind {
+		case "edit", "rename":
+			if strings.TrimSpace(op.Path) != "" {
+				paths[filepath.Clean(op.Path)] = true
+			}
+		}
+	}
+
+	ordered := make([]string, 0, len(paths))
+	for pathValue := range paths {
+		ordered = append(ordered, pathValue)
+	}
+	sort.Strings(ordered)
+
+	for _, pathValue := range ordered {
+		data, err := os.ReadFile(pathValue)
+		if err != nil {
+			return fmt.Errorf("read %s for backup: %w", pathValue, err)
+		}
+
+		backupPath := pathValue + ".bak"
+		if _, err := os.Stat(backupPath); err == nil {
+			return fmt.Errorf("backup already exists: %s", backupPath)
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("check backup %s: %w", backupPath, err)
+		}
+
+		if err := os.WriteFile(backupPath, data, 0o644); err != nil {
+			return fmt.Errorf("write backup %s: %w", backupPath, err)
+		}
+	}
+	return nil
 }
 
 func collectLintFilePaths(paths []string) ([]string, error) {
