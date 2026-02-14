@@ -1,18 +1,189 @@
 @import url("https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap");
 
-:root {
-  --bg: #f5f1e8;
-  --bg-alt: #fffaf3;
-  --ink: #172025;
-  --ink-soft: #5b6670;
-  --accent: #0b6e5f;
-  --accent-2: #e25a2c;
-  --danger: #c93c22;
-  --warn: #c98116;
-  --ok: #0f8c4f;
-  --card: rgba(255, 255, 255, 0.82);
-  --line: rgba(23, 32, 37, 0.14);
-  --shadow: 0 14px 36px rgba(0, 0, 0, 0.1);
+:root,
+:root[data-theme="cobalt"] {
+  --bg: #f4f7fb;
+  --bg-alt: #eaf0f7;
+  --bg-end: #dce6f2;
+  --bg-glow-1: rgba(29, 78, 216, 0.18);
+  --bg-glow-2: rgba(249, 115, 22, 0.15);
+  --ink: #0f172a;
+  --ink-soft: #475569;
+  --accent: #1d4ed8;
+  --accent-2: #f97316;
+  --danger: #dc2626;
+  --warn: #d97706;
+  --ok: #16a34a;
+  --card: rgba(255, 255, 255, 0.84);
+  --line: rgba(15, 23, 42, 0.14);
+  --shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+  --accent-shadow: rgba(29, 78, 216, 0.24);
+  --panel-glow: rgba(29, 78, 216, 0.16);
+  --panel-border: rgba(29, 78, 216, 0.36);
+  --icon-lineage: #1d4ed8;
+  --icon-lineage-bg: rgba(29, 78, 216, 0.12);
+  --icon-drift: #f97316;
+  --icon-drift-bg: rgba(249, 115, 22, 0.14);
+  --icon-overlay: #0f766e;
+  --icon-overlay-bg: rgba(15, 118, 110, 0.13);
+  --icon-version: #2563eb;
+  --icon-version-bg: rgba(37, 99, 235, 0.12);
+  --icon-policy: #b91c1c;
+  --icon-policy-bg: rgba(185, 28, 28, 0.12);
+  --icon-escalation: #a16207;
+  --icon-escalation-bg: rgba(161, 98, 7, 0.12);
+  --icon-invariants: #0369a1;
+  --icon-invariants-bg: rgba(3, 105, 161, 0.13);
+  --icon-reporting: #7c3aed;
+  --icon-reporting-bg: rgba(124, 58, 237, 0.12);
+}
+
+:root[data-theme="cyan"] {
+  --bg: #eef3f8;
+  --bg-alt: #e2e8f0;
+  --bg-end: #d3dde8;
+  --bg-glow-1: rgba(15, 118, 110, 0.18);
+  --bg-glow-2: rgba(6, 182, 212, 0.15);
+  --ink: #111827;
+  --ink-soft: #4b5563;
+  --accent: #0f766e;
+  --accent-2: #06b6d4;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --ok: #22c55e;
+  --card: rgba(255, 255, 255, 0.84);
+  --line: rgba(17, 24, 39, 0.14);
+  --shadow: 0 14px 36px rgba(17, 24, 39, 0.1);
+  --accent-shadow: rgba(15, 118, 110, 0.24);
+  --panel-glow: rgba(15, 118, 110, 0.15);
+  --panel-border: rgba(15, 118, 110, 0.34);
+  --icon-lineage: #0f766e;
+  --icon-lineage-bg: rgba(15, 118, 110, 0.12);
+  --icon-drift: #0284c7;
+  --icon-drift-bg: rgba(2, 132, 199, 0.13);
+  --icon-overlay: #1d4ed8;
+  --icon-overlay-bg: rgba(29, 78, 216, 0.12);
+  --icon-version: #059669;
+  --icon-version-bg: rgba(5, 150, 105, 0.12);
+  --icon-policy: #dc2626;
+  --icon-policy-bg: rgba(220, 38, 38, 0.12);
+  --icon-escalation: #d97706;
+  --icon-escalation-bg: rgba(217, 119, 6, 0.12);
+  --icon-invariants: #0369a1;
+  --icon-invariants-bg: rgba(3, 105, 161, 0.12);
+  --icon-reporting: #4338ca;
+  --icon-reporting-bg: rgba(67, 56, 202, 0.12);
+}
+
+:root[data-theme="navy"] {
+  --bg: #f5f7fa;
+  --bg-alt: #e5eaf2;
+  --bg-end: #d8e0ec;
+  --bg-glow-1: rgba(30, 58, 138, 0.18);
+  --bg-glow-2: rgba(225, 29, 72, 0.14);
+  --ink: #0b132b;
+  --ink-soft: #3a506b;
+  --accent: #1e3a8a;
+  --accent-2: #e11d48;
+  --danger: #b91c1c;
+  --warn: #ca8a04;
+  --ok: #16a34a;
+  --card: rgba(255, 255, 255, 0.86);
+  --line: rgba(11, 19, 43, 0.16);
+  --shadow: 0 14px 36px rgba(11, 19, 43, 0.11);
+  --accent-shadow: rgba(30, 58, 138, 0.24);
+  --panel-glow: rgba(30, 58, 138, 0.16);
+  --panel-border: rgba(30, 58, 138, 0.34);
+  --icon-lineage: #1e3a8a;
+  --icon-lineage-bg: rgba(30, 58, 138, 0.12);
+  --icon-drift: #e11d48;
+  --icon-drift-bg: rgba(225, 29, 72, 0.12);
+  --icon-overlay: #0f766e;
+  --icon-overlay-bg: rgba(15, 118, 110, 0.12);
+  --icon-version: #2563eb;
+  --icon-version-bg: rgba(37, 99, 235, 0.12);
+  --icon-policy: #be123c;
+  --icon-policy-bg: rgba(190, 18, 60, 0.12);
+  --icon-escalation: #a16207;
+  --icon-escalation-bg: rgba(161, 98, 7, 0.12);
+  --icon-invariants: #155e75;
+  --icon-invariants-bg: rgba(21, 94, 117, 0.12);
+  --icon-reporting: #7c3aed;
+  --icon-reporting-bg: rgba(124, 58, 237, 0.12);
+}
+
+:root[data-theme="charcoal"] {
+  --bg: #f7f5f2;
+  --bg-alt: #ece7e1;
+  --bg-end: #dfd7cd;
+  --bg-glow-1: rgba(55, 65, 81, 0.18);
+  --bg-glow-2: rgba(194, 65, 12, 0.15);
+  --ink: #1f2937;
+  --ink-soft: #4b5563;
+  --accent: #374151;
+  --accent-2: #c2410c;
+  --danger: #b91c1c;
+  --warn: #b45309;
+  --ok: #15803d;
+  --card: rgba(255, 255, 255, 0.84);
+  --line: rgba(31, 41, 55, 0.15);
+  --shadow: 0 14px 36px rgba(31, 41, 55, 0.1);
+  --accent-shadow: rgba(55, 65, 81, 0.24);
+  --panel-glow: rgba(55, 65, 81, 0.16);
+  --panel-border: rgba(55, 65, 81, 0.32);
+  --icon-lineage: #374151;
+  --icon-lineage-bg: rgba(55, 65, 81, 0.12);
+  --icon-drift: #c2410c;
+  --icon-drift-bg: rgba(194, 65, 12, 0.12);
+  --icon-overlay: #0f766e;
+  --icon-overlay-bg: rgba(15, 118, 110, 0.12);
+  --icon-version: #2563eb;
+  --icon-version-bg: rgba(37, 99, 235, 0.12);
+  --icon-policy: #b91c1c;
+  --icon-policy-bg: rgba(185, 28, 28, 0.12);
+  --icon-escalation: #92400e;
+  --icon-escalation-bg: rgba(146, 64, 14, 0.12);
+  --icon-invariants: #155e75;
+  --icon-invariants-bg: rgba(21, 94, 117, 0.12);
+  --icon-reporting: #6d28d9;
+  --icon-reporting-bg: rgba(109, 40, 217, 0.12);
+}
+
+:root[data-theme="midnight"] {
+  --bg: #eff2f7;
+  --bg-alt: #dfe6ef;
+  --bg-end: #d1dbe7;
+  --bg-glow-1: rgba(30, 41, 59, 0.18);
+  --bg-glow-2: rgba(132, 204, 22, 0.15);
+  --ink: #0f172a;
+  --ink-soft: #334155;
+  --accent: #1e293b;
+  --accent-2: #84cc16;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --ok: #22c55e;
+  --card: rgba(255, 255, 255, 0.85);
+  --line: rgba(15, 23, 42, 0.14);
+  --shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+  --accent-shadow: rgba(30, 41, 59, 0.24);
+  --panel-glow: rgba(30, 41, 59, 0.16);
+  --panel-border: rgba(30, 41, 59, 0.34);
+  --icon-lineage: #1e293b;
+  --icon-lineage-bg: rgba(30, 41, 59, 0.12);
+  --icon-drift: #84cc16;
+  --icon-drift-bg: rgba(132, 204, 22, 0.14);
+  --icon-overlay: #0369a1;
+  --icon-overlay-bg: rgba(3, 105, 161, 0.12);
+  --icon-version: #475569;
+  --icon-version-bg: rgba(71, 85, 105, 0.12);
+  --icon-policy: #dc2626;
+  --icon-policy-bg: rgba(220, 38, 38, 0.12);
+  --icon-escalation: #a16207;
+  --icon-escalation-bg: rgba(161, 98, 7, 0.12);
+  --icon-invariants: #0f766e;
+  --icon-invariants-bg: rgba(15, 118, 110, 0.12);
+  --icon-reporting: #4338ca;
+  --icon-reporting-bg: rgba(67, 56, 202, 0.12);
 }
 
 * {
@@ -25,9 +196,9 @@ body {
   font-family: "IBM Plex Mono", monospace;
   line-height: 1.5;
   background:
-    radial-gradient(circle at 8% 12%, rgba(11, 110, 95, 0.16) 0, transparent 28%),
-    radial-gradient(circle at 90% 8%, rgba(226, 90, 44, 0.15) 0, transparent 32%),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 50%, #f0e9df 100%);
+    radial-gradient(circle at 8% 12%, var(--bg-glow-1) 0, transparent 28%),
+    radial-gradient(circle at 90% 8%, var(--bg-glow-2) 0, transparent 32%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 50%, var(--bg-end) 100%);
   min-height: 100vh;
 }
 
@@ -130,6 +301,21 @@ main {
   font-size: clamp(1.8rem, 4vw, 3.2rem);
 }
 
+.hero-rotator {
+  min-height: 2.45em;
+  max-width: 24ch;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.hero-rotator.hero-rotating-out {
+  opacity: 0.24;
+  transform: translateY(4px);
+}
+
+.hero-rotate-text {
+  display: inline-block;
+}
+
 .lead {
   color: var(--ink-soft);
   max-width: 62ch;
@@ -160,7 +346,7 @@ main {
 .button-primary {
   background: var(--accent);
   color: #f4fff7;
-  box-shadow: 0 8px 18px rgba(11, 110, 95, 0.24);
+  box-shadow: 0 8px 18px var(--accent-shadow);
 }
 
 .button-secondary {
@@ -176,6 +362,24 @@ main {
   gap: 0.8rem;
 }
 
+.feature-stack {
+  margin-top: 1.2rem;
+}
+
+.feature-intro {
+  padding: 1.1rem;
+  border-left: 8px solid var(--accent);
+}
+
+.feature-intro h2 {
+  margin-top: 0.48rem;
+  font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+}
+
+.feature-intro .lead {
+  margin: 0.6rem 0 0;
+}
+
 .panel,
 .workflow,
 .cta,
@@ -189,6 +393,103 @@ main {
 
 .panel {
   padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.panel::after {
+  content: "";
+  position: absolute;
+  top: -42%;
+  right: -18%;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--panel-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.panel:hover {
+  transform: translateY(-2px);
+  border-color: var(--panel-border);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.12);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.48rem;
+}
+
+.panel h2 {
+  font-size: 0.92rem;
+}
+
+.panel-icon {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--line);
+  display: inline-grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+  color: var(--accent);
+}
+
+.panel-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.panel-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-lineage {
+  color: var(--icon-lineage);
+  background: var(--icon-lineage-bg);
+}
+
+.icon-drift {
+  color: var(--icon-drift);
+  background: var(--icon-drift-bg);
+}
+
+.icon-overlay {
+  color: var(--icon-overlay);
+  background: var(--icon-overlay-bg);
+}
+
+.icon-version {
+  color: var(--icon-version);
+  background: var(--icon-version-bg);
+}
+
+.icon-policy {
+  color: var(--icon-policy);
+  background: var(--icon-policy-bg);
+}
+
+.icon-escalation {
+  color: var(--icon-escalation);
+  background: var(--icon-escalation-bg);
+}
+
+.icon-invariants {
+  color: var(--icon-invariants);
+  background: var(--icon-invariants-bg);
+}
+
+.icon-reporting {
+  color: var(--icon-reporting);
+  background: var(--icon-reporting-bg);
 }
 
 .panel p {
@@ -228,6 +529,31 @@ main {
 .site-footer a {
   text-decoration-thickness: 0.08em;
   text-underline-offset: 0.12em;
+}
+
+.theme-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.theme-switcher label {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.theme-switcher select {
+  min-width: 184px;
+  padding: 0.38rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.74rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
 }
 
 .demo-shell {
@@ -1041,5 +1367,11 @@ select {
   .site-footer {
     display: grid;
     gap: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rotator {
+    transition: none;
   }
 }

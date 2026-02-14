@@ -2,15 +2,26 @@
 import MainLayout from "../layouts/MainLayout.astro";
 
 export const prerender = true;
+
+const heroHeadlines = [
+  "Detect API drift before it becomes an incident.",
+  "Catch schema mismatches before on-call gets paged.",
+  "Stop architecture breaks before they cross service boundaries.",
+  "Keep AI-generated changes inside enforceable guardrails.",
+  "Prevent one repo change from breaking ten systems.",
+  "Ship faster without losing contract integrity."
+];
 ---
 
 <MainLayout title="Stricture | Lineage-Aware API Linting">
   <section class="hero">
     <p class="kicker">Stricture</p>
-    <h1>Detect API drift before it becomes an incident.</h1>
+    <h1 class="hero-rotator" data-headlines={heroHeadlines.join("||")}>
+      <span class="hero-rotate-text" aria-live="polite">{heroHeadlines[0]}</span>
+    </h1>
     <p class="lead">
-      Stricture maps field lineage, validates source annotations, and blocks risky
-      deploys with explicit escalation paths.
+      Stricture maps field lineage, enforces architecture invariants, overlays existing standards,
+      and blocks risky deploys with explicit ownership and escalation evidence.
     </p>
     <div class="hero-actions">
       <a class="button button-primary" href="/demo">Open Interactive Demo</a>
@@ -18,33 +29,127 @@ export const prerender = true;
     </div>
   </section>
 
-  <section id="features" class="panel-grid">
-    <article class="panel">
-      <h2>Field-Level Lineage</h2>
-      <p>Trace each output field to one or multiple source systems with enrichment notes.</p>
-    </article>
-    <article class="panel">
-      <h2>Drift Detection</h2>
-      <p>Catch schema, version, enum, and provider drift in CI or live validation runs.</p>
-    </article>
-    <article class="panel">
-      <h2>Warn, Block, Override</h2>
-      <p>Move from warning mode to strict release blocks with time-bounded override controls.</p>
-    </article>
-    <article class="panel">
-      <h2>Escalation Chains</h2>
-      <p>When data quality fails, Stricture tells responders who to call in upstream order.</p>
-    </article>
-    <article class="panel">
-      <h2>Architecture Invariants</h2>
-      <p>Encode non-negotiable system rules and enforce them in CI as warn/block release gates.</p>
-    </article>
+  <section id="features" class="feature-stack">
+    <header class="feature-intro card">
+      <p class="kicker">Core Capabilities</p>
+      <h2>Critical capabilities that protect multi-system delivery.</h2>
+      <p class="lead">
+        These are the features that keep high-velocity, multi-repo delivery safe when contracts and dependencies are changing constantly.
+      </p>
+    </header>
+
+    <div class="panel-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-lineage" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M5 6h4v4H5zM15 4h4v4h-4zM15 14h4v4h-4zM9 8h6M12 8v6M9 16h6" />
+            </svg>
+          </span>
+          <h2>Field-Level Lineage</h2>
+        </div>
+        <p>Trace each output field to one or multiple source systems with enrichment notes.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-drift" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 6h16M4 12h10M4 18h6M16 11l3 3-3 3M14 14h8" />
+            </svg>
+          </span>
+          <h2>Multi-Repo Drift Detection</h2>
+        </div>
+        <p>Catch schema, version, enum, and provider drift across repositories before deploy.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-overlay" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M12 3 4 7l8 4 8-4-8-4Zm-8 8 8 4 8-4M4 15l8 4 8-4" />
+            </svg>
+          </span>
+          <h2>Standards Overlays</h2>
+        </div>
+        <p>Reuse one annotation set across OpenAPI, OpenTelemetry, OpenLineage, and AsyncAPI profiles.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-version" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M12 6v6l4 2M12 3a9 9 0 1 1-9 9M17 4h4v4" />
+            </svg>
+          </span>
+          <h2>Source Version + As-Of Checks</h2>
+        </div>
+        <p>Track internal and external source-system versions and freshness dates to prevent silent breakage.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-policy" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M12 3 5 6v6c0 5 3.5 8 7 9 3.5-1 7-4 7-9V6l-7-3Zm0 6v5M12 17h.01" />
+            </svg>
+          </span>
+          <h2>Warn, Block, Override</h2>
+        </div>
+        <p>Move from warning mode to strict release blocks with time-bounded override controls.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-escalation" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 6h6v4H4zM14 6h6v4h-6zM9 16h6v4H9zM10 8h4M12 10v6" />
+            </svg>
+          </span>
+          <h2>Escalation Chains</h2>
+        </div>
+        <p>When data quality fails, Stricture tells responders who to call in upstream order.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-invariants" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M6 7h12M6 12h12M6 17h8M16 15l2 2 4-4" />
+            </svg>
+          </span>
+          <h2>Architecture Invariants</h2>
+        </div>
+        <p>Encode non-negotiable system rules and enforce them in CI as warn/block release gates.</p>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span class="panel-icon icon-reporting" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M6 3h9l3 3v15H6zM15 3v3h3M9 12h6M9 16h6M9 8h3" />
+            </svg>
+          </span>
+          <h2>Machine-Readable Outputs</h2>
+        </div>
+        <p>Export results for CI and governance workflows (including SARIF and JUnit style reporting).</p>
+      </article>
+    </div>
   </section>
 
   <section id="workflow" class="workflow">
     <h2>How It Works</h2>
     <ol>
       <li>Ingest service topology and field annotations from source repos and APIs.</li>
+      <li>
+        Work seamlessly with
+        <a href="/why-not/opentelemetry"> OpenTelemetry</a>,
+        <a href="/why-not/openapi"> OpenAPI</a>,
+        <a href="/why-not/openlineage"> OpenLineage</a>,
+        <a href="/why-not/asyncapi"> AsyncAPI</a>,
+        <a href="/why-not/buf-protobuf"> Buf/Protobuf</a>, and
+        <a href="/why-not/spectral"> Spectral</a> via overlays, so teams avoid redundant metadata work.
+      </li>
       <li>Export lineage artifacts and compare against a baseline release snapshot.</li>
       <li>Classify drift by severity and enforce policy in warn or block mode.</li>
       <li>Attach ownership and escalation routes directly to affected fields.</li>
@@ -63,4 +168,35 @@ export const prerender = true;
       <a class="button button-secondary" href="/architecture-invariants">Read Invariants Guide</a>
     </div>
   </section>
+
+  <script type="module">
+    const hero = document.querySelector(".hero-rotator");
+    if (hero) {
+      const text = hero.querySelector(".hero-rotate-text");
+      const headlines = (hero.getAttribute("data-headlines") || "")
+        .split("||")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (text && headlines.length > 1) {
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const intervalMs = reduceMotion ? 7000 : 4600;
+        let idx = 0;
+
+        window.setInterval(() => {
+          idx = (idx + 1) % headlines.length;
+          if (reduceMotion) {
+            text.textContent = headlines[idx];
+            return;
+          }
+
+          hero.classList.add("hero-rotating-out");
+          window.setTimeout(() => {
+            text.textContent = headlines[idx];
+            hero.classList.remove("hero-rotating-out");
+          }, 180);
+        }, intervalMs);
+      }
+    }
+  </script>
 </MainLayout>
