@@ -39,7 +39,7 @@ const sourceKeys = [
   { key: "contract_test_id", required: "No", defaultValue: "`ci://contracts/<source_system_slug>/<field_id>`", purpose: "Reference to contract test coverage.", mode: "defaulted" },
   { key: "data_classification", required: "No", defaultValue: "`internal`", purpose: "Data sensitivity classification.", mode: "recommended" },
   { key: "escalation", required: "No", defaultValue: "`slack:#<source_system_slug>-oncall`", purpose: "Escalation channel for incidents.", mode: "defaulted" },
-  { key: "field", required: "Yes*", defaultValue: "Derived from `field_id` when omitted", purpose: "Dot path emitted by the API contract.", mode: "manual-required" },
+  { key: "field", required: "Yes* (helper or manual)", defaultValue: "Derived from code/schema path; fallback from `field_id`", purpose: "Dot path emitted by the API contract.", mode: "autogen" },
   { key: "field_id", required: "Yes*", defaultValue: "Derived from `field`; helper can auto-generate", purpose: "Stable field identity slug.", mode: "autogen" },
   { key: "flow", required: "No", defaultValue: "`from @<source_system> mapped @self`", purpose: "Human-readable flow summary.", mode: "defaulted" },
   { key: "introduced_at", required: "No", defaultValue: "`1970-01-01`", purpose: "First-known introduction date.", mode: "autogen" },
@@ -142,7 +142,7 @@ const modeMeta = {
   <section class="card">
     <h2>Field annotation keys (A-Z)</h2>
     <p class="muted">
-      * `field` or `field_id` must be present. Source comments are minimal-authoring; normalized artifacts always emit explicit canonical keys.
+      * `field` or `field_id` must be present. In practice, helper/server workflows should auto-generate both whenever resolvable from code/schema context.
     </p>
     <div class="compare-table-wrap">
       <table class="compare-table">

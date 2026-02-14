@@ -661,13 +661,15 @@ function normalizePositions(positions, width, height) {
 
   const spanX = Math.max(maxX - minX, 1);
   const spanY = Math.max(maxY - minY, 1);
-  const scale = Math.min((width - padding * 2) / spanX, (height - padding * 2) / spanY, 1);
+  // Scale each axis independently so the graph uses the full draw area.
+  const scaleX = Math.max((width - padding * 2) / spanX, 1);
+  const scaleY = Math.max((height - padding * 2) / spanY, 1);
 
   const normalized = new Map();
   positions.forEach((pos, key) => {
     normalized.set(key, {
-      x: (pos.x - minX) * scale + padding,
-      y: (pos.y - minY) * scale + padding,
+      x: (pos.x - minX) * scaleX + padding,
+      y: (pos.y - minY) * scaleY + padding,
     });
   });
 
