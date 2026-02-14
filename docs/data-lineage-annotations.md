@@ -11,6 +11,9 @@ output field back to all source systems and contracts.
 For standards compatibility and reuse policy (OpenAPI/AsyncAPI/OpenLineage/OTel),
 see `OVERLAY.md`.
 
+For build/CI automation and version-history workflow design, see
+`docs/LINEAGE-AUTOMATION-SPEC.md`.
+
 ## Goals
 
 - Detect breaking drift across services before deploy.
@@ -84,6 +87,22 @@ If both canonical and synonym are present with different values, parsing fails.
 
 - `renamed_from`: previous `field_id` when identity is intentionally migrated.
 - `sunset_at`: `YYYY-MM-DD` deprecation/removal target date.
+
+## Automation Guidance
+
+In compact authoring mode, only field identity/path, source system/version, and
+sources should be hand-authored by default.
+
+Commonly auto-filled in normalized artifacts:
+
+- owner/escalation (from system registry)
+- contract_test_id (from org naming template)
+- merge/transform/confidence defaults
+- flow/note defaults
+- introduced_at fallback
+
+Keep `data_classification`, `break_policy`, and lifecycle migration fields under
+explicit human review for high-risk domains.
 
 ## Source Ref Grammar
 

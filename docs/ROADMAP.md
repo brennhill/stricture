@@ -19,6 +19,7 @@ Goal: reduce manual annotation payload while preserving normalized artifact qual
 1. Define authoring-minimal keys and deterministic defaults.
 2. Keep normalized artifact explicit for stable diffs/exports.
 3. Provide compact + expanded annotation views in UI/docs.
+4. Introduce `.stricture-history/` for computed versions and delta summaries.
 
 Status: In progress.
 

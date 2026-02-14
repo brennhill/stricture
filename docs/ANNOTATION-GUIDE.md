@@ -2,6 +2,9 @@
 
 Clear annotations make Stricture findings readable and actionable. Use this checklist when tagging fields.
 
+For CI/build automation and `.stricture-history` design, see
+`docs/LINEAGE-AUTOMATION-SPEC.md`.
+
 ## Must-have fields (compact mode)
 - **Field identity/path**: `field` (or explicit `field_id` if you need stable rename handling).
 - **Producer**: `source_system`.
