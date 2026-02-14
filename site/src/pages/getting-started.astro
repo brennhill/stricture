@@ -1,0 +1,53 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Getting Started | Stricture" description="Learn how to set up Stricture, author clear annotations, and tune policy/override settings for safe releases.">
+  <section class="card">
+    <p class="kicker">Start Here</p>
+    <h1>Getting Started with Stricture</h1>
+    <p class="lead">Three steps: annotate, set policy, run Stricture. Clear annotations make findings readable and actionable.</p>
+  </section>
+
+  <section class="card">
+    <h2>1) Annotate fields well</h2>
+    <ul>
+      <li><strong>Owner & escalation</strong>: team slug + on-call channel.</li>
+      <li><strong>Contract ref</strong>: git ref or URL to API/event schema.</li>
+      <li><strong>Type & limits</strong>: exact type, units, ranges, enum values, nullable?, max sizes.</li>
+      <li><strong>Versioning</strong>: <code>source_version</code> and <code>min_supported_source_version</code>.</li>
+      <li><strong>Freshness</strong>: as-of + max staleness for external data.</li>
+      <li><strong>Examples</strong>: realistic payloads incl. edge values.</li>
+    </ul>
+    <p>See the full <a href="/annotation-quality">Annotation Quality Guide</a> for good/bad examples and a template.</p>
+  </section>
+
+  <section class="card">
+    <h2>2) Set policy and overrides</h2>
+    <ul>
+      <li><strong>Policy mode</strong>: <code>warn</code> (surface) vs <code>block</code> (stop deploy).</li>
+      <li><strong>Fail-on threshold</strong>: high/medium/low; use <code>high</code> to block only severe drift.</li>
+      <li><strong>Overrides</strong>: time-bound, ticketed, field + change-type scoped; use <code>*</code> only for emergency waivers.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>3) Run Stricture</h2>
+    <ol>
+      <li>Generate the demo pack (or your own artifacts): <code>npm run demo-pack</code>.</li>
+      <li>Build: <code>npm run build</code>.</li>
+      <li>CI/CD: push to <code>main</code>; workflow runs pack+build and optionally deploys.</li>
+      <li>CLI: run <code>stricture diff</code> or <code>stricture check</code> in your repo; wire into CI with your policy settings.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Designing clear findings</h2>
+    <p>Findings inherit your annotation clarity. Include:</p>
+    <ul>
+      <li>Impact: who/what breaks downstream if this changes.</li>
+      <li>Upstream/downstream chain: source → consumers.</li>
+      <li>Next action: code fix, contract bump, override with expiry.</li>
+    </ul>
+  </section>
+</MainLayout>
