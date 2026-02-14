@@ -1,0 +1,240 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+const objectRows = [
+  {
+    object: "Field lineage annotation",
+    where: "Code comments near emit/transform logic",
+    marker: "stricture-source",
+    why: "Defines per-field provenance, ownership, and drift semantics."
+  },
+  {
+    object: "Source edge entry",
+    where: "Inside `sources=` on a field annotation",
+    marker: "kind:target#path@scope?contract_ref=...",
+    why: "Defines the upstream contract edge used for blast-radius tracing."
+  },
+  {
+    object: "Service registry record",
+    where: "`lineage-systems.yml` (or equivalent registry file)",
+    marker: "systems[] objects",
+    why: "Defines service-level ownership and escalation defaults."
+  },
+  {
+    object: "Temporary lineage override",
+    where: "Code comments during migration windows",
+    marker: "stricture-lineage-override",
+    why: "Allows time-bounded exceptions with explicit reason and expiry."
+  }
+];
+
+const sourceKeys = [
+  ["annotation_schema_version", "No", "`1`", "Schema version for normalized artifacts."],
+  ["break_policy", "No", "`strict`", "Compatibility policy used for drift severity."],
+  ["confidence", "No", "`declared`", "How trusted/inferred the mapping is."],
+  ["contract_test_id", "No", "`ci://contracts/<source_system_slug>/<field_id>`", "Reference to contract test coverage."],
+  ["data_classification", "No", "`internal`", "Data sensitivity classification."],
+  ["escalation", "No", "`slack:#<source_system_slug>-oncall`", "Escalation channel for incidents."],
+  ["field", "Yes*", "Derived from `field_id` when omitted", "Dot path emitted by the API contract."],
+  ["field_id", "Yes*", "Derived from `field`", "Stable field identity slug."],
+  ["flow", "No", "`from @<source_system> mapped @self`", "Human-readable flow summary."],
+  ["introduced_at", "No", "`1970-01-01`", "First-known introduction date."],
+  ["merge_strategy", "No", "`single_source` or `priority`", "Merge policy for multi-source inputs."],
+  ["min_supported_source_version", "No", "`source_version`", "Minimum upstream version considered compatible."],
+  ["note", "No", "`defaulted_by=stricture`", "Freeform implementation note."],
+  ["owner", "No", "`team.<source_system_slug>`", "Owning team for this field contract."],
+  ["renamed_from", "No", "None", "Previous field identity for intentional migrations."],
+  ["source_system", "Yes", "None", "Primary producing system/service."],
+  ["source_version", "Yes", "None", "Producer version for this mapping."],
+  ["sources", "Yes", "None", "One or more upstream source edge refs."],
+  ["sunset_at", "No", "None", "Optional deprecation/removal target date."],
+  ["transform_type", "No", "`passthrough`", "Transform operation type for this field."]
+];
+
+const sourceQueryKeys = [
+  ["as_of", "Conditional", "Required for `@external` scope", "Snapshot date (`YYYY-MM-DD`) for external providers."],
+  ["contract_ref", "Yes", "None", "Canonical contract/spec pointer for the source edge."],
+  ["provider_id", "Conditional", "Required for `@external`; forbidden otherwise", "External provider identifier."],
+  ["upstream_system", "No", "None", "Optional explicit upstream service/system id."]
+];
+
+const overrideKeys = [
+  ["change_type", "Yes", "None", "Drift type (or `*`) covered by the override."],
+  ["expires", "Yes", "None", "UTC date when override stops applying."],
+  ["field_id", "Yes", "None", "Field identity receiving the temporary exception."],
+  ["reason", "Yes", "None", "Human-readable justification for the override."],
+  ["ticket", "No", "None", "Optional issue/change ticket id."]
+];
+
+const serviceRegistryKeys = [
+  ["id", "Yes", "None", "Stable system identifier used in lineage edges."],
+  ["name", "Yes", "None", "Human-readable system name."],
+  ["owner_team", "Yes", "None", "Owning team slug."],
+  ["escalation", "Yes", "None", "Ordered escalation contacts for this system."],
+  ["escalation[].channel", "Yes", "None", "How responders are reached."],
+  ["escalation[].name", "Yes", "None", "Contact display name."],
+  ["escalation[].role", "Yes", "None", "Escalation role (primary/secondary/vendor/etc)."]
+];
+---
+
+<MainLayout title="Annotations | Stricture" description="Clear guide to what Stricture annotates, why it matters, and an alphabetical annotation reference with required/default behavior.">
+  <section class="card">
+    <p class="kicker">Docs</p>
+    <h1>Stricture annotation guide and reference</h1>
+    <p class="lead">
+      This page answers three questions: what objects you annotate, why each one exists, and exactly which keys are required vs defaulted.
+    </p>
+    <p class="muted">
+      Scope: lineage authoring (`stricture-source`, source edges, service registry, and temporary lineage overrides).
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>What gets annotated (and why)</h2>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Object</th>
+            <th>Where</th>
+            <th>Marker / Format</th>
+            <th>Why it exists</th>
+          </tr>
+        </thead>
+        <tbody>
+          {objectRows.map((row) => (
+            <tr>
+              <td>{row.object}</td>
+              <td>{row.where}</td>
+              <td><code>{row.marker}</code></td>
+              <td>{row.why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Field annotation keys (A-Z)</h2>
+    <p class="muted">
+      * `field` or `field_id` must be present. Source comments are minimal-authoring; normalized artifacts always emit explicit canonical keys.
+    </p>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sourceKeys.map(([key, required, defaultValue, purpose]) => (
+            <tr>
+              <td><code>{key}</code></td>
+              <td>{required}</td>
+              <td><code>{defaultValue}</code></td>
+              <td>{purpose}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Source edge query keys (A-Z)</h2>
+    <p class="muted">
+      Source grammar: <code>kind:target#path[@scope[!as_of]][?contract_ref=&lt;ref&gt;&amp;provider_id=&lt;id&gt;&amp;upstream_system=&lt;id&gt;]</code>
+    </p>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Query key</th>
+            <th>Required</th>
+            <th>Default / Rule</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sourceQueryKeys.map(([key, required, defaultValue, purpose]) => (
+            <tr>
+              <td><code>{key}</code></td>
+              <td>{required}</td>
+              <td>{defaultValue}</td>
+              <td>{purpose}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Temporary override keys (A-Z)</h2>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {overrideKeys.map(([key, required, defaultValue, purpose]) => (
+            <tr>
+              <td><code>{key}</code></td>
+              <td>{required}</td>
+              <td>{defaultValue}</td>
+              <td>{purpose}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Service registry keys (A-Z)</h2>
+    <p class="muted">
+      Service-level ownership and escalation are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
+    </p>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {serviceRegistryKeys.map(([key, required, defaultValue, purpose]) => (
+            <tr>
+              <td><code>{key}</code></td>
+              <td>{required}</td>
+              <td>{defaultValue}</td>
+              <td>{purpose}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Related docs</h2>
+    <ul>
+      <li><a href="/getting-started">Getting Started</a></li>
+      <li><a href="/annotation-quality">Annotation Quality Guide</a></li>
+      <li><a href="https://github.com/brennhill/stricture/blob/main/docs/data-lineage-annotations.md" target="_blank" rel="noopener noreferrer">Canonical annotation spec (GitHub)</a></li>
+      <li><a href="https://github.com/brennhill/stricture/blob/main/docs/LINEAGE-AUTOMATION-SPEC.md" target="_blank" rel="noopener noreferrer">Automation/defaults spec (GitHub)</a></li>
+    </ul>
+  </section>
+</MainLayout>
