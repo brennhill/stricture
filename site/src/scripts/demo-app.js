@@ -12,6 +12,7 @@ const selectors = {
   escalation: document.querySelector("#escalation"),
   runSummaryText: document.querySelector("#run-summary-text"),
   controlStats: document.querySelector("#control-stats"),
+  scenarioNarrative: document.querySelector("#scenario-narrative"),
   presetScenario: document.querySelector("#preset-scenario"),
   mutationType: document.querySelector("#mutation-type"),
   mutationService: document.querySelector("#mutation-service"),
@@ -99,9 +100,23 @@ function buildPresets(snapshot) {
     );
     if (presets.length) {
       selectors.presetScenario.value = presets[0].id;
+      updateNarrative(presets[0].id);
     }
   }
   return presets;
+}
+
+function updateNarrative(presetId) {
+  if (!selectors.scenarioNarrative) {
+    return;
+  }
+  const narratives = {
+    enum_changed: "Payments enum drift: PSP added a new status value without bumping contract. Downstream billing and notifications may misclassify payments until code updates ship.",
+    type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
+    external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
+    annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
+  };
+  selectors.scenarioNarrative.textContent = narratives[presetId] || "Choose a preset to see the drift story and impact.";
 }
 
 function renderGate(summary) {
@@ -352,6 +367,10 @@ function bindEvents() {
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
   selectors.loadEscalation?.addEventListener("click", () => loadEscalation().catch(showError));
   selectors.applyScenario?.addEventListener("click", () => applyPreset().catch(showError));
+  selectors.presetScenario?.addEventListener("change", (event) => {
+    const target = event.target;
+    updateNarrative(target?.value);
+  });
   selectors.mutationType?.addEventListener("change", () => {
     if (state.snapshot) {
       refreshMutationFieldOptions(state.snapshot);
@@ -401,6 +420,7 @@ async function applyPreset() {
   if (selectors.mutationService && selectors.mutationService.options.length) {
     selectors.mutationService.value = selectors.mutationService.options[0].value;
   }
+  updateNarrative(id);
   await mutate();
   await run();
 }
