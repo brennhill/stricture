@@ -108,6 +108,20 @@ Even with automation, these should usually require explicit review in PR:
 5. Enforce policy gates.
 6. Promote baseline on successful protected branch builds.
 
+## `stricture-server` Integration (Roadmap)
+
+For multi-service companies, local `.stricture-history` outputs should also be
+publishable to a central `stricture-server`:
+
+1. CI uploads `current.json`, `diff.json`, and `summary.md` per service/repo.
+2. Server stores versioned history and computes cross-service blast radius.
+3. Server evaluates org/team policy packs and emits alert/webhook events.
+4. Dashboards show fleet health, hot paths, recurring drift classes, and owner
+   accountability over time.
+
+This keeps repo-local workflows simple while enabling organization-wide
+monitoring and flagging.
+
 ## UX Output Contract for Summaries
 
 Each finding summary should include:

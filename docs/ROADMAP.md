@@ -60,9 +60,31 @@ Planned phases:
 2. **v1 (interactive):** filters, step replay, zoom-to-fit, path focus.
 3. **v2 (ops):** history overlays and regression comparisons across runs.
 
+### Track D — `stricture-server`
+
+Goal: centralize lineage/drift signals across many company services and provide
+continuous monitoring + flagging.
+
+Scope:
+
+1. Collect artifacts from many repositories/services (push + scheduled pull).
+2. Build org-wide dependency graph and service ownership map.
+3. Run continuous drift/invariant evaluation and alert routing.
+4. Provide tenant/project/service dashboards and incident timelines.
+5. Expose APIs/webhooks for CI, chatops, ticketing, and SIEM pipelines.
+6. Support policy packs at org/team/service levels.
+
+Planned phases:
+
+1. **v0 (ingest):** receive artifacts, store history, org-level diff API.
+2. **v1 (monitor):** rules engine scheduling + alerting + escalation routing.
+3. **v2 (platform):** multi-tenant RBAC, SSO, audit trails, policy governance.
+4. **v3 (assist):** auto-remediation suggestions and AI copilot workflows.
+
 ## Sequencing
 
 1. Finish defaults implementation and compact UX.
 2. Deliver `stricture-helper` v0.
 3. Deliver `stricture-visualizer` v0.
-4. Integrate both into CI templates and docs quickstart.
+4. Deliver `stricture-server` v0 ingest + org diff API.
+5. Integrate helper/visualizer/server into CI templates and docs quickstart.
