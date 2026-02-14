@@ -590,6 +590,9 @@ async function applyPreset() {
   if (!fieldId) {
     throw new Error("No fields available for this preset.");
   }
+  const candidateSource = (state.snapshot.edges || []).find((edge) => edge.fieldId === fieldId)?.from;
+  updateNarrative(id);
+  await bootstrap(); // reset session so findings don’t pile up
   if (selectors.mutationType) {
     selectors.mutationType.value = id;
   }
@@ -598,15 +601,12 @@ async function applyPreset() {
     selectors.mutationField.value = fieldId;
   }
   if (selectors.mutationService && selectors.mutationService.options.length) {
-    const candidateSource = (state.snapshot.edges || []).find((edge) => edge.fieldId === fieldId)?.from;
     if (candidateSource && [...selectors.mutationService.options].some((option) => option.value === candidateSource)) {
       selectors.mutationService.value = candidateSource;
     } else {
       selectors.mutationService.value = selectors.mutationService.options[0].value;
     }
   }
-  updateNarrative(id);
-  await bootstrap(); // reset session so findings don’t pile up
   await mutate();
   await run();
 }

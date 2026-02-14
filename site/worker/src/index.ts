@@ -357,11 +357,39 @@ function computeEdgeStatus(edges: EdgeLink[], findings: Finding[]): EdgeLink[] {
   }));
 }
 
+function mutationIDFromFindingID(findingID: string): string {
+  const sep = findingID.indexOf(":");
+  if (sep <= 0) {
+    return "";
+  }
+  return findingID.slice(0, sep);
+}
+
+function findingHasDownstreamImpact(snapshot: DemoSnapshot, finding: Finding): boolean {
+  const mutationID = mutationIDFromFindingID(finding.id);
+  const mutation = mutationID ? snapshot.mutations.find((row) => row.id === mutationID) : undefined;
+  const sourceServiceID = finding.source?.serviceId || mutation?.serviceId || "";
+  const impactServiceID = finding.impact?.serviceId || finding.serviceId || "";
+
+  if (sourceServiceID && impactServiceID && sourceServiceID !== impactServiceID) {
+    return true;
+  }
+  if (!sourceServiceID) {
+    return true;
+  }
+  return snapshot.edges.some((edge) => {
+    return edge.fieldId === finding.fieldId && edge.from === sourceServiceID && edge.to !== sourceServiceID;
+  });
+}
+
 function runEngine(snapshot: DemoSnapshot): DemoSnapshot {
   const now = new Date();
   const allFindings = computeFindings(snapshot);
   const activeFindings = allFindings.filter((finding) => {
-    return !snapshot.overrides.some((override) => isOverrideActive(override, finding, now));
+    if (snapshot.overrides.some((override) => isOverrideActive(override, finding, now))) {
+      return false;
+    }
+    return findingHasDownstreamImpact(snapshot, finding);
   });
 
   const blockedCount = activeFindings.filter((finding) => finding.severity === "high").length;
