@@ -493,9 +493,9 @@ function renderGraph(snapshot) {
 
   const nodes = snapshot.services || [];
   const edges = snapshot.edges || [];
-  const { activeFields, sourceServices, flowNodes, flowEdges, focusFieldSeverity } = computeImpacts(snapshot);
+  const { activeFields, sourceServices, flowNodes, flowEdges, affectedServices, focusFieldSeverity } = computeImpacts(snapshot);
   const positions = normalizePositions(
-    computeLayeredLayout(nodes, edges, width, height, { sourceServices, flowNodes }),
+    computeLayeredLayout(nodes, edges, width, height, { affectedServices, sourceServices, flowNodes }),
     width,
     height,
   );
@@ -586,7 +586,11 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
   const positions = new Map();
   const incoming = new Map();
   const outgoing = new Map();
-  const focusedNodes = new Set([...(focus.flowNodes || []), ...(focus.sourceServices || [])]);
+  const focusedNodes = new Set(
+    (focus.affectedServices && focus.affectedServices.size
+      ? [...focus.affectedServices]
+      : [...(focus.flowNodes || []), ...(focus.sourceServices || [])]),
+  );
   nodes.forEach((n) => {
     incoming.set(n.id, 0);
     outgoing.set(n.id, 0);
@@ -628,7 +632,10 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
   });
 
   const columnCount = layers.length || 1;
-  const colWidth = Math.max((width - 40) / columnCount, 140);
+  // Reserve at least four horizontal slots so dense groups can spread.
+  const slotCount = Math.max(columnCount, 4);
+  const slotWidth = Math.max((width - 40) / slotCount, 120);
+  const slotX = (slotIndex) => 20 + slotWidth * slotIndex + slotWidth / 2;
   const topStart = 56;
   const topEnd = Math.max(topStart + 120, Math.floor(height * 0.6));
   const bottomStart = Math.max(topEnd + 20, Math.floor(height * 0.74));
@@ -646,22 +653,40 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
     });
   };
 
+  const placeInBandAcrossSlots = (ids, slots, startY, endY) => {
+    if (!ids.length || !slots.length) return;
+    const buckets = slots.map(() => []);
+    ids.forEach((id, idx) => {
+      buckets[idx % slots.length].push(id);
+    });
+    buckets.forEach((bucket, idx) => {
+      if (!bucket.length) return;
+      placeInBand(bucket, slotX(slots[idx]), startY, endY);
+    });
+  };
+
   layers.forEach((layerNodeIds, colIdx) => {
-    const x = 20 + colWidth * colIdx + colWidth / 2;
+    let slotStart = Math.floor((colIdx * slotCount) / columnCount);
+    let slotEnd = Math.floor(((colIdx + 1) * slotCount) / columnCount) - 1;
+    if (slotEnd < slotStart) slotEnd = slotStart;
+    if (colIdx === columnCount - 1) slotEnd = slotCount - 1;
+    slotStart = Math.max(0, Math.min(slotStart, slotCount - 1));
+    slotEnd = Math.max(slotStart, Math.min(slotEnd, slotCount - 1));
+    const slots = [];
+    for (let s = slotStart; s <= slotEnd; s++) {
+      slots.push(s);
+    }
+
     if (focusedNodes.size === 0) {
-      const rowCount = layerNodeIds.length;
-      const rowGap = Math.max((height - 80) / (rowCount || 1), 70);
-      layerNodeIds.forEach((nodeId, rowIdx) => {
-        positions.set(nodeId, { x, y: 50 + rowGap * rowIdx });
-      });
+      placeInBandAcrossSlots(layerNodeIds, slots, 50, height - 40);
       return;
     }
 
     const key = layerNodeIds.filter((id) => focusedNodes.has(id));
     const nonKey = layerNodeIds.filter((id) => !focusedNodes.has(id));
-    placeInBand(key, x, topStart, topEnd);
+    placeInBandAcrossSlots(key, slots, topStart, topEnd);
     // Keep non-key/non-affected services compressed in the lower band.
-    placeInBand(nonKey, x, bottomStart, bottomEnd);
+    placeInBandAcrossSlots(nonKey, slots, bottomStart, bottomEnd);
   });
 
   nodes.forEach((node) => {
@@ -757,13 +782,6 @@ function addGraphInteractions(svg) {
     });
   });
 
-  svg.querySelectorAll(".graph-edge").forEach((edge) => {
-    edge.addEventListener("mouseenter", () => {
-      const nodeIds = new Set([edge.dataset.from, edge.dataset.to]);
-      applyFocus(nodeIds, [edge.dataset.edgeId]);
-    });
-  });
-
   svg.addEventListener("mouseleave", () => {
     applyFocus(new Set(), new Set());
   });
@@ -821,8 +839,23 @@ function computeImpacts(snapshot) {
     const last = snapshot.mutations[snapshot.mutations.length - 1];
     focus = { fieldId: last.fieldId, serviceId: last.serviceId, severity: "info" };
   }
-  const activeFields = new Set(focus ? [focus.fieldId] : []);
+  const activeFields = new Set(
+    findings
+      .map((item) => item.fieldId)
+      .filter((value) => typeof value === "string" && value.length > 0),
+  );
+  if (activeFields.size === 0 && focus?.fieldId) {
+    activeFields.add(focus.fieldId);
+  }
   const sourceServices = new Set(focus && focus.serviceId ? [focus.serviceId] : []);
+  const affectedServices = new Set(
+    findings
+      .map((item) => item.serviceId)
+      .filter((value) => typeof value === "string" && value.length > 0),
+  );
+  if (affectedServices.size === 0 && focus?.serviceId) {
+    affectedServices.add(focus.serviceId);
+  }
   const flowEdges = new Set();
   const flowNodes = new Set();
   (snapshot.edges || []).forEach((e) => {
@@ -830,11 +863,14 @@ function computeImpacts(snapshot) {
       flowEdges.add(e.id);
       flowNodes.add(e.from);
       flowNodes.add(e.to);
+      affectedServices.add(e.from);
+      affectedServices.add(e.to);
     }
   });
   return {
     activeFields,
     sourceServices,
+    affectedServices,
     flowNodes,
     flowEdges,
     focusFieldSeverity: focus?.severity || null,
