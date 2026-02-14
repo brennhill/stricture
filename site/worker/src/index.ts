@@ -36,6 +36,20 @@ interface EdgeLink {
   status: "healthy" | "warning" | "blocked";
 }
 
+interface FindingContextEdge {
+  serviceId?: string;
+  service?: string;
+  api?: string;
+}
+
+interface FindingTypeDelta {
+  change?: string;
+  beforeContractRef?: string;
+  afterContractRef?: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+}
+
 interface Finding {
   id: string;
   severity: Severity;
@@ -44,6 +58,12 @@ interface Finding {
   changeType: string;
   summary: string;
   remediation: string;
+  source?: FindingContextEdge;
+  impact?: FindingContextEdge;
+  typeDelta?: FindingTypeDelta;
+  modifiedBy?: string[];
+  validation?: string;
+  suggestion?: string;
   timestamp: string;
 }
 
@@ -124,6 +144,18 @@ interface DemoPackShape {
           change_type: string;
           field_id: string;
           message: string;
+          source?: { service?: string; api?: string };
+          impact?: { service?: string; api?: string };
+          type_delta?: {
+            change?: string;
+            before_contract_ref?: string;
+            after_contract_ref?: string;
+            before_label?: string;
+            after_label?: string;
+          };
+          modified_by?: string[];
+          validation?: string;
+          suggestion?: string;
         }>;
       }
     >
@@ -185,6 +217,19 @@ function normalizeID(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function resolveServiceID(token: string | undefined, services: ServiceNode[]): string {
+  const value = normalizeID(String(token || "").replace(/[^a-zA-Z0-9]/g, ""));
+  if (!value) {
+    return "";
+  }
+  const match = services.find((service) => {
+    const id = normalizeID(service.id.replace(/[^a-zA-Z0-9]/g, ""));
+    const name = normalizeID(service.name.replace(/[^a-zA-Z0-9]/g, ""));
+    return id === value || name === value;
+  });
+  return match?.id || "";
+}
+
 function edgesWithHealthyStatus(): EdgeLink[] {
   return PACK.edges.map((edge) => ({
     ...edge,
@@ -240,14 +285,37 @@ function computeFindings(snapshot: DemoSnapshot): Finding[] {
 
     scenario.changes.forEach((change, idx) => {
       const metadata = PACK.field_metadata[change.field_id] || PACK.field_metadata[mutation.fieldId];
+      const sourceServiceID = resolveServiceID(change.source?.service, snapshot.services);
+      const impactServiceID = resolveServiceID(change.impact?.service, snapshot.services);
+      const findingServiceID = impactServiceID || metadata?.serviceId || mutation.serviceId;
       rows.push({
         id: `${mutation.id}:${idx}`,
         severity: change.severity,
-        serviceId: metadata?.serviceId || mutation.serviceId,
+        serviceId: findingServiceID,
         fieldId: change.field_id,
         changeType: change.change_type,
         summary: change.message,
         remediation: remediationFor(change.change_type),
+        source: change.source ? {
+          serviceId: sourceServiceID || undefined,
+          service: change.source.service,
+          api: change.source.api,
+        } : undefined,
+        impact: change.impact ? {
+          serviceId: impactServiceID || undefined,
+          service: change.impact.service,
+          api: change.impact.api,
+        } : undefined,
+        typeDelta: change.type_delta ? {
+          change: change.type_delta.change,
+          beforeContractRef: change.type_delta.before_contract_ref,
+          afterContractRef: change.type_delta.after_contract_ref,
+          beforeLabel: change.type_delta.before_label,
+          afterLabel: change.type_delta.after_label,
+        } : undefined,
+        modifiedBy: Array.isArray(change.modified_by) ? change.modified_by : undefined,
+        validation: change.validation,
+        suggestion: change.suggestion,
         timestamp: mutation.timestamp,
       });
     });

@@ -95,6 +95,17 @@ function listServiceNames(snapshot, ids, limit = 3) {
 function inferSourceServices(snapshot, findings, latest) {
   const sourceServices = new Set();
   (findings || []).forEach((finding) => {
+    if (finding?.source?.serviceId) {
+      sourceServices.add(finding.source.serviceId);
+      return;
+    }
+    if (finding?.source?.service) {
+      const sourceId = resolveServiceId(snapshot, finding.source.service);
+      if (sourceId) {
+        sourceServices.add(sourceId);
+        return;
+      }
+    }
     const summary = String(finding.summary || "");
     const sourceMatch = /source\s+[a-z_]+\|([A-Za-z0-9_-]+)\./i.exec(summary);
     if (sourceMatch?.[1]) {
@@ -131,22 +142,8 @@ function inferSourceServices(snapshot, findings, latest) {
 }
 
 function findingSummaryText(snapshot, finding) {
-  const text = finding.summary || "";
-  const mutation = latestMutation(snapshot);
-  const sources = inferSourceServices(snapshot, [finding], mutation);
-  const source = sources.size ? serviceName(snapshot, [...sources][0]) : mutation ? serviceName(snapshot, mutation.serviceId) : "the source service";
-  const impacted = serviceName(snapshot, finding.serviceId);
-  const mergeMatch = /^merge_strategy changed from ([^ ]+) to ([^ ]+)$/i.exec(text);
-  if (mergeMatch) {
-    return `${source} changed merge behavior (${mergeMatch[1]} -> ${mergeMatch[2]}) to alter how upstream data is resolved. ${impacted} can now consume a different value shape than expected.`;
-  }
-  if (text.startsWith("contract_ref changed")) {
-    return `Types were expanded, contracted, or changed in ${source} to support a new contract revision. This fails enum/type checks in ${impacted} until consumers align.`;
-  }
-  if (text.startsWith("source removed")) {
-    return `${source} removed a required upstream source. ${impacted} now receives incomplete lineage and can fail strict validation.`;
-  }
-  return text;
+  void snapshot;
+  return finding.summary || "";
 }
 
 async function request(path, method = "GET", body) {
@@ -403,6 +400,8 @@ function render(snapshot) {
           <span class="chip">Blast radius: ${blastRadius}</span>
           <span class="chip">Owner: ${owner}</span>
         </p>
+        ${finding.validation ? `<p class="item-meta">Validation: ${finding.validation}</p>` : ""}
+        ${finding.suggestion ? `<p class="item-meta">Suggestion: ${finding.suggestion}</p>` : ""}
         <p class="item-meta">Remediation: ${finding.remediation}</p>
       `;
       },

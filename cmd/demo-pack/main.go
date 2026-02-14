@@ -341,10 +341,24 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 				ChangeType: "type_changed",
 				FieldID:    customField,
 				Message:    "Producer widened from uint8 to uint16; JS consumer coerces to Number and passes through values >255; downstream Go consumer overflows.",
+				Source: &lineage.DriftEdge{
+					Service: "CommerceCore",
+					API:     "CommerceCore.GetCheckoutRiskGate",
+				},
+				Impact: &lineage.DriftEdge{
+					Service: "CommerceGateway",
+					API:     customField,
+				},
+				TypeDelta: &lineage.TypeDelta{
+					Change:      "expanded",
+					BeforeLabel: "uint8",
+					AfterLabel:  "uint16",
+				},
+				Validation: "numeric range compatibility check (0..255) failed in downstream typed consumer",
+				Suggestion: "add boundary tests/assertions for >255 and roll out consumer updates before widening producer type",
 			},
 		},
 	}
-
 
 	return pack, nil
 }
