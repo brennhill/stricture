@@ -48,18 +48,18 @@ const sourceKeys = [
   { key: "note", required: "No", defaultValue: "`defaulted_by=stricture`", purpose: "Freeform implementation note.", mode: "defaulted" },
   { key: "owner", required: "No", defaultValue: "`team.<source_system_slug>`", purpose: "Owning team for this field contract.", mode: "defaulted" },
   { key: "renamed_from", required: "No", defaultValue: "None", purpose: "Previous field identity for intentional migrations.", mode: "manual-optional" },
-  { key: "source_system", required: "Yes", defaultValue: "None", purpose: "Primary producing system/service.", mode: "manual-required" },
-  { key: "source_version", required: "Yes", defaultValue: "None", purpose: "Producer version for this mapping.", mode: "manual-required" },
-  { key: "sources", required: "Yes", defaultValue: "None", purpose: "One or more upstream source edge refs.", mode: "manual-required" },
+  { key: "source_system", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service mapping when strict:server_url is configured", purpose: "Primary producing system/service.", mode: "autogen" },
+  { key: "source_version", required: "Yes (helper or manual)", defaultValue: "Derived from source contract ref/commit when available", purpose: "Producer version for this mapping.", mode: "autogen" },
+  { key: "sources", required: "Yes (helper or manual)", defaultValue: "Helper-inferred from AST + contracts", purpose: "One or more upstream source edge refs.", mode: "autogen" },
   { key: "sunset_at", required: "No", defaultValue: "None", purpose: "Optional deprecation/removal target date.", mode: "manual-optional" },
   { key: "transform_type", required: "No", defaultValue: "`passthrough`", purpose: "Transform operation type for this field.", mode: "defaulted" }
 ];
 
 const sourceQueryKeys = [
-  { key: "as_of", required: "Conditional", defaultValue: "Required for `@external` scope", purpose: "Snapshot date (`YYYY-MM-DD`) for external providers.", mode: "manual-required" },
-  { key: "contract_ref", required: "Yes", defaultValue: "None", purpose: "Canonical contract/spec pointer for the source edge.", mode: "manual-required" },
-  { key: "provider_id", required: "Conditional", defaultValue: "Required for `@external`; forbidden otherwise", purpose: "External provider identifier.", mode: "manual-required" },
-  { key: "upstream_system", required: "No", defaultValue: "None", purpose: "Optional explicit upstream service/system id.", mode: "manual-optional" }
+  { key: "as_of", required: "Conditional", defaultValue: "Required for `@external` scope (helper can stamp run-date)", purpose: "Snapshot date (`YYYY-MM-DD`) for external providers.", mode: "autogen" },
+  { key: "contract_ref", required: "Yes", defaultValue: "Helper can derive from OpenAPI/AsyncAPI/proto pointers", purpose: "Canonical contract/spec pointer for the source edge.", mode: "autogen" },
+  { key: "provider_id", required: "Conditional", defaultValue: "Required for `@external`; helper can map from provider catalog", purpose: "External provider identifier.", mode: "autogen" },
+  { key: "upstream_system", required: "No", defaultValue: "Helper-inferred from source target/service map", purpose: "Optional explicit upstream service/system id.", mode: "autogen" }
 ];
 
 const overrideKeys = [
@@ -71,7 +71,7 @@ const overrideKeys = [
 ];
 
 const serviceRegistryKeys = [
-  { key: "id", required: "Yes", defaultValue: "None", purpose: "Stable system identifier used in lineage edges.", mode: "manual-required" },
+  { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier used in lineage edges.", mode: "autogen" },
   { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
   { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team slug.", mode: "manual-required" },
   { key: "escalation", required: "No (policy can require)", defaultValue: "None", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
@@ -108,6 +108,7 @@ const modeMeta = {
       ))}
     </div>
     <p class="muted">Recommended fields can be promoted to required by policy packs.</p>
+    <p class="muted">When part of a multi-service ecosystem, use <code>strict:server_url</code> so Autogen fields resolve from shared service/policy context.</p>
   </section>
 
   <section class="card">
@@ -233,6 +234,9 @@ const modeMeta = {
     <p class="muted">
       Service-level ownership and escalation are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
     </p>
+    <p class="muted">
+      If a `strict:server_url` is configured, helper/server workflows can bootstrap service IDs automatically and register them centrally.
+    </p>
     <div class="compare-table-wrap">
       <table class="compare-table">
         <thead>
@@ -289,6 +293,18 @@ lineage:
     break_policy: strict
   severity_overrides:
     missing_escalation: high`}</code></pre>
+  </section>
+
+  <section class="card">
+    <h2>How tool-assisted authoring makes this easier</h2>
+    <ul>
+      <li><strong>`source_system`</strong>: helper derives service identity from repo/service mapping; prefer <code>strict:server_url</code> in multi-service environments.</li>
+      <li><strong>`source_version`</strong>: helper resolves from contract source ref (repo tag/commit) so humans do not bump it manually every PR.</li>
+      <li><strong>`sources`</strong>: helper infers edge candidates from AST + contract schemas and writes normalized refs.</li>
+      <li><strong>`contract_ref`</strong>: helper reuses OpenAPI/AsyncAPI/proto pointers already present in repo/config.</li>
+      <li><strong>`provider_id` + `as_of`</strong>: helper fills from provider registry and run timestamp for external sources.</li>
+      <li><strong>Manual override remains</strong>: engineers can still pin or override values when migration windows need explicit intent.</li>
+    </ul>
   </section>
 
   <section class="card">

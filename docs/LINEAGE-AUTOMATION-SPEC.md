@@ -70,7 +70,7 @@ Automation tiers:
 | `field_id` | Auto | derive from `field` | stable slug transform |
 | `field` | Auto | derive from `field_id` | fallback only |
 | `source_system` | Suggest/Auto+Policy | repo/service mapping | can be defaulted from module map |
-| `source_version` | Auto | `.stricture-history/versions.json` | computed build version |
+| `source_version` | Auto | `.stricture-history/versions.json` + contract ref revision | computed build version, preferably pinned to contract commit/tag |
 | `min_supported_source_version` | Auto | source version policy | default same as `source_version` |
 | `transform_type` | Auto+Policy / Suggest | defaults + static analysis hints | default `passthrough` |
 | `merge_strategy` | Auto | source count | single source => `single_source`, multi => `priority` |
@@ -81,7 +81,7 @@ Automation tiers:
 | `escalation` | Auto+Policy | system registry | from on-call routing map |
 | `contract_test_id` | Auto+Policy | naming template | `ci://contracts/<service>/<field_id>` |
 | `introduced_at` | Auto | first seen in history | initial fallback date when unknown |
-| `sources` | Suggest / Auto+Policy | static analysis + OpenAPI/AsyncAPI/proto | confidence-scored candidates |
+| `sources` | Suggest / Auto+Policy | static analysis + OpenAPI/AsyncAPI/proto | confidence-scored candidates; helper should emit normalized edge refs |
 | `flow` | Suggest / Auto+Policy | graph path synthesis | generated from source edges |
 | `note` | Auto+Policy / Suggest | summary templates | machine-generated; editable |
 | `renamed_from` | Suggest | history match + similarity | require confirmation |
@@ -135,6 +135,13 @@ Policy source and cache model:
 2. local tool resolves from cache first, then URL
 3. URL may point to stricture-server or GitHub-hosted policy
 4. local cache is used for offline runs
+
+Service registry bootstrap model:
+
+1. if `strict:server_url` is configured, helper/server can auto-register
+   service IDs from repo identity
+2. generated IDs remain overrideable manually in repo-local registry files
+3. policy packs can still require additional manual service metadata
 
 ## CI Workflow (Reference)
 

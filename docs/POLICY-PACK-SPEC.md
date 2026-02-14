@@ -129,6 +129,12 @@ Optional integrity pin:
 'strict:policy_sha256': <sha256-hex>
 ```
 
+Optional server binding for registry/bootstrap workflows:
+
+```yaml
+'strict:server_url': https://stricture.example.com
+```
+
 ## Resolution Order
 
 When `'strict:policy_url'` is configured, clients should resolve in this order:

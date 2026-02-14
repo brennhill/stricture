@@ -32,6 +32,15 @@ agents and frequent API changes.
 4. Emit confidence + quality signals so uncertain output is reviewable.
 5. Integrate with `.stricture-history/` so versioning/deltas are automatic.
 
+High-priority automation targets:
+
+1. `source_version`: derive from contract ref revision/commit where available.
+2. `sources`: infer from AST + contract artifacts, then normalize refs.
+3. external `provider_id` + `as_of`: derive from provider map + run context.
+4. `contract_ref`: reuse existing OpenAPI/AsyncAPI/proto pointers.
+5. service registry `id`: bootstrap from repo/service identity and optionally
+   register to `strict:server_url`.
+
 ## Non-Goals (v0)
 
 1. Full autonomous merge of low-confidence inferred annotations.
