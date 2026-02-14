@@ -847,10 +847,12 @@ select {
   padding: 0.75rem;
   background: #ffffff;
   overflow: auto;
+  min-height: 520px;
 }
 
 .topology-graph svg {
-  width: 100%;
+  width: 1400px;
+  max-width: none;
   height: auto;
 }
 
