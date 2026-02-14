@@ -243,6 +243,74 @@ func TestInferTraceFormat(t *testing.T) {
 	}
 }
 
+func TestLoadPolicyBindingFromConfig(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	pathValue := filepath.Join(dir, ".stricture.yml")
+	content := "'strict:policy_url': https://policies.example.com/stricture/prod.yml\n'strict:policy_sha256': 9f0e6e7ccfa6c54f0b8a8ec61c8ab1a3c0c6c3f8875f0c6ad6d8b6c2c3d1f8a4\n"
+	if err := os.WriteFile(pathValue, []byte(content), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	binding, err := loadPolicyBindingFromConfig(pathValue)
+	if err != nil {
+		t.Fatalf("loadPolicyBindingFromConfig error: %v", err)
+	}
+	if binding.PolicyURL != "https://policies.example.com/stricture/prod.yml" {
+		t.Fatalf("PolicyURL = %q", binding.PolicyURL)
+	}
+	if binding.PolicySHA256 == "" {
+		t.Fatalf("PolicySHA256 should not be empty")
+	}
+}
+
+func TestLoadPolicyBindingFromConfigMissingURL(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	pathValue := filepath.Join(dir, ".stricture.yml")
+	if err := os.WriteFile(pathValue, []byte("rules: {}\n"), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if _, err := loadPolicyBindingFromConfig(pathValue); err == nil {
+		t.Fatalf("expected missing strict:policy_url error")
+	}
+}
+
+func TestResolveExpectedPolicyURL(t *testing.T) {
+	t.Setenv("STRICTURE_POLICY_URL", "https://policies.example.com/stricture/prod.yml")
+	got, source := resolveExpectedPolicyURL("", "STRICTURE_POLICY_URL")
+	if got != "https://policies.example.com/stricture/prod.yml" {
+		t.Fatalf("resolveExpectedPolicyURL env = %q", got)
+	}
+	if source != "env:STRICTURE_POLICY_URL" {
+		t.Fatalf("resolveExpectedPolicyURL source = %q", source)
+	}
+
+	got, source = resolveExpectedPolicyURL("https://override.example/policy.yml", "STRICTURE_POLICY_URL")
+	if got != "https://override.example/policy.yml" {
+		t.Fatalf("resolveExpectedPolicyURL explicit should win, got %q", got)
+	}
+	if source != "flag:expected-url" {
+		t.Fatalf("resolveExpectedPolicyURL explicit source = %q", source)
+	}
+}
+
+func TestIsValidSHA256Hex(t *testing.T) {
+	t.Parallel()
+
+	if !isValidSHA256Hex("9f0e6e7ccfa6c54f0b8a8ec61c8ab1a3c0c6c3f8875f0c6ad6d8b6c2c3d1f8a4") {
+		t.Fatalf("valid sha256 should pass")
+	}
+	if isValidSHA256Hex("short") {
+		t.Fatalf("short value should fail")
+	}
+	if isValidSHA256Hex("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz") {
+		t.Fatalf("non-hex value should fail")
+	}
+}
+
 func TestValidateTracePayload(t *testing.T) {
 	t.Parallel()
 

@@ -11,9 +11,21 @@ and CI compliance checks.
 Allow organizations to enforce one approved `'strict:policy_url'` across repos,
 while local/CI runs can use cached policy when network is unavailable.
 
+## Command Status
+
+Implemented now:
+
+1. `stricture policy verify-ref`
+
+Planned (next):
+
+1. `stricture policy fetch`
+2. `stricture policy resolve`
+3. `stricture policy lint`
+
 ## Commands
 
-## `stricture policy fetch`
+## `stricture policy fetch` (planned)
 
 Fetches policy from `'strict:policy_url'` and updates local cache.
 
@@ -30,7 +42,7 @@ Behavior:
 3. validates hash when provided
 4. stores policy + metadata in cache
 
-## `stricture policy resolve`
+## `stricture policy resolve` (planned)
 
 Resolves effective policy using cache-first logic.
 
@@ -54,16 +66,17 @@ Enforces repo binding to org-approved policy URL.
 ```bash
 stricture policy verify-ref \
   --config .stricture.yml \
-  --expected-url https://policies.example.com/stricture/prod.yml
+  --expected-url-env STRICTURE_POLICY_URL
 ```
 
 Behavior:
 
 1. fails if `'strict:policy_url'` missing
-2. fails if URL differs from expected (or allowlist)
-3. optional: verifies `'strict:policy_sha256'` presence in strict mode
+2. resolves expected URL from `--expected-url` or `--expected-url-env`
+3. fails if URL differs from expected (or allowlist)
+4. optional: verifies `'strict:policy_sha256'` presence in strict mode
 
-## `stricture policy lint`
+## `stricture policy lint` (planned)
 
 Validates policy pack structure and semantics.
 
@@ -91,8 +104,11 @@ Behavior:
 ```bash
 stricture policy verify-ref \
   --config .stricture.yml \
-  --expected-url "$STRICTURE_POLICY_URL"
+  --expected-url-env STRICTURE_POLICY_URL
 ```
+
+This is intended for CI/CD enforcement. Local developers usually do not set
+`STRICTURE_POLICY_URL`; CI injects it as an org-controlled value.
 
 ## Full policy warm-up + validation
 

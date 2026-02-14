@@ -266,6 +266,10 @@ const modeMeta = {
     </p>
     <pre><code>{`'strict:policy_url': https://policies.example.com/stricture/prod.yml
 'strict:policy_sha256': <optional_sha256_pin>`}</code></pre>
+    <p class="muted">CI/CD enforcement pattern:</p>
+    <pre><code>{`stricture policy verify-ref \
+  --config .stricture.yml \
+  --expected-url-env STRICTURE_POLICY_URL`}</code></pre>
     <p class="muted">Example policy pack at that URL:</p>
     <pre><code>{`schema_version: 1
 policy_id: strict:policy

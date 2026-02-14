@@ -24,4 +24,4 @@ jobs:
         run: |
           stricture policy verify-ref \
             --config .stricture.yml \
-            --expected-url "$STRICTURE_POLICY_URL"
+            --expected-url-env STRICTURE_POLICY_URL
