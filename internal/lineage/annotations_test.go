@@ -228,6 +228,89 @@ func TestParseWithOverrides_RejectsInvalidOverride(t *testing.T) {
 	}
 }
 
+func TestParse_AcceptsAliasKeysAndTracksMappedFrom(t *testing.T) {
+	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field_path=response.track service_name=Media service_version=v1 min_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner_team=team.media escalation=pagerduty:media contract_test=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external?provider=spotify&schema_ref=https://developer.spotify.com/reference/get-track&asof=2026-02-13 flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+
+	annotations, errs := Parse(source)
+	if len(errs) != 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+	a := annotations[0]
+	if a.Field != "response.track" {
+		t.Fatalf("field = %q, want response.track", a.Field)
+	}
+	if a.SourceSystem != "Media" {
+		t.Fatalf("source_system = %q, want Media", a.SourceSystem)
+	}
+	if a.SourceVersion != "v1" {
+		t.Fatalf("source_version = %q, want v1", a.SourceVersion)
+	}
+	if a.MinSupportedSourceVersion != "v1" {
+		t.Fatalf("min_supported_source_version = %q, want v1", a.MinSupportedSourceVersion)
+	}
+	if a.Owner != "team.media" {
+		t.Fatalf("owner = %q, want team.media", a.Owner)
+	}
+	if a.ContractTestID != "ci://contracts/media-track" {
+		t.Fatalf("contract_test_id = %q, unexpected", a.ContractTestID)
+	}
+	if len(a.Sources) != 1 {
+		t.Fatalf("sources len = %d, want 1", len(a.Sources))
+	}
+	s := a.Sources[0]
+	if s.ContractRef != "https://developer.spotify.com/reference/get-track" {
+		t.Fatalf("contract_ref = %q, unexpected", s.ContractRef)
+	}
+	if s.ProviderID != "spotify" {
+		t.Fatalf("provider_id = %q, want spotify", s.ProviderID)
+	}
+	if s.AsOf != "2026-02-13" {
+		t.Fatalf("as_of = %q, want 2026-02-13", s.AsOf)
+	}
+	if len(a.MappedFrom) == 0 {
+		t.Fatalf("expected mapped_from to include alias keys")
+	}
+}
+
+func TestParse_RejectsConflictingCanonicalAndAliasValues(t *testing.T) {
+	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity service_name=Billing source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"`)
+
+	_, errs := Parse(source)
+	if len(errs) != 1 {
+		t.Fatalf("errs len = %d, want 1", len(errs))
+	}
+	if !strings.Contains(strings.ToLower(errs[0].Message), "conflicting") {
+		t.Fatalf("error should mention conflict, got %q", errs[0].Message)
+	}
+}
+
+func TestParse_AcceptsCanonicalAndAliasWhenEqual(t *testing.T) {
+	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity service_name=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"`)
+
+	annotations, errs := Parse(source)
+	if len(errs) != 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+}
+
+func TestParse_RejectsConflictingSourceAliases(t *testing.T) {
+	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?contract_ref=https://a.example/schema&schema_ref=https://b.example/schema&provider_id=spotify flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+
+	_, errs := Parse(source)
+	if len(errs) != 1 {
+		t.Fatalf("errs len = %d, want 1", len(errs))
+	}
+	if !strings.Contains(strings.ToLower(errs[0].Message), "conflicting") {
+		t.Fatalf("error should mention conflict, got %q", errs[0].Message)
+	}
+}
+
 func replaceToken(input string, old string, replacement string) string {
 	return strings.Replace(input, old, replacement, 1)
 }

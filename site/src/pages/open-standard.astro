@@ -11,6 +11,10 @@ const links = [
   {
     label: "Stricture Open Standard (SOS) v0.1 Draft",
     href: "https://github.com/brennhill/stricture/blob/main/spec/0.1-draft.md"
+  },
+  {
+    label: "License Split (CC BY spec, AGPL implementation)",
+    href: "https://github.com/brennhill/stricture/blob/main/LICENSES.md"
   }
 ];
 ---
@@ -37,6 +41,26 @@ const links = [
       <li>Determinism: policy results are reproducible and auditable across runners.</li>
       <li>Ecosystem growth: more implementations can conform to the same contract.</li>
     </ol>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Separation of concerns</h2>
+    <p>
+      SOS is the public contract and remains implementation-neutral. The `stricture` CLI is a
+      reference engine that executes the contract in CI and runtime workflows.
+    </p>
+    <div class="compare-grid">
+      <article class="compare-card">
+        <h3>Open Standard Layer</h3>
+        <p>Spec text and schemas define semantics and conformance criteria.</p>
+        <p><strong>License:</strong> CC BY 4.0</p>
+      </article>
+      <article class="compare-card">
+        <h3>Implementation Layer</h3>
+        <p>CLI and engine code implement linting, diffs, policy decisions, and reporting.</p>
+        <p><strong>License:</strong> AGPL-3.0</p>
+      </article>
+    </div>
   </section>
 
   <section class="card compare-section">

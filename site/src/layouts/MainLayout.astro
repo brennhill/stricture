@@ -5,7 +5,10 @@ const {
   title = "Stricture",
   description = "Stricture verifies API lineage, drift, and escalation paths before deployment."
 } = Astro.props;
-const canonicalUrl = new URL(Astro.url.pathname, "https://stricture-lint.com").toString();
+const siteBase = "https://stricture-lint.com";
+const canonicalUrl = new URL(Astro.url.pathname, siteBase).toString();
+const markdownPath = Astro.url.pathname.endsWith("/") ? `${Astro.url.pathname}index.md` : `${Astro.url.pathname}/index.md`;
+const markdownUrl = new URL(markdownPath, siteBase).toString();
 ---
 
 <!doctype html>
@@ -14,7 +17,10 @@ const canonicalUrl = new URL(Astro.url.pathname, "https://stricture-lint.com").t
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <meta name="robots" content="index,follow" />
+    <meta name="content-signal" content="ai-train=yes, search=yes, ai-input=yes" />
     <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" type="text/markdown" href={markdownUrl} />
     <meta property="og:site_name" content="Stricture" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
@@ -64,7 +70,11 @@ const canonicalUrl = new URL(Astro.url.pathname, "https://stricture-lint.com").t
     <footer class="site-footer">
       <p>Lineage an Architecture aware linting and release gates for API ecosystems.</p>
       <p><a href="/why-not">Tool Comparison</a></p>
-      <p><a href="/open-standard">Open Standard</a></p>
+      <p>
+        <a href="/open-standard">Open Standard</a>
+        ·
+        <a href="https://github.com/brennhill/stricture/blob/main/spec/0.1-draft.md" target="_blank" rel="noopener noreferrer">Spec Draft</a>
+      </p>
       <p>
         &copy; 2026
         <a href="https://www.linkedin.com/in/brennhill/" target="_blank" rel="noopener noreferrer">Brenn Hill</a>

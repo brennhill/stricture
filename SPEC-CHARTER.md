@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 Brenn Hill
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Stricture Open Standard (SOS) Charter
 
 Status: Draft
@@ -125,7 +130,7 @@ Conformance is required for ecosystem trust.
 
 ## Intellectual Property and Licensing
 
-1. Spec text and schemas should use permissive licensing (for example Apache-2.0).
+1. Spec text and schemas are licensed under CC BY 4.0.
 2. No patent encumbrance should be introduced via normative language.
 3. If any patented claim is known, it must be disclosed in RFC discussion.
 

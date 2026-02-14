@@ -54,15 +54,7 @@ make build
   --mode block
 ```
 
-## Key Commands
-
-```bash
-make test-phase1
-make test-phase3
-make test-phase5
-make quality-gate
-make ci
-```
+## CLI Commands
 
 ```bash
 stricture list-rules
@@ -70,6 +62,10 @@ stricture explain --rule ARCH-dependency-direction
 stricture inspect-lineage path/to/file.go
 stricture lineage-escalate --service ServiceY --artifact tests/lineage/current.json --systems docs/config-examples/lineage-systems.yml
 ```
+
+## Testing And CI
+
+Contributor and CI commands are documented in [TESTING.md](TESTING.md).
 
 ## Open Standard (SOS)
 
@@ -85,6 +81,7 @@ Stricture is being formalized as an open standard.
 - Technical spec: [docs/tech-spec.md](docs/tech-spec.md)
 - Invariants: [docs/INVARIANTS.md](docs/INVARIANTS.md)
 - Lineage annotations: [docs/data-lineage-annotations.md](docs/data-lineage-annotations.md)
+- Testing and quality gates: [TESTING.md](TESTING.md)
 - Deploying site: [DEPLOY.md](DEPLOY.md)
 
 ## Website
@@ -96,4 +93,6 @@ Stricture is being formalized as an open standard.
 
 ## License
 
-[Apache-2.0](LICENSE)
+- Implementation (CLI, engine, adapters, scripts): [AGPL-3.0](LICENSE)
+- Open Standard spec and schemas: [CC BY 4.0](LICENSES/CC-BY-4.0.md)
+- Path-level mapping: [LICENSES.md](LICENSES.md)

@@ -3,14 +3,14 @@ import MainLayout from "../layouts/MainLayout.astro";
 
 export const prerender = true;
 
-const heroHeadlines = [
-  "Detect API drift before it becomes an incident.",
-  "Catch schema mismatches before on-call gets paged.",
-  "Stop architecture breaks before they cross service boundaries.",
-  "Keep AI-generated changes inside enforceable guardrails.",
-  "Prevent one repo change from breaking ten systems.",
-  "Ship faster without losing contract integrity."
-];
+const heroHeadlines = ["Build safe with AI."];
+
+const specLinks = {
+  charter: "https://github.com/brennhill/stricture/blob/main/SPEC-CHARTER.md",
+  draft: "https://github.com/brennhill/stricture/blob/main/spec/0.1-draft.md",
+  licenses: "https://github.com/brennhill/stricture/blob/main/LICENSES.md",
+  repo: "https://github.com/brennhill/stricture"
+};
 ---
 
 <MainLayout
@@ -23,11 +23,13 @@ const heroHeadlines = [
       <span class="hero-rotate-text" aria-live="polite">{heroHeadlines[0]}</span>
     </h1>
     <p class="lead">
-      Stricture maps field lineage, enforces architecture invariants, overlays existing standards,
-      and blocks risky deploys with explicit ownership and escalation evidence.
+      AI-generated code can silently drift APIs and contracts without warning, creating massive risk across
+      service boundaries. Stricture catches that drift, enforces the contract, and blocks unsafe deploys
+      before incidents hit customers.
     </p>
     <div class="hero-actions">
       <a class="button button-primary" href="/demo">Open Interactive Demo</a>
+      <a class="button button-secondary" href="/open-standard">Read Open Standard</a>
       <a class="button button-secondary" href="https://github.com/brennhill/stricture">View GitHub</a>
     </div>
   </section>
@@ -158,6 +160,39 @@ const heroHeadlines = [
       <li>Attach ownership and escalation routes directly to affected fields.</li>
       <li>Evaluate architecture invariants such as dependency direction and provenance completeness.</li>
     </ol>
+  </section>
+
+  <section id="separation-of-concerns" class="card compare-section">
+    <p class="kicker">Separation Of Concerns</p>
+    <h2>Open standard semantics, reference engine execution.</h2>
+    <p>
+      Stricture keeps the interoperability contract independent from the runtime engine:
+      teams can adopt the SOS model across tools while using the AGPL CLI as a reference implementation.
+    </p>
+    <div class="compare-grid">
+      <article class="compare-card">
+        <h3>Stricture Open Standard (CC BY 4.0)</h3>
+        <p>
+          Defines field lineage, drift classes, architecture invariants, and profile overlay semantics
+          as a portable contract that is implementation-neutral.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-secondary" href={specLinks.charter} target="_blank" rel="noopener noreferrer">Read Charter</a>
+          <a class="button button-secondary" href={specLinks.draft} target="_blank" rel="noopener noreferrer">Read v0.1 Draft</a>
+        </div>
+      </article>
+      <article class="compare-card">
+        <h3>Reference Implementation (AGPL-3.0)</h3>
+        <p>
+          The `stricture` CLI executes linting, lineage export/diff, policy gates, and escalation checks
+          against the SOS semantics, with independent implementation paths possible.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-secondary" href={specLinks.repo} target="_blank" rel="noopener noreferrer">View Implementation</a>
+          <a class="button button-secondary" href={specLinks.licenses} target="_blank" rel="noopener noreferrer">License Split</a>
+        </div>
+      </article>
+    </div>
   </section>
 
   <section class="cta">

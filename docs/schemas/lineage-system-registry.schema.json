@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "SPDX-License-Identifier: CC-BY-4.0; Copyright (c) 2026 Brenn Hill",
   "$id": "https://stricture.dev/schemas/lineage-system-registry.schema.json",
   "title": "Stricture Lineage System Registry",
   "type": "object",

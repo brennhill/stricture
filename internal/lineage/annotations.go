@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -44,6 +45,7 @@ type Annotation struct {
 	Sources                   []SourceRef `json:"sources"`
 	Flow                      string      `json:"flow"`
 	Note                      string      `json:"note"`
+	MappedFrom                []string    `json:"mapped_from,omitempty"`
 	FilePath                  string      `json:"file_path,omitempty"`
 	Line                      int         `json:"line"`
 }
@@ -59,15 +61,16 @@ type Annotation struct {
 //	api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://...
 //	api:spotify.GetTrack#response.track@external!2026-02-13?provider_id=spotify&contract_ref=https://developer.spotify.com/...
 type SourceRef struct {
-	Kind           string `json:"kind"`
-	Target         string `json:"target"`
-	Path           string `json:"path"`
-	Scope          string `json:"scope"`
-	AsOf           string `json:"as_of,omitempty"`
-	ProviderID     string `json:"provider_id,omitempty"`
-	UpstreamSystem string `json:"upstream_system,omitempty"`
-	ContractRef    string `json:"contract_ref"`
-	Raw            string `json:"raw"`
+	Kind           string   `json:"kind"`
+	Target         string   `json:"target"`
+	Path           string   `json:"path"`
+	Scope          string   `json:"scope"`
+	AsOf           string   `json:"as_of,omitempty"`
+	ProviderID     string   `json:"provider_id,omitempty"`
+	UpstreamSystem string   `json:"upstream_system,omitempty"`
+	ContractRef    string   `json:"contract_ref"`
+	MappedFrom     []string `json:"mapped_from,omitempty"`
+	Raw            string   `json:"raw"`
 }
 
 // Override is a comment-based temporary drift override.
@@ -180,6 +183,7 @@ func overridePayload(comment string) (string, bool) {
 
 func parsePayload(payload string, line int) (Annotation, *ParseError) {
 	fields := map[string]string{}
+	mappedFrom := make([]string, 0)
 
 	matches := kvPairRe.FindAllStringSubmatch(payload, -1)
 	for _, match := range matches {
@@ -187,6 +191,11 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 		value := strings.TrimSpace(match[2])
 		fields[key] = unquote(value)
 	}
+	normalizedMapped, aliasErr := normalizeAnnotationAliases(fields)
+	if aliasErr != nil {
+		return Annotation{}, parseErr(line, aliasErr.Error())
+	}
+	mappedFrom = append(mappedFrom, normalizedMapped...)
 
 	required := []string{
 		"annotation_schema_version",
@@ -320,6 +329,10 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 	if err != nil {
 		return Annotation{}, err
 	}
+	for _, src := range sourceRefs {
+		mappedFrom = append(mappedFrom, src.MappedFrom...)
+	}
+	mappedFrom = uniqueSortedStrings(mappedFrom)
 
 	if len(sourceRefs) > 1 && mergeStrategy == "single_source" {
 		return Annotation{}, parseErr(line, "merge_strategy=single_source is invalid when multiple sources are declared")
@@ -349,6 +362,7 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 		Sources:                   sourceRefs,
 		Flow:                      fields["flow"],
 		Note:                      fields["note"],
+		MappedFrom:                mappedFrom,
 		Line:                      line,
 	}, nil
 }
@@ -474,17 +488,26 @@ func parseSourceRef(ref string, line int) (SourceRef, *ParseError) {
 		return SourceRef{}, parseErr(line, fmt.Sprintf("unsupported source scope %q (use internal|cross_repo|external)", scope))
 	}
 
+	query, err := parseQuery(queryRaw)
+	if err != nil {
+		return SourceRef{}, parseErr(line, fmt.Sprintf("invalid source reference %q (%s)", ref, err.Error()))
+	}
+	queryMappedFrom, err := normalizeSourceQueryAliases(query)
+	if err != nil {
+		return SourceRef{}, parseErr(line, fmt.Sprintf("invalid source reference %q (%s)", ref, err.Error()))
+	}
+	if aliasAsOf := strings.TrimSpace(query["as_of"]); aliasAsOf != "" {
+		if asOf != "" && asOf != aliasAsOf {
+			return SourceRef{}, parseErr(line, fmt.Sprintf("source %q has conflicting as_of values (%q vs %q)", ref, asOf, aliasAsOf))
+		}
+		asOf = aliasAsOf
+	}
 	if scope == "external" {
 		if !validDate(asOf) {
 			return SourceRef{}, parseErr(line, fmt.Sprintf("external source %q must include as_of date YYYY-MM-DD", ref))
 		}
 	} else if asOf != "" {
 		return SourceRef{}, parseErr(line, fmt.Sprintf("source %q includes as_of date but scope is %q", ref, scope))
-	}
-
-	query, err := parseQuery(queryRaw)
-	if err != nil {
-		return SourceRef{}, parseErr(line, fmt.Sprintf("invalid source reference %q (%s)", ref, err.Error()))
 	}
 
 	contractRef := strings.TrimSpace(query["contract_ref"])
@@ -517,6 +540,7 @@ func parseSourceRef(ref string, line int) (SourceRef, *ParseError) {
 		ProviderID:     providerID,
 		UpstreamSystem: upstreamSystem,
 		ContractRef:    contractRef,
+		MappedFrom:     queryMappedFrom,
 		Raw:            ref,
 	}, nil
 }
@@ -583,4 +607,71 @@ func unquote(value string) string {
 		return value[1 : len(value)-1]
 	}
 	return value
+}
+
+func normalizeAnnotationAliases(fields map[string]string) ([]string, error) {
+	aliases := map[string][]string{
+		"annotation_schema_version":    {"schema_version"},
+		"field":                        {"field_path", "json_path", "property_path"},
+		"source_system":                {"service_name"},
+		"source_version":               {"service_version", "spec_version"},
+		"min_supported_source_version": {"min_source_version", "min_supported_version"},
+		"owner":                        {"owner_team"},
+		"contract_test_id":             {"contract_test", "test_id"},
+	}
+	return normalizeAliases(fields, aliases)
+}
+
+func normalizeSourceQueryAliases(query map[string]string) ([]string, error) {
+	aliases := map[string][]string{
+		"contract_ref":    {"schema_ref", "spec_ref", "contract_uri", "schema_url"},
+		"provider_id":     {"provider", "external_provider"},
+		"upstream_system": {"upstream_service", "upstream_source_system"},
+		"as_of":           {"asof", "snapshot_as_of"},
+	}
+	return normalizeAliases(query, aliases)
+}
+
+func normalizeAliases(fields map[string]string, aliases map[string][]string) ([]string, error) {
+	mappedFrom := make([]string, 0)
+	for canonical, aliasKeys := range aliases {
+		canonicalValue := strings.TrimSpace(fields[canonical])
+		for _, aliasKey := range aliasKeys {
+			aliasValue := strings.TrimSpace(fields[aliasKey])
+			if aliasValue == "" {
+				continue
+			}
+			if canonicalValue == "" {
+				fields[canonical] = aliasValue
+				canonicalValue = aliasValue
+				mappedFrom = append(mappedFrom, aliasKey)
+				continue
+			}
+			if canonicalValue != aliasValue {
+				return nil, fmt.Errorf("conflicting values for %q and alias %q", canonical, aliasKey)
+			}
+		}
+	}
+	return uniqueSortedStrings(mappedFrom), nil
+}
+
+func uniqueSortedStrings(values []string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	seen := map[string]bool{}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		v := strings.TrimSpace(value)
+		if v == "" || seen[v] {
+			continue
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	sort.Strings(out)
+	return out
 }

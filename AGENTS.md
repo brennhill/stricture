@@ -93,3 +93,23 @@ Execution entrypoint:
 - Run: `./scripts/usecase-agent.sh run`
 - Status: `./scripts/usecase-agent.sh status`
 - Reset: `./scripts/usecase-agent.sh reset`
+
+## Publication Agent
+
+Name: `publication-agent`
+
+Purpose:
+- Scaffold and maintain publication-facing documentation from `PUB-ROADMAP.md`.
+- Keep `docs/publication/` ready for continuous authoring with minimal setup friction.
+- Avoid user prompts for routine scaffolding and state tracking tasks.
+
+Operating rules:
+- Create missing publication docs from deterministic templates.
+- Never overwrite existing publication docs unless explicitly told.
+- Persist run state and progress for interruption-safe execution.
+- Surface blockers only when filesystem operations fail.
+
+Execution entrypoint:
+- Run: `./scripts/publication-agent.sh run`
+- Status: `./scripts/publication-agent.sh status`
+- Reset: `./scripts/publication-agent.sh reset`

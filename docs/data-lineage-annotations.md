@@ -1,7 +1,15 @@
+<!--
+SPDX-FileCopyrightText: 2026 Brenn Hill
+SPDX-License-Identifier: CC-BY-4.0
+-->
+
 # Data Lineage Annotations for API Outputs
 
 This document defines a strict, versioned annotation contract for tracing each API
 output field back to all source systems and contracts.
+
+For standards compatibility and reuse policy (OpenAPI/AsyncAPI/OpenLineage/OTel),
+see `OVERLAY.md`.
 
 ## Goals
 
@@ -45,6 +53,20 @@ Accepted comment prefixes:
 - `flow`: provenance chain (`from @X enriched @self`).
 - `note`: human explanation (can include URL/spec/class/method).
 
+## Accepted Synonyms (No-Rename Adoption)
+
+Stricture keeps canonical keys above, but accepts these synonyms to ease
+interop with existing metadata conventions:
+
+- `field_path` -> `field`
+- `service_name` -> `source_system`
+- `service_version` / `spec_version` -> `source_version`
+- `min_source_version` / `min_supported_version` -> `min_supported_source_version`
+- `owner_team` -> `owner`
+- `contract_test` / `test_id` -> `contract_test_id`
+
+If both canonical and synonym are present with different values, parsing fails.
+
 ## Optional Keys
 
 - `renamed_from`: previous `field_id` when identity is intentionally migrated.
@@ -75,6 +97,13 @@ Rules:
 - `as_of` (`YYYY-MM-DD`) is required for `external` sources.
 - `provider_id` must not be set on non-external sources.
 
+Accepted source query synonyms:
+
+- `schema_ref` / `spec_ref` / `contract_uri` / `schema_url` -> `contract_ref`
+- `provider` / `external_provider` -> `provider_id`
+- `upstream_service` / `upstream_source_system` -> `upstream_system`
+- `asof` / `snapshot_as_of` -> `as_of`
+
 ## Examples
 
 Single-source internal:
@@ -99,6 +128,8 @@ External provider:
 
 - Export normalized artifact:
   - `stricture lineage-export --out tests/lineage/current.json .`
+- Export with profile aliases/proxies:
+  - `stricture lineage-export --profile otel --out tests/lineage/current-otel.json .`
 - Diff artifacts:
   - `stricture lineage-diff --base tests/lineage/baseline.json --head tests/lineage/current.json --fail-on medium --mode block`
 - CI helper (uses baseline + head artifact generation):

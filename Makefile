@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset publication-agent publication-agent-status publication-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
 
 GOFLAGS ?=
 GOCACHE ?= $(PWD)/.cache/go-build
@@ -149,6 +149,15 @@ usecase-agent-status:
 
 usecase-agent-reset:
 	./scripts/usecase-agent.sh reset
+
+publication-agent:
+	./scripts/publication-agent.sh run
+
+publication-agent-status:
+	./scripts/publication-agent.sh status
+
+publication-agent-reset:
+	./scripts/publication-agent.sh reset
 
 spec-quality-audit:
 	./scripts/spec-quality-audit.sh

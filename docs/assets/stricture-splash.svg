@@ -10,6 +10,10 @@
       <stop offset="0%" stop-color="#f97316"/>
       <stop offset="100%" stop-color="#fb923c"/>
     </linearGradient>
+    <linearGradient id="hexMark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0b1222" flood-opacity="0.45"/>
     </filter>
@@ -19,6 +23,20 @@
 
   <circle cx="110" cy="90" r="140" fill="#1e3a8a" opacity="0.35"/>
   <circle cx="1110" cy="510" r="170" fill="#f97316" opacity="0.18"/>
+
+  <g transform="translate(988 78)" filter="url(#shadow)">
+    <rect x="-20" y="-20" width="148" height="148" rx="14" fill="#102448" stroke="#3f6ab0" stroke-width="2"/>
+    <g transform="translate(12 12) scale(1.95)">
+      <path
+        fill="url(#hexMark)"
+        d="M32 3 56 17v30L32 61 8 47V17L32 3Zm0 8.8L15.6 21v22L32 52.2 48.4 43V21L32 11.8Z"
+      />
+      <path
+        fill="#f8fbff"
+        d="M19.8 39.2 26.3 33a10.6 10.6 0 0 1 3.5-2.2l8.5-2.9a2 2 0 0 0 1.2-2.6 2 2 0 0 0-2.5-1.2l-8.6 2.9a14.7 14.7 0 0 0-4.8 3l-6.6 6.3a2 2 0 1 0 2.8 2.9Zm24.4-14.4a2 2 0 0 0-2.8 0L34.8 31a10.6 10.6 0 0 1-3.5 2.2l-8.6 2.9a2 2 0 0 0 1.3 3.8l8.6-2.9a14.7 14.7 0 0 0 4.8-3l6.8-6.4a2 2 0 0 0 0-2.8Z"
+      />
+    </g>
+  </g>
 
   <rect x="70" y="70" width="1060" height="490" rx="18" fill="#0b1224" stroke="#29406d" stroke-width="2" opacity="0.92"/>
 

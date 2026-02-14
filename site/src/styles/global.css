@@ -533,31 +533,6 @@ main {
   text-underline-offset: 0.12em;
 }
 
-.theme-switcher {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
-.theme-switcher label {
-  display: inline-flex;
-  align-items: center;
-  margin: 0;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.theme-switcher select {
-  min-width: 184px;
-  padding: 0.38rem 0.5rem;
-  border-radius: 8px;
-  font-size: 0.74rem;
-  border: 1px solid var(--line);
-  background: #ffffff;
-  color: var(--ink);
-}
-
 .demo-shell {
   padding-top: 1rem;
 }

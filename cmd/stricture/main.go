@@ -2152,6 +2152,7 @@ func runLineageExport(args []string) {
 	fs := flag.NewFlagSet("lineage-export", flag.ExitOnError)
 	outPath := fs.String("out", "", "Write artifact JSON to this path (stdout if empty)")
 	strict := fs.Bool("strict", true, "Exit non-zero if parse errors are found")
+	profileRaw := fs.String("profile", string(lineage.ProfileStricture), "Export profile (stricture, openlineage, otel, openapi, asyncapi)")
 	fs.Usage = func() {
 		fmt.Println("Usage: stricture lineage-export [options] [paths...]")
 		fmt.Println()
@@ -2159,6 +2160,11 @@ func runLineageExport(args []string) {
 		fs.PrintDefaults()
 	}
 	parseFlagSetOrExit(fs, args)
+	profile, err := lineage.ParseExportProfile(*profileRaw)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(2)
+	}
 
 	paths := fs.Args()
 	if len(paths) == 0 {
@@ -2172,12 +2178,12 @@ func runLineageExport(args []string) {
 	}
 
 	if *outPath != "" {
-		if err := lineage.WriteArtifact(*outPath, artifact); err != nil {
+		if err := lineage.WriteArtifactForProfile(*outPath, artifact, profile); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: write artifact: %v\n", err)
 			os.Exit(1)
 		}
 	} else {
-		out, err := json.MarshalIndent(artifact, "", "  ")
+		out, err := lineage.MarshalArtifactForProfile(artifact, profile)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: marshal artifact: %v\n", err)
 			os.Exit(1)
