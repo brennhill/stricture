@@ -848,6 +848,20 @@ select {
   border: 1px solid var(--line);
 }
 
+.legend-node-source::before {
+  background: #f59e0b;
+  border-color: #b45309;
+}
+
+.legend-node-impacted::before {
+  background: #ef4444;
+  border-color: #b91c1c;
+}
+
+.legend-edge-affected::before {
+  background: #f59e0b;
+}
+
 .node {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -988,8 +1002,23 @@ select {
 }
 
 .graph-node.source circle {
-  stroke: var(--accent-2);
+  fill: rgba(249, 115, 22, 0.16);
+  stroke: #d97706;
   stroke-width: 2.6;
+}
+
+.graph-node.source text {
+  fill: #9a3412;
+}
+
+.graph-node.impacted circle {
+  fill: rgba(239, 68, 68, 0.15);
+  stroke: #dc2626;
+  stroke-width: 2.8;
+}
+
+.graph-node.impacted text {
+  fill: #7f1d1d;
 }
 
 .graph-node.isolated circle {
@@ -1036,6 +1065,11 @@ select {
 
 .graph-edge.edge-healthy {
   stroke: var(--ok);
+}
+
+.graph-edge.edge-affected {
+  stroke: #d97706;
+  stroke-width: 2.4;
 }
 
 .graph-edge.flow {

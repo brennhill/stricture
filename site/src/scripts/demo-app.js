@@ -36,6 +36,62 @@ const selectors = {
   toggleEdges: document.querySelector("#toggle-edges"),
 };
 
+const humanChange = {
+  annotation_missing: "annotation missing",
+  external_as_of_rollback: "external snapshot stale",
+  external_as_of_stale: "external snapshot stale",
+  field_removed: "field removed",
+  merge_strategy_changed: "merge behavior changed",
+  source_contract_ref_changed: "contract reference changed",
+  source_removed: "source mapping removed",
+  source_version_changed: "source version changed",
+  type_changed: "type changed",
+  enum_changed: "enum changed",
+};
+
+function serviceById(snapshot) {
+  return new Map((snapshot.services || []).map((service) => [service.id, service]));
+}
+
+function serviceName(snapshot, serviceId) {
+  const service = serviceById(snapshot).get(serviceId);
+  return service?.name || serviceId || "unknown service";
+}
+
+function serviceOwner(snapshot, serviceId) {
+  const service = serviceById(snapshot).get(serviceId);
+  return service?.owner || "unknown owner";
+}
+
+function latestMutation(snapshot) {
+  if (!snapshot?.mutations?.length) {
+    return null;
+  }
+  return snapshot.mutations[snapshot.mutations.length - 1];
+}
+
+function listServiceNames(snapshot, ids, limit = 3) {
+  const names = [...new Set((ids || []).map((id) => serviceName(snapshot, id)).filter(Boolean))];
+  if (!names.length) return "none";
+  if (names.length <= limit) return names.join(", ");
+  return `${names.slice(0, limit).join(", ")} +${names.length - limit} more`;
+}
+
+function findingSummaryText(finding) {
+  const text = finding.summary || "";
+  const mergeMatch = /^merge_strategy changed from ([^ ]+) to ([^ ]+)$/i.exec(text);
+  if (mergeMatch) {
+    return `Merge behavior changed (${mergeMatch[1]} -> ${mergeMatch[2]}). Downstream services may resolve this field differently.`;
+  }
+  if (text.startsWith("contract_ref changed")) {
+    return "Contract reference changed without a coordinated version rollout.";
+  }
+  if (text.startsWith("source removed")) {
+    return "A required upstream source was removed, so downstream data lineage is incomplete.";
+  }
+  return text;
+}
+
 async function request(path, method = "GET", body) {
   const response = await fetch(path, {
     method,
@@ -119,7 +175,7 @@ function updateNarrative(presetId) {
     return;
   }
   const narratives = {
-    enum_changed: "Payments enum drift: PSP added a new status value without bumping contract. Downstream billing and notifications may misclassify payments until code updates ship.",
+    enum_changed: "Payments enum drift: payment service provider (PSP) adds a new status without a contract bump. Downstream billing and notifications can misclassify payments until consumers update.",
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
     annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
@@ -135,7 +191,8 @@ function renderGate(summary) {
   selectors.gateBanner.classList.remove("gate-ok", "gate-warn", "gate-block");
   const cls = summary.gate === "BLOCK" ? "gate-block" : summary.findingCount > 0 ? "gate-warn" : "gate-ok";
   selectors.gateBanner.classList.add(cls);
-  selectors.gateBanner.textContent = `Run #${summary.runCount} | ${summary.gate} | findings=${summary.findingCount} | mode=${summary.mode}`;
+  const gateText = summary.gate === "BLOCK" ? "Deploy blocked" : "Deploy allowed";
+  selectors.gateBanner.textContent = `Run #${summary.runCount} | ${gateText} | ${summary.findingCount} finding(s)`;
 }
 
 function renderRunSummary(snapshot) {
@@ -147,9 +204,17 @@ function renderRunSummary(snapshot) {
     selectors.runSummaryText.textContent = "Awaiting first run. Apply a mutation then rerun to see how Stricture flags drift.";
     return;
   }
-  const gatePhrase = summary.gate === "BLOCK" ? "blocked deploy" : "passed gate";
-  const detail = `policy=${summary.mode}/${snapshot.policy.failOn}, high=${summary.blockedCount}, warn=${summary.warningCount}`;
-  selectors.runSummaryText.textContent = `Run #${summary.runCount} ${gatePhrase}: ${summary.findingCount} findings (${detail}). Stricture flags severity from the mutation scenario and applies policy thresholds; high-severity findings block when policy=block and severity ≥ failOn.`;
+  const findingWord = summary.findingCount === 1 ? "finding" : "findings";
+  const gateText = summary.gate === "BLOCK" ? "Deploy blocked." : "Deploy allowed.";
+  const policyText = summary.mode === "block"
+    ? `Policy is block at ${snapshot.policy.failOn}+ severity.`
+    : `Policy is warn (never blocks), threshold is ${snapshot.policy.failOn}+ for escalation.`;
+  const mutation = latestMutation(snapshot);
+  const sourceText = mutation ? `Changed source: ${serviceName(snapshot, mutation.serviceId)}.` : "";
+  const impactedText = summary.findingCount
+    ? `Flagged services: ${listServiceNames(snapshot, snapshot.findings.map((finding) => finding.serviceId))}.`
+    : "No services were flagged.";
+  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} ${findingWord} (${summary.blockedCount} high, ${summary.warningCount} warning). ${gateText} ${policyText} ${sourceText} ${impactedText}`;
 }
 
 function nodeStatusForService(serviceId, findings) {
@@ -245,16 +310,27 @@ function render(snapshot) {
     "No findings yet.",
     {
       className: (finding) => `list-item sev-${finding.severity}`,
-      html: (finding) => `
-        <h3>${humanChange[finding.changeType] || finding.changeType} — ${finding.fieldId} (${finding.severity.toUpperCase()})</h3>
-        <p>${finding.summary}</p>
+      html: (finding) => {
+        const mutation = latestMutation(snapshot);
+        const source = mutation ? serviceName(snapshot, mutation.serviceId) : "unknown";
+        const impacted = serviceName(snapshot, finding.serviceId);
+        const owner = serviceOwner(snapshot, finding.serviceId);
+        const flowServices = (snapshot.edges || [])
+          .filter((edge) => edge.fieldId === finding.fieldId)
+          .flatMap((edge) => [edge.from, edge.to]);
+        const blastRadius = listServiceNames(snapshot, [...flowServices, finding.serviceId], 4);
+        return `
+        <h3>${humanChange[finding.changeType] || finding.changeType} — ${finding.fieldId} (${finding.severity.toUpperCase()}) in ${impacted}</h3>
+        <p>${findingSummaryText(finding)}</p>
         <p class="item-meta chips">
-          <span class="chip">Cause: ${humanChange[finding.changeType] || finding.changeType}</span>
-          <span class="chip">Blast radius: ${finding.serviceId}</span>
-          <span class="chip">Owner: ${finding.serviceId}</span>
+          <span class="chip">Cause: ${source}</span>
+          <span class="chip">Impact: ${impacted}</span>
+          <span class="chip">Blast radius: ${blastRadius}</span>
+          <span class="chip">Owner: ${owner}</span>
         </p>
         <p class="item-meta">Remediation: ${finding.remediation}</p>
-      `,
+      `;
+      },
     },
   );
 
@@ -441,7 +517,12 @@ async function applyPreset() {
     selectors.mutationField.value = fieldId;
   }
   if (selectors.mutationService && selectors.mutationService.options.length) {
-    selectors.mutationService.value = selectors.mutationService.options[0].value;
+    const candidateSource = (state.snapshot.edges || []).find((edge) => edge.fieldId === fieldId)?.from;
+    if (candidateSource && [...selectors.mutationService.options].some((option) => option.value === candidateSource)) {
+      selectors.mutationService.value = candidateSource;
+    } else {
+      selectors.mutationService.value = selectors.mutationService.options[0].value;
+    }
   }
   updateNarrative(id);
   await bootstrap(); // reset session so findings don’t pile up
@@ -467,7 +548,7 @@ function renderGraph(snapshot) {
   container.innerHTML = "";
   const label = document.createElement("div");
   label.className = "graph-label";
-  label.textContent = "Animated arrows show field flow direction";
+  label.textContent = "Orange node = source change, red node = impacted service, orange edge = affected path";
   container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
@@ -498,7 +579,16 @@ function renderGraph(snapshot) {
     return Math.max(max, label.length);
   }, 0);
   const sideLabelPadding = Math.min(Math.max(56, Math.ceil(longestLabel * 3.8)), 190);
-  const { activeFields, sourceServices, flowNodes, flowEdges, affectedServices, focusFieldSeverity } = computeImpacts(snapshot);
+  const {
+    activeFields,
+    sourceServices,
+    impactedServices,
+    failedServices,
+    flowNodes,
+    flowEdges,
+    affectedServices,
+    focusFieldSeverity,
+  } = computeImpacts(snapshot);
   const positions = normalizePositions(
     computeLayeredLayout(nodes, edges, width, height, { affectedServices, sourceServices, flowNodes }),
     width,
@@ -529,10 +619,14 @@ function renderGraph(snapshot) {
     curve.setAttribute("d", d);
     const isFlow = flowEdges.has(edge.id);
     const isActiveField = activeFields.has(edge.fieldId);
-    const color = isActiveField ? "var(--accent-2)" : edgeColor(edge.status);
+    const isSourceImpactEdge =
+      isFlow && (sourceServices.has(edge.from) || sourceServices.has(edge.to)) &&
+      (impactedServices.has(edge.from) || impactedServices.has(edge.to) || isActiveField);
+    const color = !isFlow ? "var(--line)" : isSourceImpactEdge ? "var(--warn)" : edgeColor(edge.status);
     curve.setAttribute("stroke", color);
     const classes = [`graph-edge`, `edge-${edge.status}`, "flow"];
     if (!isFlow) classes.push("dimmed");
+    if (isSourceImpactEdge) classes.push("edge-affected");
     curve.setAttribute("class", classes.join(" "));
     const title = document.createElementNS(svgNS, "title");
     title.textContent = `${edge.from} → ${edge.to} • ${edge.fieldId} • ${edge.status}`;
@@ -551,19 +645,26 @@ function renderGraph(snapshot) {
     const isolated = (node.edgeDegree || 0) === 0;
     const inFlow = flowNodes.has(node.id);
     const isSource = sourceServices.has(node.id);
+    const isImpacted = impactedServices.has(node.id);
+    const isFailing = failedServices.has(node.id);
     const classes = ["graph-node", statusClass];
     if (isolated) classes.push("isolated");
-    if (!inFlow) classes.push("dimmed");
-    if (isSource) classes.push("source", "focus");
+    if (!inFlow && !isSource && !isImpacted) classes.push("dimmed");
+    if (isSource) classes.push("source");
+    if (isImpacted) classes.push("impacted");
+    if (isFailing) classes.push("failing");
     g.setAttribute("class", classes.join(" "));
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", pos.x);
     circle.setAttribute("cy", pos.y);
-    circle.setAttribute("r", inFlow ? "26" : "18");
+    circle.setAttribute("r", isSource || isImpacted ? "28" : inFlow ? "24" : "16");
     g.appendChild(circle);
     const label = document.createElementNS(svgNS, "text");
     label.setAttribute("x", pos.x);
-    label.setAttribute("y", pos.y + 34);
+    label.setAttribute("y", pos.y + 37);
+    if (isSource || isImpacted) {
+      label.setAttribute("font-weight", "700");
+    }
     label.textContent = node.name;
     const title = document.createElementNS(svgNS, "title");
     title.textContent = `${node.name} (${node.domain}) • owner=${node.owner}`;
@@ -574,9 +675,18 @@ function renderGraph(snapshot) {
   });
 
   container.appendChild(svg);
+  svg.__positions = positions;
 
   if (selectors.flowPathSummary) {
-    selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges, focusFieldSeverity, activeFields);
+    selectors.flowPathSummary.textContent = summarizeFlow(
+      snapshot,
+      nodes,
+      edges,
+      sourceServices,
+      impactedServices,
+      focusFieldSeverity,
+      activeFields,
+    );
   }
 
   addGraphInteractions(svg);
@@ -821,11 +931,12 @@ function zoomToNodes(svg, positions, nodeSet) {
   svg.setAttribute("viewBox", viewBox);
 }
 
-function summarizeFlow(nodes, edges, severity, activeFields) {
+function summarizeFlow(snapshot, nodes, edges, sourceServices, impactedServices, severity, activeFields) {
   if (!nodes.length) return "No services loaded.";
   const incoming = new Map();
   edges.forEach((e) => incoming.set(e.to, (incoming.get(e.to) || 0) + 1));
-  let start = nodes.find((n) => !incoming.get(n.id)) || nodes[0];
+  const sourceID = sourceServices && sourceServices.size ? [...sourceServices][0] : null;
+  let start = (sourceID && nodes.find((n) => n.id === sourceID)) || nodes.find((n) => !incoming.get(n.id)) || nodes[0];
   const path = [start.name];
   const seen = new Set();
   let current = start.id;
@@ -839,18 +950,22 @@ function summarizeFlow(nodes, edges, severity, activeFields) {
     current = nextNode.id;
     if (seen.has(current)) break;
   }
-  const sevText = severity ? ` | severity=${severity}` : "";
-  return `Sample flow: ${path.join(" → ")}${sevText}`;
+  const sevText = severity ? ` (${severity} severity)` : "";
+  const sourceText = sourceID ? `Source changed: ${serviceName(snapshot, sourceID)}.` : "";
+  const impactText = impactedServices?.size
+    ? `Impacted services: ${listServiceNames(snapshot, [...impactedServices], 4)}.`
+    : "No impacted services.";
+  return `${sourceText} ${impactText} Flow: ${path.join(" -> ")}${sevText}`;
 }
 
 function computeImpacts(snapshot) {
   const sevRank = { high: 3, medium: 2, low: 1, info: 0 };
   const findings = snapshot.findings || [];
   const sorted = [...findings].sort((a, b) => (sevRank[b.severity] || 0) - (sevRank[a.severity] || 0));
+  const latest = latestMutation(snapshot);
   let focus = sorted[0];
-  if (!focus && snapshot.mutations?.length) {
-    const last = snapshot.mutations[snapshot.mutations.length - 1];
-    focus = { fieldId: last.fieldId, serviceId: last.serviceId, severity: "info" };
+  if (!focus && latest) {
+    focus = { fieldId: latest.fieldId, serviceId: latest.serviceId, severity: "info" };
   }
   const activeFields = new Set(
     findings
@@ -860,7 +975,23 @@ function computeImpacts(snapshot) {
   if (activeFields.size === 0 && focus?.fieldId) {
     activeFields.add(focus.fieldId);
   }
-  const sourceServices = new Set(focus && focus.serviceId ? [focus.serviceId] : []);
+  const sourceServices = new Set();
+  if (latest?.serviceId) {
+    sourceServices.add(latest.serviceId);
+  } else if (focus?.serviceId) {
+    sourceServices.add(focus.serviceId);
+  }
+  const impactedServices = new Set(
+    findings
+      .map((item) => item.serviceId)
+      .filter((value) => typeof value === "string" && value.length > 0),
+  );
+  const failedServices = new Set(
+    findings
+      .filter((item) => item.severity === "high")
+      .map((item) => item.serviceId)
+      .filter((value) => typeof value === "string" && value.length > 0),
+  );
   const affectedServices = new Set(
     findings
       .map((item) => item.serviceId)
@@ -878,11 +1009,18 @@ function computeImpacts(snapshot) {
       flowNodes.add(e.to);
       affectedServices.add(e.from);
       affectedServices.add(e.to);
+      impactedServices.add(e.from);
+      impactedServices.add(e.to);
     }
+  });
+  sourceServices.forEach((serviceId) => {
+    impactedServices.delete(serviceId);
   });
   return {
     activeFields,
     sourceServices,
+    impactedServices,
+    failedServices,
     affectedServices,
     flowNodes,
     flowEdges,

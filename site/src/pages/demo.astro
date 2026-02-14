@@ -103,18 +103,18 @@ export const prerender = true;
       <section class="demo-main">
         <article class="card">
           <h2>Findings</h2>
-          <p class="muted" id="run-summary-text">Awaiting first run. Apply a mutation then rerun to see flags.</p>
+          <p class="muted" id="run-summary-text">Awaiting first run. Apply a mutation then rerun to see what changed, which service caused it, and which services are impacted.</p>
           <div id="findings" class="list"></div>
         </article>
 
         <article class="card">
           <h2>Service Topology</h2>
-          <p class="muted">Visualize how services (big nodes) and field-level flows (thin edges) connect. Nodes inherit the worst finding on that service; edges show per-field status.</p>
+          <p class="muted">Visualize how services (nodes) and field-level flows (edges) connect. Orange node = service that introduced the change. Red node = service where Stricture flags impact. Orange edge = affected path between them.</p>
           <div class="legend">
-            <span class="legend-chip legend-node-ok">Service node</span>
-            <span class="legend-chip legend-edge-healthy">Field flow (healthy)</span>
-            <span class="legend-chip legend-edge-warning">Field flow (warn)</span>
-            <span class="legend-chip legend-edge-blocked">Field flow (blocked)</span>
+            <span class="legend-chip legend-node-source">Source changed</span>
+            <span class="legend-chip legend-node-impacted">Service impacted</span>
+            <span class="legend-chip legend-edge-affected">Affected path</span>
+            <span class="legend-chip legend-edge-healthy">Other healthy flow</span>
           </div>
           <div id="topology-graph" class="topology-graph flow-graph"></div>
           <p class="muted tight" id="flow-path-summary">Loading flow...</p>
