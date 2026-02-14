@@ -11,12 +11,20 @@ export const prerender = true;
       <div>
         <p class="kicker">Interactive Demo</p>
         <h1>Topology + Drift Lab</h1>
+        <p class="hint">Apply a mutation, rerun, and watch how findings change across services.</p>
       </div>
       <div id="gate-banner" class="gate-banner gate-ok">Awaiting first run</div>
     </header>
 
     <div class="demo-layout">
       <aside class="demo-controls">
+        <h2>Quick Scenarios</h2>
+        <label>
+          Preset
+          <select id="preset-scenario"></select>
+        </label>
+        <button id="apply-scenario" class="button button-secondary">Load Scenario</button>
+
         <h2>Mutations</h2>
         <label>
           Type
@@ -37,6 +45,7 @@ export const prerender = true;
           Field ID
           <select id="mutation-field"></select>
         </label>
+        <p class="hint" id="control-stats"></p>
         <button id="apply-mutation" class="button button-primary">Apply Mutation</button>
 
         <h2>Policy</h2>
@@ -55,6 +64,7 @@ export const prerender = true;
             <option value="low">low</option>
           </select>
         </label>
+        <p class="hint">Block: stop deploy when severity ≥ threshold. Warn: allow deploy but surface findings.</p>
         <button id="update-policy" class="button button-secondary">Update Policy</button>
 
         <h2>Override</h2>
@@ -78,6 +88,7 @@ export const prerender = true;
           Ticket
           <input id="override-ticket" type="text" placeholder="INC-123" />
         </label>
+        <p class="hint">Use * to cover any change type; set an expiry so temporary overrides auto-expire.</p>
         <button id="add-override" class="button button-secondary">Add Override</button>
 
         <div class="control-actions">

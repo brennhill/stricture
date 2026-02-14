@@ -10,6 +10,8 @@ const selectors = {
   findings: document.querySelector("#findings"),
   overrides: document.querySelector("#overrides"),
   escalation: document.querySelector("#escalation"),
+  controlStats: document.querySelector("#control-stats"),
+  presetScenario: document.querySelector("#preset-scenario"),
   mutationType: document.querySelector("#mutation-type"),
   mutationService: document.querySelector("#mutation-service"),
   mutationField: document.querySelector("#mutation-field"),
@@ -27,6 +29,7 @@ const selectors = {
   runStricture: document.querySelector("#run-stricture"),
   resetSession: document.querySelector("#reset-session"),
   loadEscalation: document.querySelector("#load-escalation"),
+  applyScenario: document.querySelector("#apply-scenario"),
 };
 
 async function request(path, method = "GET", body) {
@@ -62,6 +65,42 @@ function refreshMutationFieldOptions(snapshot) {
   const mutationType = selectors.mutationType.value;
   const fieldIDs = snapshot.fieldsByMutation?.[mutationType] || [];
   setOptions(selectors.mutationField, fieldIDs, (id) => id);
+}
+
+function updateControlStats(snapshot) {
+  if (!selectors.controlStats || !selectors.mutationType) {
+    return;
+  }
+  const mutationType = selectors.mutationType.value;
+  const fieldCount = snapshot.fieldsByMutation?.[mutationType]?.length || 0;
+  const serviceCount = snapshot.services?.length || 0;
+  selectors.controlStats.textContent = `${serviceCount} services • ${fieldCount} fields for this mutation`;
+}
+
+function buildPresets(snapshot) {
+  const candidates = [
+    { id: "enum_changed", label: "Payments enum drift" },
+    { id: "type_changed", label: "Orders type drift" },
+    { id: "external_as_of_stale", label: "External as-of stale" },
+    { id: "annotation_missing", label: "Missing annotation" },
+  ];
+  const presets = candidates
+    .map((item) => {
+      const fields = snapshot.fieldsByMutation?.[item.id] || [];
+      return fields.length ? { ...item, fieldId: fields[0] } : null;
+    })
+    .filter(Boolean);
+  if (selectors.presetScenario) {
+    setOptions(
+      selectors.presetScenario,
+      presets.map((p) => p.id),
+      (id) => presets.find((p) => p.id === id)?.label || id,
+    );
+    if (presets.length) {
+      selectors.presetScenario.value = presets[0].id;
+    }
+  }
+  return presets;
 }
 
 function renderGate(summary) {
@@ -149,6 +188,7 @@ function render(snapshot) {
 
   renderGate(snapshot.runSummary);
   renderTopology(snapshot);
+  updateControlStats(snapshot);
 
   renderList(
     selectors.findings,
@@ -191,6 +231,7 @@ function render(snapshot) {
   setOptions(selectors.escalationService, serviceIDs, (id) => id);
 
   refreshMutationFieldOptions(snapshot);
+  buildPresets(snapshot);
 
   if (selectors.policyMode) {
     selectors.policyMode.value = snapshot.policy.mode;
@@ -212,6 +253,7 @@ async function run() {
   }
   const response = await request(`/api/session/${state.sessionId}/run`, "POST", {});
   render(response.snapshot);
+  revealFindings();
 }
 
 async function mutate() {
@@ -225,6 +267,7 @@ async function mutate() {
   };
   const response = await request(`/api/session/${state.sessionId}/mutations`, "POST", payload);
   render(response.snapshot);
+  revealFindings();
 }
 
 async function updatePolicy() {
@@ -292,9 +335,11 @@ function bindEvents() {
   selectors.runStricture?.addEventListener("click", () => run().catch(showError));
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
   selectors.loadEscalation?.addEventListener("click", () => loadEscalation().catch(showError));
+  selectors.applyScenario?.addEventListener("click", () => applyPreset().catch(showError));
   selectors.mutationType?.addEventListener("change", () => {
     if (state.snapshot) {
       refreshMutationFieldOptions(state.snapshot);
+      updateControlStats(state.snapshot);
     }
   });
 }
@@ -307,6 +352,41 @@ function showError(error) {
   selectors.gateBanner.classList.remove("gate-ok", "gate-warn", "gate-block");
   selectors.gateBanner.classList.add("gate-block");
   selectors.gateBanner.textContent = `Error: ${error.message}`;
+}
+
+function revealFindings() {
+  if (!selectors.findings) {
+    return;
+  }
+  selectors.findings.scrollIntoView({ behavior: "smooth", block: "start" });
+  selectors.findings.classList.add("pulse-once");
+  window.setTimeout(() => {
+    selectors.findings?.classList.remove("pulse-once");
+  }, 900);
+}
+
+async function applyPreset() {
+  if (!state.snapshot || !selectors.presetScenario) {
+    return;
+  }
+  const id = selectors.presetScenario.value;
+  const fields = state.snapshot.fieldsByMutation?.[id] || [];
+  const fieldId = fields[0];
+  if (!fieldId) {
+    throw new Error("No fields available for this preset.");
+  }
+  if (selectors.mutationType) {
+    selectors.mutationType.value = id;
+  }
+  refreshMutationFieldOptions(state.snapshot);
+  if (selectors.mutationField) {
+    selectors.mutationField.value = fieldId;
+  }
+  if (selectors.mutationService && selectors.mutationService.options.length) {
+    selectors.mutationService.value = selectors.mutationService.options[0].value;
+  }
+  await mutate();
+  await run();
 }
 
 bindEvents();
