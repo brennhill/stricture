@@ -493,11 +493,22 @@ function renderGraph(snapshot) {
 
   const nodes = snapshot.services || [];
   const edges = snapshot.edges || [];
+  const longestLabel = nodes.reduce((max, node) => {
+    const label = typeof node?.name === "string" ? node.name : "";
+    return Math.max(max, label.length);
+  }, 0);
+  const sideLabelPadding = Math.min(Math.max(56, Math.ceil(longestLabel * 3.8)), 190);
   const { activeFields, sourceServices, flowNodes, flowEdges, affectedServices, focusFieldSeverity } = computeImpacts(snapshot);
   const positions = normalizePositions(
     computeLayeredLayout(nodes, edges, width, height, { affectedServices, sourceServices, flowNodes }),
     width,
     height,
+    {
+      left: sideLabelPadding,
+      right: sideLabelPadding,
+      top: 44,
+      bottom: 72,
+    },
   );
 
   const edgeColor = (status) => {
@@ -518,11 +529,10 @@ function renderGraph(snapshot) {
     curve.setAttribute("d", d);
     const isFlow = flowEdges.has(edge.id);
     const isActiveField = activeFields.has(edge.fieldId);
-    const color = isActiveField ? "var(--accent-2)" : isFlow ? "#2563eb" : edgeColor(edge.status);
+    const color = isActiveField ? "var(--accent-2)" : edgeColor(edge.status);
     curve.setAttribute("stroke", color);
     const classes = [`graph-edge`, `edge-${edge.status}`, "flow"];
     if (!isFlow) classes.push("dimmed");
-    if (isActiveField) classes.push("focus");
     curve.setAttribute("class", classes.join(" "));
     const title = document.createElementNS(svgNS, "title");
     title.textContent = `${edge.from} → ${edge.to} • ${edge.fieldId} • ${edge.status}`;
@@ -695,8 +705,11 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
   return positions;
 }
 
-function normalizePositions(positions, width, height) {
-  const padding = 30;
+function normalizePositions(positions, width, height, padding = {}) {
+  const left = Math.max(0, padding.left ?? 30);
+  const right = Math.max(0, padding.right ?? 30);
+  const top = Math.max(0, padding.top ?? 30);
+  const bottom = Math.max(0, padding.bottom ?? 30);
   let minX = Infinity;
   let maxX = -Infinity;
   let minY = Infinity;
@@ -715,15 +728,17 @@ function normalizePositions(positions, width, height) {
 
   const spanX = Math.max(maxX - minX, 1);
   const spanY = Math.max(maxY - minY, 1);
-  // Scale each axis independently so the graph uses the full draw area.
-  const scaleX = Math.max((width - padding * 2) / spanX, 1);
-  const scaleY = Math.max((height - padding * 2) / spanY, 1);
+  const drawWidth = Math.max(width - left - right, 1);
+  const drawHeight = Math.max(height - top - bottom, 1);
+  // Scale each axis to fit the available draw area, shrinking when needed.
+  const scaleX = drawWidth / spanX;
+  const scaleY = drawHeight / spanY;
 
   const normalized = new Map();
   positions.forEach((pos, key) => {
     normalized.set(key, {
-      x: (pos.x - minX) * scaleX + padding,
-      y: (pos.y - minY) * scaleY + padding,
+      x: (pos.x - minX) * scaleX + left,
+      y: (pos.y - minY) * scaleY + top,
     });
   });
 
@@ -751,10 +766,8 @@ function addGraphInteractions(svg) {
       const id = edge.dataset.edgeId;
       if (edgeSet.size === 0 || edgeSet.has(id)) {
         edge.classList.remove("dimmed");
-        edge.classList.add("focus");
       } else {
         edge.classList.add("dimmed");
-        edge.classList.remove("focus");
       }
     });
 
