@@ -12,6 +12,15 @@ Last updated: 2026-02-14
    - Cloudflare Worker + R2
 4. Deterministic keys so records can be reconstructed and replayed.
 
+## Day 1 Operation Support Matrix
+
+| Mode | Runtime | Storage | Status |
+|---|---|---|---|
+| Local process | `cmd/stricture-server` | `fs` | Implemented |
+| Local process | `cmd/stricture-server` | `s3`/`r2` | Planned (required for day-1 completion) |
+| Cloud function | runtime adapter + `NewHandler` | `s3`/`r2` | Planned (required for day-1 completion) |
+| Hybrid mirror | process + replicator | `fs` + `s3`/`r2` | Planned (required for day-1 completion) |
+
 ## Record Model
 
 Each ingest request becomes one immutable record envelope:
@@ -63,6 +72,15 @@ Notes:
 - Same key strategy as S3.
 - Targets Cloudflare R2 via S3-compatible API or Worker binding layer.
 
+### Driver: `mirror` (planned day-1 completion)
+
+- Primary write to `fs` for low-latency local durability.
+- Secondary async replication to `s3` or `r2`.
+- Guarantees:
+  - ingest ACK after successful local write
+  - replication status tracked and retryable
+  - idempotent remote object keys by `run_id`
+
 ## Query Without Database
 
 v0/v1 query path avoids DB by combining:
@@ -92,20 +110,20 @@ cache/accelerator, not as source of truth.
 ### Profile A: Simple Server + S3
 
 - `stricture-server` binary handles ingest API.
-- Records write directly to S3 bucket.
+- Records write directly to S3 bucket (`s3` driver).
 - Token auth (v0), then OIDC/JWT (v1).
 
 ### Profile B: Cloudflare Worker + R2
 
-- Worker handles ingest endpoint.
-- Writes payload directly into R2 with same canonical keys.
+- Function/worker handler serves the same ingest endpoint contract.
+- Writes payload directly into R2 with canonical keys.
 - Cloudflare Access/JWT for auth.
 - Optional queue for retries under burst load.
 
 ### Profile C: Hybrid
 
-- Ingest to local `fs` for low latency.
-- Replicator mirrors to S3/R2 for durability.
+- Ingest to local `fs` for fast local ACK.
+- Replicator mirrors to S3/R2 for ultra-durable storage.
 - Server can continue from local cache during object-store incidents.
 
 ## Auth Design
@@ -134,5 +152,6 @@ Token claims should include service identity and allowed org/project scopes.
 ## Migration Plan
 
 1. v0: `fs` driver + token auth (implemented now).
-2. v1: `s3` and `r2` drivers + OIDC/JWT auth.
-3. v2: optional index service + policy/routing APIs.
+2. v1/day-1 completion: `s3` and/or `r2` driver + cloud-function adapter test path.
+3. v1.1: mirror driver (`fs` + object store replication queue/retry).
+4. v2: optional index service + policy/routing APIs.
