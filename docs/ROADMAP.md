@@ -27,6 +27,8 @@ Status: In progress.
 
 Goal: auto-decorate codebases using static analysis and existing contracts.
 
+Spec: `docs/helper/SPEC.md` (draft)
+
 Scope:
 
 1. Scan source and infer candidate `stricture-source` blocks.
