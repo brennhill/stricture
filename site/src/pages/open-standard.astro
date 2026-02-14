@@ -1,0 +1,78 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+export const prerender = true;
+
+const links = [
+  {
+    label: "Stricture Open Standard (SOS) Charter",
+    href: "https://github.com/brennhill/stricture/blob/main/SPEC-CHARTER.md"
+  },
+  {
+    label: "Stricture Open Standard (SOS) v0.1 Draft",
+    href: "https://github.com/brennhill/stricture/blob/main/spec/0.1-draft.md"
+  }
+];
+---
+
+<MainLayout title="Open Standard | Stricture" description="Stricture Open Standard (SOS): an open model for API lineage, architectural invariants, deterministic drift policy, and interoperable overlays with OpenAPI, OpenTelemetry, AsyncAPI, and OpenLineage.">
+  <section class="hero compare-hero">
+    <p class="kicker">Open Standard</p>
+    <h1>Stricture Open Standard (SOS)</h1>
+    <p class="lead">
+      Stricture is being formalized as an open standard for field-level lineage,
+      architecture invariants, deterministic drift outcomes, and policy-gated releases.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href={links[0].href} target="_blank" rel="noopener noreferrer">Read Charter</a>
+      <a class="button button-secondary" href={links[1].href} target="_blank" rel="noopener noreferrer">Read v0.1 Draft</a>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Why an open standard</h2>
+    <ol>
+      <li>Cross-team trust: architecture and lineage rules are transparent and portable.</li>
+      <li>Interoperability: one semantic model can overlay OpenAPI, AsyncAPI, OpenTelemetry, and OpenLineage.</li>
+      <li>Determinism: policy results are reproducible and auditable across runners.</li>
+      <li>Ecosystem growth: more implementations can conform to the same contract.</li>
+    </ol>
+  </section>
+
+  <section class="card compare-section">
+    <h2>What SOS standardizes</h2>
+    <div class="ai-grid">
+      <article class="ai-card">
+        <h3>Field Provenance</h3>
+        <p>Canonical model for per-field source systems, transforms, versions, and notes.</p>
+      </article>
+      <article class="ai-card">
+        <h3>Architecture Invariants</h3>
+        <p>Executable rules for dependency direction, provenance completeness, and compatibility.</p>
+      </article>
+      <article class="ai-card">
+        <h3>Drift Semantics</h3>
+        <p>Deterministic drift classes, severity mapping, and release gate behavior.</p>
+      </article>
+      <article class="ai-card">
+        <h3>Overrides and Escalation</h3>
+        <p>Time-bounded override semantics and operational ownership/escalation metadata.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Current status</h2>
+    <p>
+      SOS is currently in draft (`v0.1`). The reference implementation remains the
+      `stricture` CLI, with conformance fixtures and profile overlays defining behavior.
+    </p>
+    <ul>
+      {
+        links.map((item) => (
+          <li><a href={item.href} target="_blank" rel="noopener noreferrer">{item.label}</a></li>
+        ))
+      }
+    </ul>
+  </section>
+</MainLayout>

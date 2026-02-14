@@ -23,20 +23,6 @@ const canonicalUrl = new URL(Astro.url.pathname, "https://stricture-lint.com").t
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <script is:inline>
-      (() => {
-        const key = "stricture_theme";
-        const allowed = ["cobalt", "cyan", "navy", "charcoal", "midnight"];
-        try {
-          const saved = window.localStorage.getItem(key);
-          if (saved && allowed.includes(saved)) {
-            document.documentElement.setAttribute("data-theme", saved);
-          }
-        } catch {
-          // no-op if storage is unavailable
-        }
-      })();
-    </script>
     <title>{title}</title>
   </head>
   <body>
@@ -78,54 +64,11 @@ const canonicalUrl = new URL(Astro.url.pathname, "https://stricture-lint.com").t
     <footer class="site-footer">
       <p>Lineage an Architecture aware linting and release gates for API ecosystems.</p>
       <p><a href="/why-not">Tool Comparison</a></p>
-      <div class="theme-switcher">
-        <label for="theme-selector">Theme</label>
-        <select id="theme-selector" aria-label="Theme Selector">
-          <option value="cobalt">Cobalt + Orange</option>
-          <option value="cyan">Cyan + Teal</option>
-          <option value="navy">Navy + Signal Red</option>
-          <option value="charcoal">Charcoal + Burnt Orange</option>
-          <option value="midnight">Midnight + Lime</option>
-        </select>
-      </div>
+      <p><a href="/open-standard">Open Standard</a></p>
       <p>
         &copy; 2026
         <a href="https://www.linkedin.com/in/brennhill/" target="_blank" rel="noopener noreferrer">Brenn Hill</a>
       </p>
     </footer>
-    <script is:inline>
-      (() => {
-        const key = "stricture_theme";
-        const allowed = ["cobalt", "cyan", "navy", "charcoal", "midnight"];
-        const root = document.documentElement;
-        const selector = document.getElementById("theme-selector");
-        if (!selector) {
-          return;
-        }
-
-        const applyTheme = (theme) => {
-          const next = allowed.includes(theme) ? theme : "cobalt";
-          root.setAttribute("data-theme", next);
-          selector.value = next;
-        };
-
-        let saved = null;
-        try {
-          saved = window.localStorage.getItem(key);
-        } catch {
-          saved = null;
-        }
-        applyTheme(saved || "cobalt");
-
-        selector.addEventListener("change", () => {
-          applyTheme(selector.value);
-          try {
-            window.localStorage.setItem(key, selector.value);
-          } catch {
-            // no-op if storage is unavailable
-          }
-        });
-      })();
-    </script>
   </body>
 </html>
