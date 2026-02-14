@@ -3,14 +3,31 @@ import MainLayout from "../layouts/MainLayout.astro";
 
 export const prerender = true;
 
-const heroHeadlines = [
-  "Build safe with AI.",
-  "Keep AI-generated changes inside enforceable guardrails.",
-  "Detect API drift before it becomes an incident.",
-  "Catch schema mismatches before on-call gets paged.",
-  "Stop architecture breaks before they cross service boundaries.",
-  "Prevent one repo change from breaking ten systems.",
-  "Ship faster without losing contract integrity."
+const heroSlides = [
+  {
+    title: "Build safe with AI.",
+    lead: "AI-generated code can silently drift APIs and contracts without warning, creating massive risk across service boundaries. Stricture catches that drift, enforces the contract, and blocks unsafe deploys before incidents hit customers.",
+    visualTitle: "Agent change introduces contract drift",
+    visualBody: "A generated PR widens a core field type. Stricture traces downstream consumers, highlights the impacted path, and blocks the deploy until contracts are fixed."
+  },
+  {
+    title: "Keep AI-generated changes inside enforceable guardrails.",
+    lead: "Define acceptable changes with annotations, ownership, and policy gates so teams can move fast while still protecting production contracts.",
+    visualTitle: "Policy mode protects release flow",
+    visualBody: "Teams run in warn mode first, then promote rules to block mode once confidence is high and owners are assigned."
+  },
+  {
+    title: "Detect API drift before it becomes an incident.",
+    lead: "Stricture compares current lineage and contract state against a known-good baseline and surfaces exactly what changed, why it matters, and who is affected.",
+    visualTitle: "Baseline diff catches risky changes",
+    visualBody: "Findings include the source change, blast radius, and escalation chain so responders can act before customers are impacted."
+  },
+  {
+    title: "Ship faster without losing contract integrity.",
+    lead: "Use AI where it helps most, then let Stricture validate service boundaries, data contracts, and architecture invariants before release.",
+    visualTitle: "Velocity with reliable boundaries",
+    visualBody: "Developers keep delivery speed while CI blocks only the changes that create real downstream risk."
+  }
 ];
 
 const specLinks = {
@@ -25,24 +42,31 @@ const specLinks = {
   title="Stricture | Lineage-Aware API Linting"
   description="Stricture enforces architecture and data lineage across APIs with field provenance, multi-repo drift checks, source-version/as-of controls, invariants, policy gates, and escalation routing across logistics, fintech, media, ecommerce, and governance systems."
 >
-  <section class="hero">
-    <p class="kicker">Stricture</p>
-    <div>
-      <h1 class="hero-rotator" data-headlines={heroHeadlines.join("||")}>
-        <span class="hero-rotate-text" aria-live="polite">{heroHeadlines[0]}</span>
+  <section class="hero" data-hero-slides={JSON.stringify(heroSlides)}>
+    <div class="hero-copy">
+      <p class="kicker">Stricture</p>
+      <h1 class="hero-rotator">
+        <span class="hero-rotate-text" aria-live="polite">{heroSlides[0].title}</span>
       </h1>
-    <p class="lead hero-lead" data-headlines={heroHeadlines.join("||")}>
-      <span class="hero-rotate-text" aria-live="polite">{heroHeadlines[0]}</span>
-    </p>
+      <p class="lead hero-lead">
+        <span class="hero-rotate-text" aria-live="polite">{heroSlides[0].lead}</span>
+      </p>
       <div class="hero-actions">
         <a class="button button-primary" href="/demo">Open Interactive Demo</a>
         <a class="button button-secondary" href="/open-standard">Read Open Standard</a>
         <a class="button button-secondary" href="https://github.com/brennhill/stricture">View GitHub</a>
       </div>
+      <div class="hero-indicators" aria-hidden="true">
+        {heroSlides.map((_, idx) => (
+          <span class={`hero-indicator ${idx === 0 ? "is-active" : ""}`} data-hero-indicator></span>
+        ))}
+      </div>
     </div>
-    <div class="hero-visual" aria-hidden="true">
-      <span>Architecture map + live findings (demo)</span>
-    </div>
+    <aside class="hero-visual">
+      <p class="kicker">Live scenario</p>
+      <h2 class="hero-visual-title" data-hero-visual-title>{heroSlides[0].visualTitle}</h2>
+      <p class="hero-visual-body" data-hero-visual-body>{heroSlides[0].visualBody}</p>
+    </aside>
   </section>
 
   <section class="card getting-started-blurb">
@@ -233,30 +257,51 @@ const specLinks = {
   </section>
 
   <script type="module">
-    const hero = document.querySelector(".hero-rotator");
-    if (hero) {
-      const text = hero.querySelector(".hero-rotate-text");
-      const headlines = (hero.getAttribute("data-headlines") || "")
-        .split("||")
-        .map((item) => item.trim())
-        .filter(Boolean);
+    const hero = document.querySelector(".hero");
+    if (hero instanceof HTMLElement) {
+      const rotator = hero.querySelector(".hero-rotator");
+      const titleText = hero.querySelector(".hero-rotator .hero-rotate-text");
+      const leadText = hero.querySelector(".hero-lead .hero-rotate-text");
+      const visualTitle = hero.querySelector("[data-hero-visual-title]");
+      const visualBody = hero.querySelector("[data-hero-visual-body]");
+      const indicators = Array.from(hero.querySelectorAll("[data-hero-indicator]"));
+      const rawSlides = hero.getAttribute("data-hero-slides");
 
-      if (text && headlines.length > 1) {
+      let slides = [];
+      try {
+        slides = rawSlides ? JSON.parse(rawSlides) : [];
+      } catch {
+        slides = [];
+      }
+
+      if (rotator && titleText && leadText && visualTitle && visualBody && slides.length > 1) {
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const intervalMs = reduceMotion ? 12000 : 9000;
+        const intervalMs = reduceMotion ? 13000 : 9000;
         let idx = 0;
 
+        const applySlide = (nextIdx) => {
+          const next = slides[nextIdx];
+          if (!next) return;
+          titleText.textContent = next.title || "";
+          leadText.textContent = next.lead || "";
+          visualTitle.textContent = next.visualTitle || "";
+          visualBody.textContent = next.visualBody || "";
+          indicators.forEach((indicator, indicatorIdx) => {
+            indicator.classList.toggle("is-active", indicatorIdx === nextIdx);
+          });
+        };
+
         window.setInterval(() => {
-          idx = (idx + 1) % headlines.length;
+          idx = (idx + 1) % slides.length;
           if (reduceMotion) {
-            text.textContent = headlines[idx];
+            applySlide(idx);
             return;
           }
 
-          hero.classList.add("hero-rotating-out");
+          rotator.classList.add("hero-rotating-out");
           window.setTimeout(() => {
-            text.textContent = headlines[idx];
-            hero.classList.remove("hero-rotating-out");
+            applySlide(idx);
+            rotator.classList.remove("hero-rotating-out");
           }, 180);
         }, intervalMs);
       }
