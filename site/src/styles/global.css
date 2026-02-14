@@ -760,6 +760,10 @@ select {
   max-width: 25ch;
 }
 
+.invariants-hero h1 {
+  max-width: 24ch;
+}
+
 .compare-section {
   margin-top: 0.9rem;
   display: grid;
@@ -783,6 +787,47 @@ select {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 0.68rem;
+}
+
+.invariant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.68rem;
+}
+
+.invariant-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.invariant-card h3 {
+  font-size: 0.88rem;
+}
+
+.invariant-card p {
+  margin: 0;
+  font-size: 0.76rem;
+}
+
+.invariant-id {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: rgba(11, 110, 95, 0.08);
+}
+
+.invariant-example strong {
+  color: var(--ink);
 }
 
 .compare-card {

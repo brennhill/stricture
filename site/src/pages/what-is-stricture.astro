@@ -198,6 +198,37 @@ x-stricture-lineage:
   </section>
 
   <section class="card what-section">
+    <h2>Why use Stricture: architectural invariants</h2>
+    <p>
+      Architectural invariants define what must always remain true across your system boundaries.
+      Stricture turns those invariants into enforceable release checks instead of documentation that goes stale.
+    </p>
+    <div class="invariant-grid">
+      <article class="invariant-card">
+        <p class="invariant-id">Direction Rules</p>
+        <h3>Prevent forbidden dependency paths</h3>
+        <p>Example: block any change where data-layer services call public gateways directly.</p>
+      </article>
+      <article class="invariant-card">
+        <p class="invariant-id">Provenance Rules</p>
+        <h3>Require source metadata for every exposed field</h3>
+        <p>Example: fail releases where externally consumed fields lack source-system annotations.</p>
+      </article>
+      <article class="invariant-card">
+        <p class="invariant-id">Compliance Rules</p>
+        <h3>Control sensitive data movement</h3>
+        <p>Example: block flows that move regulated data to unapproved services without required transforms.</p>
+      </article>
+      <article class="invariant-card">
+        <p class="invariant-id">Compatibility Rules</p>
+        <h3>Gate upstream version drift</h3>
+        <p>Example: stop deploy when provider version changes without downstream compatibility updates.</p>
+      </article>
+    </div>
+    <a class="button button-primary" href="/architecture-invariants">Read Architecture Invariants Guide</a>
+  </section>
+
+  <section class="card what-section">
     <h2>Why not just use OpenTelemetry, OpenAPI, or OpenLineage?</h2>
     <p>
       You usually want all of them. Stricture does not replace core standards that teams already depend on.

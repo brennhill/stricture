@@ -1,0 +1,181 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+export const prerender = true;
+
+const invariants = [
+  {
+    id: "ARC-DEP-001",
+    title: "Dependency Direction Must Stay One-Way",
+    description:
+      "Public API services can call domain services, and domain services can call data systems, but reverse calls are blocked.",
+    example:
+      "Prevents a data-layer service from directly invoking a public gateway and bypassing policy checks."
+  },
+  {
+    id: "ARC-PROV-002",
+    title: "All Externally Visible Fields Need Provenance",
+    description:
+      "Every response field consumed outside a service boundary must declare at least one source system and ownership metadata.",
+    example:
+      "Prevents a customer-facing \"risk_score\" field from shipping with unknown origin."
+  },
+  {
+    id: "ARC-COMP-003",
+    title: "Regulated Data Cannot Cross Untagged Boundaries",
+    description:
+      "Fields tagged with PII, PCI, or regulated classifications cannot flow into disallowed systems unless required transforms are present.",
+    example:
+      "Blocks raw account numbers from entering analytics topics unless tokenized."
+  },
+  {
+    id: "ARC-VER-004",
+    title: "Source Version Compatibility Must Hold",
+    description:
+      "If upstream source-system versions change, downstream contracts must prove compatibility before release.",
+    example:
+      "Prevents deploy when an external payment provider schema changed and internal mapping was not updated."
+  },
+  {
+    id: "ARC-ESC-005",
+    title: "Critical Flows Require Escalation Coverage",
+    description:
+      "Any field in a critical customer journey must include owner and escalation contacts.",
+    example:
+      "If checkout totals drift, responders can immediately route from gateway owner to pricing and tax systems."
+  }
+];
+
+const rollout = [
+  "Start with 5-10 high-impact invariants tied to known outage patterns.",
+  "Run in warn mode for one release cycle to collect false-positive data.",
+  "Promote only high-confidence, high-impact invariants to block mode.",
+  "Require override comment, reason, owner, and expiry for temporary exceptions.",
+  "Review invariant violations weekly and tighten rule definitions over time."
+];
+---
+
+<MainLayout title="Architecture Invariants | Stricture">
+  <section class="hero invariants-hero">
+    <p class="kicker">Architecture Invariants</p>
+    <h1>Turn architecture intent into enforceable release policy.</h1>
+    <p class="lead">
+      Architectural invariants are the conditions that must always remain true across services,
+      data flows, and releases. Stricture makes them executable so drift is caught before incidents.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/walkthrough">Open Walkthrough</a>
+      <a class="button button-secondary" href="/what-is-stricture">Back to What Is Stricture</a>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Why this matters</h2>
+    <p>
+      Most incidents are not caused by one broken endpoint. They come from broken assumptions between systems.
+      Invariants are how you encode those assumptions as testable rules instead of tribal knowledge.
+    </p>
+    <p>
+      In AI-speed delivery environments, invariants are the control plane that lets teams ship quickly without
+      losing architectural integrity.
+    </p>
+  </section>
+
+  <section class="card compare-section">
+    <h2>High-value invariant classes</h2>
+    <div class="invariant-grid">
+      {
+        invariants.map((item) => (
+          <article class="invariant-card">
+            <p class="invariant-id">{item.id}</p>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+            <p class="invariant-example"><strong>Example:</strong> {item.example}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>How Stricture enforces invariants</h2>
+    <ol>
+      <li>Collect contracts, annotations, topology, and source-system metadata across repositories.</li>
+      <li>Normalize equivalent keys with overlays (OpenAPI, OpenLineage, OpenTelemetry, AsyncAPI, etc.).</li>
+      <li>Resolve field-level lineage and service dependency graph.</li>
+      <li>Evaluate invariant rules against current and baseline snapshots.</li>
+      <li>Emit warn/block decisions with precise field/system evidence.</li>
+      <li>Allow controlled overrides with expiry and audit trail.</li>
+    </ol>
+
+    <pre class="code-view compare-code"><code>{`# invariants.yml (example)
+invariants:
+  - id: ARC-DEP-001
+    kind: dependency_direction
+    applies_to: ["service"]
+    assert: "edge -> domain -> data"
+    severity: high
+    mode: block
+
+  - id: ARC-PROV-002
+    kind: field_provenance_required
+    applies_to: ["api.response.field"]
+    assert: "from[].system exists AND owner.team exists"
+    severity: high
+    mode: block
+
+  - id: ARC-VER-004
+    kind: source_version_compatibility
+    applies_to: ["api.response.field"]
+    assert: "source.version in allowed_matrix"
+    severity: medium
+    mode: warn`}</code></pre>
+  </section>
+
+  <section class="card compare-section compare-both-section">
+    <h2>When to combine invariants with other standards</h2>
+    <ul>
+      <li>Use OpenAPI or AsyncAPI for contract shape, then use Stricture invariants to enforce cross-system behavior at deploy time.</li>
+      <li>Use OpenTelemetry for runtime diagnosis, then use Stricture invariants to stop the same drift from shipping again.</li>
+      <li>Use OpenLineage for dataset/job lineage, then use Stricture invariants for API-field lineage and ownership accountability.</li>
+    </ul>
+    <a class="button button-secondary" href="/why-not">View Detailed Tool Comparisons</a>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Rollout plan that works in practice</h2>
+    <ol>
+      {rollout.map((step) => <li>{step}</li>)}
+    </ol>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Diagram blueprint pack</h2>
+    <div class="diagram-grid">
+      <article class="diagram-card">
+        <h3>Invariant Evaluation Pipeline</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: ingest specs/annotations -> build graph -> evaluate rules -> gate decision.</p>
+        </div>
+      </article>
+      <article class="diagram-card">
+        <h3>Dependency Direction Violation</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: allowed layer arrows in green, forbidden reverse call in red with blocked release badge.</p>
+        </div>
+      </article>
+      <article class="diagram-card">
+        <h3>Provenance Completeness Rule</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: response payload fields with missing source metadata highlighted as failing nodes.</p>
+        </div>
+      </article>
+      <article class="diagram-card">
+        <h3>Override Lifecycle</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: warning -> temporary override -> expiry -> re-evaluation -> pass/block.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+</MainLayout>
