@@ -363,10 +363,8 @@ export default {
   },
 };
 
-export class DemoSession extends DurableObject {
-  constructor(ctx: DurableObjectState, env: Env) {
-    super(ctx, env);
-  }
+export class DemoSession {
+  constructor(private readonly ctx: DurableObjectState, _env: Env) {}
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
