@@ -826,19 +826,59 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
       impacted.push(bridge.pop());
     }
 
-    const columns = [source, bridge, impacted, background];
     const laneCount = 4;
     const laneWidth = Math.max((width - 40) / laneCount, 120);
     const laneX = (idx) => 20 + laneWidth * idx + laneWidth / 2;
+    const bridgeLeft = [];
+    const bridgeRight = [];
+    bridge.forEach((id, idx) => {
+      if (idx % 2 === 0) {
+        bridgeLeft.push(id);
+      } else {
+        bridgeRight.push(id);
+      }
+    });
 
-    columns.forEach((ids, idx) => {
-      const isBackground = idx === 3;
-      placeInBand(
-        ids,
-        laneX(idx),
-        isBackground ? bottomStart : topStart,
-        isBackground ? bottomEnd : topEnd,
-      );
+    const depth = new Map();
+    const roots = nodes.filter((n) => (incoming.get(n.id) || 0) === 0);
+    const queue = roots.map((node) => node.id);
+    roots.forEach((node) => depth.set(node.id, 0));
+    while (queue.length) {
+      const current = queue.shift();
+      const currentDepth = depth.get(current) || 0;
+      edges
+        .filter((edge) => edge.from === current)
+        .forEach((edge) => {
+          if (depth.has(edge.to)) return;
+          depth.set(edge.to, currentDepth + 1);
+          queue.push(edge.to);
+        });
+    }
+
+    let maxDepth = 0;
+    depth.forEach((value) => {
+      if (value > maxDepth) {
+        maxDepth = value;
+      }
+    });
+    if (maxDepth < 1) maxDepth = 1;
+
+    const backgroundByLane = Array.from({ length: laneCount }, () => []);
+    background.forEach((id, idx) => {
+      const d = depth.has(id) ? (depth.get(id) || 0) : (idx % laneCount);
+      const lane = Math.max(0, Math.min(Math.round((d / maxDepth) * (laneCount - 1)), laneCount - 1));
+      backgroundByLane[lane].push(id);
+    });
+
+    // Keep cause -> impact left-to-right on top row.
+    placeInBand(source, laneX(0), topStart, topEnd);
+    placeInBand(bridgeLeft, laneX(1), topStart, topEnd);
+    placeInBand(bridgeRight, laneX(2), topStart, topEnd);
+    placeInBand(impacted, laneX(3), topStart, topEnd);
+
+    // Distribute unaffected services by topology depth to preserve ecosystem legibility.
+    backgroundByLane.forEach((ids, lane) => {
+      placeInBand(ids, laneX(lane), bottomStart, bottomEnd);
     });
 
     nodes.forEach((node) => {
