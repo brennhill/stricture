@@ -35,6 +35,10 @@ export const prerender = true;
       <h2>Escalation Chains</h2>
       <p>When data quality fails, Stricture tells responders who to call in upstream order.</p>
     </article>
+    <article class="panel">
+      <h2>Architecture Invariants</h2>
+      <p>Encode non-negotiable system rules and enforce them in CI as warn/block release gates.</p>
+    </article>
   </section>
 
   <section id="workflow" class="workflow">
@@ -44,15 +48,19 @@ export const prerender = true;
       <li>Export lineage artifacts and compare against a baseline release snapshot.</li>
       <li>Classify drift by severity and enforce policy in warn or block mode.</li>
       <li>Attach ownership and escalation routes directly to affected fields.</li>
+      <li>Evaluate architecture invariants such as dependency direction and provenance completeness.</li>
     </ol>
   </section>
 
   <section class="cta">
-    <h2>Run the full lifecycle simulation.</h2>
+    <h2>Run the full lifecycle simulation and invariant checks.</h2>
     <p>
       The demo shows 14 connected systems across logistics, fintech, media,
-      ecommerce, and governance with real-time mutation and rerun.
+      ecommerce, and governance with real-time mutation, rerun, and architecture invariant enforcement.
     </p>
-    <a class="button button-primary" href="/demo">Launch Demo</a>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/demo">Launch Demo</a>
+      <a class="button button-secondary" href="/architecture-invariants">Read Invariants Guide</a>
+    </div>
   </section>
 </MainLayout>
