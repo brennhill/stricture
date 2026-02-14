@@ -99,15 +99,16 @@ export const prerender = true;
 
       <section class="demo-main">
         <article class="card">
-          <h2>Service Topology</h2>
-          <p class="muted">Node and edge status changes as findings are detected.</p>
-          <div id="topology" class="topology"></div>
-          <div id="edge-list" class="edge-list"></div>
+          <h2>Findings</h2>
+          <p class="muted" id="run-summary-text">Awaiting first run. Apply a mutation then rerun to see flags.</p>
+          <div id="findings" class="list"></div>
         </article>
 
         <article class="card">
-          <h2>Findings</h2>
-          <div id="findings" class="list"></div>
+          <h2>Service Topology</h2>
+          <p class="muted">Node and edge status change as findings are detected.</p>
+          <div id="topology" class="topology"></div>
+          <div id="edge-list" class="edge-list"></div>
         </article>
 
         <article class="card dual">

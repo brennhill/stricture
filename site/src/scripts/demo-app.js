@@ -10,6 +10,7 @@ const selectors = {
   findings: document.querySelector("#findings"),
   overrides: document.querySelector("#overrides"),
   escalation: document.querySelector("#escalation"),
+  runSummaryText: document.querySelector("#run-summary-text"),
   controlStats: document.querySelector("#control-stats"),
   presetScenario: document.querySelector("#preset-scenario"),
   mutationType: document.querySelector("#mutation-type"),
@@ -113,6 +114,20 @@ function renderGate(summary) {
   selectors.gateBanner.textContent = `Run #${summary.runCount} | ${summary.gate} | findings=${summary.findingCount} | mode=${summary.mode}`;
 }
 
+function renderRunSummary(snapshot) {
+  if (!selectors.runSummaryText) {
+    return;
+  }
+  const summary = snapshot.runSummary;
+  if (!summary || summary.runCount === 0) {
+    selectors.runSummaryText.textContent = "Awaiting first run. Apply a mutation then rerun to see how Stricture flags drift.";
+    return;
+  }
+  const gatePhrase = summary.gate === "BLOCK" ? "blocked deploy" : "passed gate";
+  const detail = `policy=${summary.mode}/${snapshot.policy.failOn}, high=${summary.blockedCount}, warn=${summary.warningCount}`;
+  selectors.runSummaryText.textContent = `Run #${summary.runCount} ${gatePhrase}: ${summary.findingCount} findings (${detail}). Stricture flags severity from the mutation scenario and applies policy thresholds; high-severity findings block when policy=block and severity ≥ failOn.`;
+}
+
 function nodeStatusForService(serviceId, findings) {
   let blocked = false;
   let warning = false;
@@ -187,6 +202,7 @@ function render(snapshot) {
   state.snapshot = snapshot;
 
   renderGate(snapshot.runSummary);
+  renderRunSummary(snapshot);
   renderTopology(snapshot);
   updateControlStats(snapshot);
 
