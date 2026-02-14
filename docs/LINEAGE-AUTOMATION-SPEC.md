@@ -96,6 +96,39 @@ Even with automation, these should usually require explicit review in PR:
 3. `renamed_from` and deprecation windows (`sunset_at`).
 4. Any auto-generated `sources` with low confidence.
 
+## Policy Packs (Draft)
+
+Policy packs let organizations override defaults and promote recommended fields
+to required for specific environments or domains.
+
+Example draft shape:
+
+```yaml
+'strict:policy':
+  require:
+    field_keys:
+      - owner
+      - escalation
+    system_registry_keys:
+      - escalation
+      - escalation[].role
+      - escalation[].name
+      - escalation[].channel
+  defaults:
+    escalation: pagerduty:platform-oncall
+    break_policy: strict
+  severity_overrides:
+    missing_escalation: high
+```
+
+Notes:
+
+1. Base schema remains adoption-friendly.
+2. Policy packs provide org-level strictness without forcing all teams into the
+   same baseline on day one.
+3. `strict:policy` naming is a draft reference handle; concrete CLI/config
+   wiring is part of helper/server roadmap phases.
+
 ## CI Workflow (Reference)
 
 1. Generate `current.json` (`lineage-export`).

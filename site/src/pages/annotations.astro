@@ -5,76 +5,88 @@ const objectRows = [
   {
     object: "Field lineage annotation",
     where: "Code comments near emit/transform logic",
-    marker: "stricture-source",
+    reference: "stricture:source",
+    syntax: "stricture-source",
     why: "Defines per-field provenance, ownership, and drift semantics."
   },
   {
     object: "Source edge entry",
     where: "Inside `sources=` on a field annotation",
-    marker: "kind:target#path@scope?contract_ref=...",
+    reference: "stricture:source-edge",
+    syntax: "kind:target#path@scope?contract_ref=...",
     why: "Defines the upstream contract edge used for blast-radius tracing."
   },
   {
     object: "Service registry record",
     where: "`lineage-systems.yml` (or equivalent registry file)",
-    marker: "systems[] objects",
+    reference: "stricture:systems[]",
+    syntax: "systems[] objects",
     why: "Defines service-level ownership and escalation defaults."
   },
   {
     object: "Temporary lineage override",
     where: "Code comments during migration windows",
-    marker: "stricture-lineage-override",
+    reference: "stricture:lineage-override",
+    syntax: "stricture-lineage-override",
     why: "Allows time-bounded exceptions with explicit reason and expiry."
   }
 ];
 
 const sourceKeys = [
-  ["annotation_schema_version", "No", "`1`", "Schema version for normalized artifacts."],
-  ["break_policy", "No", "`strict`", "Compatibility policy used for drift severity."],
-  ["confidence", "No", "`declared`", "How trusted/inferred the mapping is."],
-  ["contract_test_id", "No", "`ci://contracts/<source_system_slug>/<field_id>`", "Reference to contract test coverage."],
-  ["data_classification", "No", "`internal`", "Data sensitivity classification."],
-  ["escalation", "No", "`slack:#<source_system_slug>-oncall`", "Escalation channel for incidents."],
-  ["field", "Yes*", "Derived from `field_id` when omitted", "Dot path emitted by the API contract."],
-  ["field_id", "Yes*", "Derived from `field`", "Stable field identity slug."],
-  ["flow", "No", "`from @<source_system> mapped @self`", "Human-readable flow summary."],
-  ["introduced_at", "No", "`1970-01-01`", "First-known introduction date."],
-  ["merge_strategy", "No", "`single_source` or `priority`", "Merge policy for multi-source inputs."],
-  ["min_supported_source_version", "No", "`source_version`", "Minimum upstream version considered compatible."],
-  ["note", "No", "`defaulted_by=stricture`", "Freeform implementation note."],
-  ["owner", "No", "`team.<source_system_slug>`", "Owning team for this field contract."],
-  ["renamed_from", "No", "None", "Previous field identity for intentional migrations."],
-  ["source_system", "Yes", "None", "Primary producing system/service."],
-  ["source_version", "Yes", "None", "Producer version for this mapping."],
-  ["sources", "Yes", "None", "One or more upstream source edge refs."],
-  ["sunset_at", "No", "None", "Optional deprecation/removal target date."],
-  ["transform_type", "No", "`passthrough`", "Transform operation type for this field."]
+  { key: "annotation_schema_version", required: "No", defaultValue: "`1`", purpose: "Schema version for normalized artifacts.", mode: "defaulted" },
+  { key: "break_policy", required: "No", defaultValue: "`strict`", purpose: "Compatibility policy used for drift severity.", mode: "defaulted" },
+  { key: "confidence", required: "No", defaultValue: "`declared`", purpose: "How trusted/inferred the mapping is.", mode: "defaulted" },
+  { key: "contract_test_id", required: "No", defaultValue: "`ci://contracts/<source_system_slug>/<field_id>`", purpose: "Reference to contract test coverage.", mode: "defaulted" },
+  { key: "data_classification", required: "No", defaultValue: "`internal`", purpose: "Data sensitivity classification.", mode: "recommended" },
+  { key: "escalation", required: "No", defaultValue: "`slack:#<source_system_slug>-oncall`", purpose: "Escalation channel for incidents.", mode: "defaulted" },
+  { key: "field", required: "Yes*", defaultValue: "Derived from `field_id` when omitted", purpose: "Dot path emitted by the API contract.", mode: "manual-required" },
+  { key: "field_id", required: "Yes*", defaultValue: "Derived from `field`; helper can auto-generate", purpose: "Stable field identity slug.", mode: "autogen" },
+  { key: "flow", required: "No", defaultValue: "`from @<source_system> mapped @self`", purpose: "Human-readable flow summary.", mode: "defaulted" },
+  { key: "introduced_at", required: "No", defaultValue: "`1970-01-01`", purpose: "First-known introduction date.", mode: "autogen" },
+  { key: "merge_strategy", required: "No", defaultValue: "`single_source` or `priority`", purpose: "Merge policy for multi-source inputs.", mode: "defaulted" },
+  { key: "min_supported_source_version", required: "No", defaultValue: "`source_version`", purpose: "Minimum upstream version considered compatible.", mode: "defaulted" },
+  { key: "note", required: "No", defaultValue: "`defaulted_by=stricture`", purpose: "Freeform implementation note.", mode: "defaulted" },
+  { key: "owner", required: "No", defaultValue: "`team.<source_system_slug>`", purpose: "Owning team for this field contract.", mode: "defaulted" },
+  { key: "renamed_from", required: "No", defaultValue: "None", purpose: "Previous field identity for intentional migrations.", mode: "manual-optional" },
+  { key: "source_system", required: "Yes", defaultValue: "None", purpose: "Primary producing system/service.", mode: "manual-required" },
+  { key: "source_version", required: "Yes", defaultValue: "None", purpose: "Producer version for this mapping.", mode: "manual-required" },
+  { key: "sources", required: "Yes", defaultValue: "None", purpose: "One or more upstream source edge refs.", mode: "manual-required" },
+  { key: "sunset_at", required: "No", defaultValue: "None", purpose: "Optional deprecation/removal target date.", mode: "manual-optional" },
+  { key: "transform_type", required: "No", defaultValue: "`passthrough`", purpose: "Transform operation type for this field.", mode: "defaulted" }
 ];
 
 const sourceQueryKeys = [
-  ["as_of", "Conditional", "Required for `@external` scope", "Snapshot date (`YYYY-MM-DD`) for external providers."],
-  ["contract_ref", "Yes", "None", "Canonical contract/spec pointer for the source edge."],
-  ["provider_id", "Conditional", "Required for `@external`; forbidden otherwise", "External provider identifier."],
-  ["upstream_system", "No", "None", "Optional explicit upstream service/system id."]
+  { key: "as_of", required: "Conditional", defaultValue: "Required for `@external` scope", purpose: "Snapshot date (`YYYY-MM-DD`) for external providers.", mode: "manual-required" },
+  { key: "contract_ref", required: "Yes", defaultValue: "None", purpose: "Canonical contract/spec pointer for the source edge.", mode: "manual-required" },
+  { key: "provider_id", required: "Conditional", defaultValue: "Required for `@external`; forbidden otherwise", purpose: "External provider identifier.", mode: "manual-required" },
+  { key: "upstream_system", required: "No", defaultValue: "None", purpose: "Optional explicit upstream service/system id.", mode: "manual-optional" }
 ];
 
 const overrideKeys = [
-  ["change_type", "Yes", "None", "Drift type (or `*`) covered by the override."],
-  ["expires", "Yes", "None", "UTC date when override stops applying."],
-  ["field_id", "Yes", "None", "Field identity receiving the temporary exception."],
-  ["reason", "Yes", "None", "Human-readable justification for the override."],
-  ["ticket", "No", "None", "Optional issue/change ticket id."]
+  { key: "change_type", required: "Yes", defaultValue: "None", purpose: "Drift type (or `*`) covered by the override.", mode: "manual-required" },
+  { key: "expires", required: "Yes", defaultValue: "None", purpose: "UTC date when override stops applying.", mode: "manual-required" },
+  { key: "field_id", required: "Yes", defaultValue: "None", purpose: "Field identity receiving the temporary exception.", mode: "manual-required" },
+  { key: "reason", required: "Yes", defaultValue: "None", purpose: "Human-readable justification for the override.", mode: "manual-required" },
+  { key: "ticket", required: "No", defaultValue: "None", purpose: "Optional issue/change ticket id.", mode: "recommended" }
 ];
 
 const serviceRegistryKeys = [
-  ["id", "Yes", "None", "Stable system identifier used in lineage edges."],
-  ["name", "Yes", "None", "Human-readable system name."],
-  ["owner_team", "Yes", "None", "Owning team slug."],
-  ["escalation", "Yes", "None", "Ordered escalation contacts for this system."],
-  ["escalation[].channel", "Yes", "None", "How responders are reached."],
-  ["escalation[].name", "Yes", "None", "Contact display name."],
-  ["escalation[].role", "Yes", "None", "Escalation role (primary/secondary/vendor/etc)."]
+  { key: "id", required: "Yes", defaultValue: "None", purpose: "Stable system identifier used in lineage edges.", mode: "manual-required" },
+  { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
+  { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team slug.", mode: "manual-required" },
+  { key: "escalation", required: "No (policy can require)", defaultValue: "None", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
+  { key: "escalation[].channel", required: "No (policy can require)", defaultValue: "None", purpose: "How responders are reached.", mode: "recommended" },
+  { key: "escalation[].name", required: "No (policy can require)", defaultValue: "None", purpose: "Contact display name.", mode: "recommended" },
+  { key: "escalation[].role", required: "No (policy can require)", defaultValue: "None", purpose: "Escalation role (primary/secondary/vendor/etc).", mode: "recommended" }
 ];
+
+const modeMeta = {
+  defaulted: { label: "Defaulted", className: "anno-chip-defaulted" },
+  autogen: { label: "Auto-gen", className: "anno-chip-autogen" },
+  recommended: { label: "Strongly recommended", className: "anno-chip-recommended" },
+  "manual-required": { label: "Manual + required", className: "anno-chip-manual-required" },
+  "manual-optional": { label: "Manual + optional", className: "anno-chip-manual-optional" }
+};
 ---
 
 <MainLayout title="Annotations | Stricture" description="Clear guide to what Stricture annotates, why it matters, and an alphabetical annotation reference with required/default behavior.">
@@ -87,6 +99,15 @@ const serviceRegistryKeys = [
     <p class="muted">
       Scope: lineage authoring (`stricture-source`, source edges, service registry, and temporary lineage overrides).
     </p>
+    <p class="muted">
+      `stricture:*` labels on this page are reference handles for docs and tooling UX; parser syntax is shown separately in the syntax column.
+    </p>
+    <div class="anno-legend">
+      {Object.values(modeMeta).map((mode) => (
+        <span class={`anno-chip ${mode.className}`}>{mode.label}</span>
+      ))}
+    </div>
+    <p class="muted">Recommended fields can be promoted to required by policy packs.</p>
   </section>
 
   <section class="card">
@@ -97,7 +118,8 @@ const serviceRegistryKeys = [
           <tr>
             <th>Object</th>
             <th>Where</th>
-            <th>Marker / Format</th>
+            <th>Stricture reference</th>
+            <th>Syntax</th>
             <th>Why it exists</th>
           </tr>
         </thead>
@@ -106,7 +128,8 @@ const serviceRegistryKeys = [
             <tr>
               <td>{row.object}</td>
               <td>{row.where}</td>
-              <td><code>{row.marker}</code></td>
+              <td><code>{row.reference}</code></td>
+              <td><code>{row.syntax}</code></td>
               <td>{row.why}</td>
             </tr>
           ))}
@@ -125,18 +148,20 @@ const serviceRegistryKeys = [
         <thead>
           <tr>
             <th>Key</th>
+            <th>Mode</th>
             <th>Required</th>
             <th>Default</th>
             <th>Purpose</th>
           </tr>
         </thead>
         <tbody>
-          {sourceKeys.map(([key, required, defaultValue, purpose]) => (
+          {sourceKeys.map((item) => (
             <tr>
-              <td><code>{key}</code></td>
-              <td>{required}</td>
-              <td><code>{defaultValue}</code></td>
-              <td>{purpose}</td>
+              <td><code>{item.key}</code></td>
+              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td>{item.required}</td>
+              <td><code>{item.defaultValue}</code></td>
+              <td>{item.purpose}</td>
             </tr>
           ))}
         </tbody>
@@ -154,18 +179,20 @@ const serviceRegistryKeys = [
         <thead>
           <tr>
             <th>Query key</th>
+            <th>Mode</th>
             <th>Required</th>
             <th>Default / Rule</th>
             <th>Purpose</th>
           </tr>
         </thead>
         <tbody>
-          {sourceQueryKeys.map(([key, required, defaultValue, purpose]) => (
+          {sourceQueryKeys.map((item) => (
             <tr>
-              <td><code>{key}</code></td>
-              <td>{required}</td>
-              <td>{defaultValue}</td>
-              <td>{purpose}</td>
+              <td><code>{item.key}</code></td>
+              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td>{item.required}</td>
+              <td>{item.defaultValue}</td>
+              <td>{item.purpose}</td>
             </tr>
           ))}
         </tbody>
@@ -180,18 +207,20 @@ const serviceRegistryKeys = [
         <thead>
           <tr>
             <th>Key</th>
+            <th>Mode</th>
             <th>Required</th>
             <th>Default</th>
             <th>Purpose</th>
           </tr>
         </thead>
         <tbody>
-          {overrideKeys.map(([key, required, defaultValue, purpose]) => (
+          {overrideKeys.map((item) => (
             <tr>
-              <td><code>{key}</code></td>
-              <td>{required}</td>
-              <td>{defaultValue}</td>
-              <td>{purpose}</td>
+              <td><code>{item.key}</code></td>
+              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td>{item.required}</td>
+              <td>{item.defaultValue}</td>
+              <td>{item.purpose}</td>
             </tr>
           ))}
         </tbody>
@@ -209,23 +238,47 @@ const serviceRegistryKeys = [
         <thead>
           <tr>
             <th>Key</th>
+            <th>Mode</th>
             <th>Required</th>
             <th>Default</th>
             <th>Purpose</th>
           </tr>
         </thead>
         <tbody>
-          {serviceRegistryKeys.map(([key, required, defaultValue, purpose]) => (
+          {serviceRegistryKeys.map((item) => (
             <tr>
-              <td><code>{key}</code></td>
-              <td>{required}</td>
-              <td>{defaultValue}</td>
-              <td>{purpose}</td>
+              <td><code>{item.key}</code></td>
+              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td>{item.required}</td>
+              <td>{item.defaultValue}</td>
+              <td>{item.purpose}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section class="card">
+    <h2>Policy packs can change required/default behavior</h2>
+    <p class="muted">
+      Teams can keep base annotations lightweight, then enforce stricter org rules through policy. Example draft shape:
+    </p>
+    <pre><code>{`'strict:policy':
+  require:
+    field_keys:
+      - owner
+      - escalation
+    system_registry_keys:
+      - escalation
+      - escalation[].role
+      - escalation[].name
+      - escalation[].channel
+  defaults:
+    escalation: pagerduty:platform-oncall
+    break_policy: strict
+  severity_overrides:
+    missing_escalation: high`}</code></pre>
   </section>
 
   <section class="card">

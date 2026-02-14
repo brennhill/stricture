@@ -104,6 +104,9 @@ Commonly auto-filled in normalized artifacts:
 Keep `data_classification`, `break_policy`, and lifecycle migration fields under
 explicit human review for high-risk domains.
 
+Escalation metadata in service registries is strongly recommended by default and
+can be promoted to required by org policy packs.
+
 ## Source Ref Grammar
 
 Each entry in `sources`:

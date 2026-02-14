@@ -13,6 +13,9 @@ Registry format is defined in:
 - `docs/schemas/lineage-system-registry.schema.json`
 - example: `docs/config-examples/lineage-systems.yml`
 
+By default, registry escalation contacts are strongly recommended but not
+globally required; organizations can enforce stricter requirements via policy.
+
 ## Command
 
 ```bash

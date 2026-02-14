@@ -1744,6 +1744,54 @@ select {
   background: rgba(201, 60, 34, 0.14);
 }
 
+.anno-legend {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.anno-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.14rem 0.44rem;
+  border: 1px solid var(--line);
+  font-size: 0.65rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.anno-chip-defaulted {
+  color: #1d4ed8;
+  border-color: rgba(29, 78, 216, 0.38);
+  background: rgba(29, 78, 216, 0.13);
+}
+
+.anno-chip-autogen {
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.36);
+  background: rgba(21, 128, 61, 0.13);
+}
+
+.anno-chip-recommended {
+  color: #92400e;
+  border-color: rgba(146, 64, 14, 0.35);
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.anno-chip-manual-required {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.38);
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.anno-chip-manual-optional {
+  color: #78350f;
+  border-color: rgba(120, 53, 15, 0.34);
+  background: rgba(217, 119, 6, 0.14);
+}
+
 @keyframes reveal {
   from {
     opacity: 0;

@@ -10,7 +10,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "name", "owner_team", "escalation"],
+        "required": ["id", "name", "owner_team"],
         "properties": {
           "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
           "name": { "type": "string", "minLength": 1 },
@@ -19,7 +19,6 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["role", "name", "channel"],
               "properties": {
                 "role": { "type": "string", "minLength": 1 },
                 "name": { "type": "string", "minLength": 1 },
