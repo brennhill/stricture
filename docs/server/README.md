@@ -5,3 +5,5 @@
 - Contribution terms: `docs/server/CONTRIBUTING.md`
 - Day-1 runtime requirement: local process + cloud-function support with the
   same API contract (see `docs/server/SPEC.md`).
+- Default drift model: warn/block findings require downstream impact; self-only
+  drift is still tracked for publication/audit.

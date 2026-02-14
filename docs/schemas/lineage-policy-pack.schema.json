@@ -44,6 +44,29 @@
             "enum": ["high", "medium", "low", "info"]
           }
         },
+        "findings": {
+          "type": "object",
+          "properties": {
+            "require_downstream_impact": { "type": "boolean" },
+            "unknown_impact_severity": {
+              "type": "string",
+              "enum": ["high", "medium", "low", "info"]
+            },
+            "self_only": {
+              "type": "object",
+              "properties": {
+                "emit_finding": { "type": "boolean" },
+                "severity": {
+                  "type": "string",
+                  "enum": ["high", "medium", "low", "info"]
+                },
+                "publish_change_event": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
         "profiles": {
           "type": "object",
           "additionalProperties": {

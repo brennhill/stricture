@@ -14,6 +14,7 @@ This is the control plane for:
 2. overriding defaults
 3. tuning severity for policy findings
 4. enforcing different strictness by environment/profile
+5. defining when drift becomes a finding vs. a tracked/published change event
 
 ## Scope
 
@@ -57,6 +58,7 @@ lineage:
     override_keys: []
   defaults: {}
   severity_overrides: {}
+  findings: {}
   profiles: {}
 ```
 
@@ -93,15 +95,41 @@ Example:
 Environment overlays (for example `dev`, `staging`, `prod`) that merge onto the
 base policy.
 
+### `lineage.findings`
+
+Controls impact gating behavior for drift findings.
+
+Default model (if omitted):
+
+```yaml
+lineage:
+  findings:
+    require_downstream_impact: true
+    unknown_impact_severity: low
+    self_only:
+      emit_finding: false
+      publish_change_event: true
+```
+
+Interpretation:
+
+1. Downstream-impact drift can emit findings and participate in gate decisions.
+2. Self-only drift (service changes that do not impact downstream consumers)
+   does not emit warnings/errors by default.
+3. Self-only drift is still tracked and published as a change event for audit,
+   release notes, and external customer visibility.
+4. Unknown impact defaults to `low` severity unless overridden.
+
 ## Merge And Evaluation Order
 
 1. Parse source annotations.
 2. Normalize with base defaults.
 3. Apply policy default overrides.
 4. Apply selected profile overlay (if any).
-5. Evaluate required-key checks.
-6. Emit policy findings with configured severities.
-7. Gate via existing warn/block mode using final severities.
+5. Compute impact scope per drift (`downstream`, `self_only`, `unknown`).
+6. Evaluate required-key checks.
+7. Emit policy findings with configured severities and `lineage.findings` rules.
+8. Gate via existing warn/block mode using final severities.
 
 ## Distribution Model (Locked Requirement)
 
@@ -193,6 +221,7 @@ See CLI command contract: `docs/POLICY-CLI-CONTRACT.md`.
 2. `invalid_default_value`
 3. `unknown_policy_key`
 4. `disallowed_value`
+5. `unknown_impact_scope`
 
 ## Reference Strict Policy Example
 
@@ -217,8 +246,15 @@ lineage:
   defaults:
     break_policy: strict
     data_classification: internal
+  findings:
+    require_downstream_impact: true
+    unknown_impact_severity: low
+    self_only:
+      emit_finding: false
+      publish_change_event: true
   severity_overrides:
     missing_required_key: high
+    unknown_impact_scope: low
 ```
 
 ## Compatibility Notes

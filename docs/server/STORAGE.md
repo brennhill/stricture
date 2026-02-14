@@ -27,6 +27,9 @@ Each ingest request becomes one immutable record envelope:
 
 - identity: `organization`, `project`, `service`, `run_id`
 - lineage payloads: `artifact`, optional `diff`, optional `summary`
+- derived drift partitions:
+  - `findings` (impact-gated policy candidates)
+  - `change_events` (includes `self_only` drift for publication history)
 - metadata: commit SHA, timestamps, arbitrary metadata map
 - server fields: `received_at`
 
@@ -41,6 +44,7 @@ Optional helper objects:
 ```text
 <prefix>/v1/org=<organization>/project=<project>/service=<service>/latest.json
 <prefix>/v1/org=<organization>/project=<project>/service=<service>/manifests/date=<YYYY-MM-DD>.jsonl
+<prefix>/v1/org=<organization>/project=<project>/service=<service>/changes/date=<YYYY-MM-DD>.jsonl
 ```
 
 Policy objects (draft):
@@ -55,6 +59,7 @@ Notes:
 - `payload.json` is immutable.
 - `latest.json` is a pointer object (best-effort convenience).
 - per-day `manifest` enables query without SQL by listing one object.
+- per-day `changes` stream includes publishable self-only and downstream events.
 
 ## Driver Strategy
 

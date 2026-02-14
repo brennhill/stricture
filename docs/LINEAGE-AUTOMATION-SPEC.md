@@ -147,13 +147,27 @@ Service registry bootstrap model:
 
 1. Generate `current.json` (`lineage-export`).
 2. Diff against `baseline.json` (`lineage-diff`).
-3. Compute version bumps from diff classes:
+3. Classify drift impact scope (`downstream`, `self_only`, `unknown`).
+4. Compute version bumps from diff classes:
    - breaking/high -> major
    - additive/medium -> minor
    - metadata/low -> patch
-4. Write `versions.json` and `summary.md`.
-5. Enforce policy gates.
-6. Promote baseline on successful protected branch builds.
+5. Write `versions.json` and `summary.md`.
+6. Enforce policy gates using impact-gated findings (default: downstream only).
+7. Publish change events (including `self_only`) for audit/customer visibility.
+8. Promote baseline on successful protected branch builds.
+
+## Finding vs Change Event Policy (Default)
+
+Default behavior keeps safety gates focused on blast radius:
+
+1. downstream-impact drift -> finding + gate evaluation
+2. self-only drift -> tracked change event, no warn/block
+3. unknown-impact drift -> low-severity finding unless policy overrides
+
+This allows companies to publish contract evolution (for example to external
+customers) without generating noisy CI warnings when no downstream impact
+exists.
 
 ## `stricture-server` Integration (Roadmap)
 
@@ -163,7 +177,9 @@ publishable to a central `stricture-server`:
 1. CI uploads `current.json`, `diff.json`, and `summary.md` per service/repo.
 2. Server stores versioned history and computes cross-service blast radius.
 3. Server evaluates org/team policy packs and emits alert/webhook events.
-4. Dashboards show fleet health, hot paths, recurring drift classes, and owner
+4. Server keeps a publishable change stream that includes self-only drift for
+   release notes/customer updates.
+5. Dashboards show fleet health, hot paths, recurring drift classes, and owner
    accountability over time.
 
 This keeps repo-local workflows simple while enabling organization-wide

@@ -22,6 +22,9 @@ It is intentionally append-only for v0 and does not require a relational DB.
    - long-running local/server process
    - stateless cloud-function execution
 4. Define storage and auth contracts that map cleanly to Cloudflare/R2 and S3.
+5. Preserve both:
+   - impact-gated findings for CI/policy workflows
+   - non-impacting change events for publication/audit workflows
 
 ## Non-Goals (v0)
 
@@ -49,6 +52,17 @@ It is intentionally append-only for v0 and does not require a relational DB.
   - `summary` (optional text/markdown)
   - `metadata` (optional map)
 - Response: `202 {"accepted":true,"run_id":"...","location":"..."}`.
+
+## Finding vs Change Event Contract (Default)
+
+Server ingest stores the full diff model. Downstream consumers apply this
+default interpretation:
+
+1. `downstream` impact -> finding candidate (warn/block based on policy).
+2. `self_only` impact -> track/publish change event, no warning by default.
+3. `unknown` impact -> low-severity finding by default unless policy overrides.
+
+This keeps CI noise low while still publishing provider-facing contract changes.
 
 ## Runtime + Operation Model (Day 1 Requirement)
 
@@ -129,7 +143,10 @@ docs/server/
 3. Optional compact index artifacts for faster queries without SQL.
 4. Webhook/alerting for high-severity blast radius.
 5. Tenant-aware authz and audit trail endpoints.
-6. Policy distribution APIs for CI/local clients:
+6. Change-feed APIs for downstream/external subscribers:
+   - `GET /v1/changes/{organization}/{project}/{service}`
+   - `GET /v1/changes/{organization}/{project}/{service}?impact=self_only|downstream`
+7. Policy distribution APIs for CI/local clients:
    - `GET /v1/policies/{policy_id}`
    - `GET /v1/policies/{policy_id}/versions/{version}`
    - metadata endpoint for caching hints.

@@ -180,8 +180,30 @@ External provider:
 
 `lineage-diff` mode:
 
-- `--mode block` (default): return non-zero if non-overridden drift meets `--fail-on`.
+- `--mode block` (default): return non-zero if non-overridden finding meets `--fail-on`.
 - `--mode warn`: always return zero; prints warning when threshold is met.
+
+By default, findings are impact-gated (downstream impact required). Self-only
+drift is still recorded in diff output for history/publication but does not
+warn/block unless policy overrides that behavior.
+
+## Impact-Gated Findings And Publication (Default)
+
+Each drift item is classified as one of:
+
+1. `downstream`: change can impact one or more downstream consumers.
+2. `self_only`: change is isolated to the producing service.
+3. `unknown`: Stricture cannot confidently determine impact scope.
+
+Default behavior:
+
+1. `downstream` -> emits finding with severity model and participates in gates.
+2. `self_only` -> no warning/error finding by default.
+3. `self_only` -> still tracked and publishable as a change event.
+4. `unknown` -> emits low-severity finding unless policy overrides.
+
+This keeps deploy gates focused on actual blast radius while still preserving a
+complete change history for internal/external consumers.
 
 ## Temporary Overrides
 
