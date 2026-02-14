@@ -53,6 +53,21 @@ function serviceById(snapshot) {
   return new Map((snapshot.services || []).map((service) => [service.id, service]));
 }
 
+function normalizeServiceToken(value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function resolveServiceId(snapshot, token) {
+  const want = normalizeServiceToken(token);
+  if (!want) return "";
+  const services = snapshot.services || [];
+  for (const service of services) {
+    if (normalizeServiceToken(service.id) === want) return service.id;
+    if (normalizeServiceToken(service.name) === want) return service.id;
+  }
+  return "";
+}
+
 function serviceName(snapshot, serviceId) {
   const service = serviceById(snapshot).get(serviceId);
   return service?.name || serviceId || "unknown service";
@@ -77,10 +92,49 @@ function listServiceNames(snapshot, ids, limit = 3) {
   return `${names.slice(0, limit).join(", ")} +${names.length - limit} more`;
 }
 
+function inferSourceServices(snapshot, findings, latest) {
+  const sourceServices = new Set();
+  (findings || []).forEach((finding) => {
+    const summary = String(finding.summary || "");
+    const sourceMatch = /source\s+[a-z_]+\|([A-Za-z0-9_-]+)\./i.exec(summary);
+    if (sourceMatch?.[1]) {
+      const sourceId = resolveServiceId(snapshot, sourceMatch[1]);
+      if (sourceId) {
+        sourceServices.add(sourceId);
+        return;
+      }
+    }
+    const upstreamDriven = (
+      finding.changeType === "source_contract_ref_changed" ||
+      finding.changeType === "source_removed" ||
+      finding.changeType === "source_provider_changed" ||
+      finding.changeType === "source_upstream_system_changed" ||
+      finding.changeType === "external_as_of_rollback" ||
+      finding.changeType === "external_as_of_changed" ||
+      finding.changeType === "external_as_of_advanced"
+    );
+    if (upstreamDriven && finding.fieldId) {
+      const fieldEdges = (snapshot.edges || []).filter((edge) => edge.fieldId === finding.fieldId);
+      const external = fieldEdges.find((edge) => {
+        const from = serviceById(snapshot).get(edge.from);
+        return from?.kind === "external";
+      });
+      if (external?.from) {
+        sourceServices.add(external.from);
+      }
+    }
+  });
+  if (!sourceServices.size && latest?.serviceId) {
+    sourceServices.add(latest.serviceId);
+  }
+  return sourceServices;
+}
+
 function findingSummaryText(snapshot, finding) {
   const text = finding.summary || "";
   const mutation = latestMutation(snapshot);
-  const source = mutation ? serviceName(snapshot, mutation.serviceId) : "the source service";
+  const sources = inferSourceServices(snapshot, [finding], mutation);
+  const source = sources.size ? serviceName(snapshot, [...sources][0]) : mutation ? serviceName(snapshot, mutation.serviceId) : "the source service";
   const impacted = serviceName(snapshot, finding.serviceId);
   const mergeMatch = /^merge_strategy changed from ([^ ]+) to ([^ ]+)$/i.exec(text);
   if (mergeMatch) {
@@ -178,13 +232,26 @@ function updateNarrative(presetId) {
     return;
   }
   const narratives = {
-    enum_changed: "Payments enum drift: payment service provider (PSP, Stripe) adds a new status without a contract bump. Downstream billing and notifications can misclassify payments until consumers update.",
+    enum_changed: "Payments enum drift: a producer changed payment status handling without a coordinated contract update. Downstream services can misclassify payment state until contracts and consumers align.",
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
     annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
     numeric_widen: "Numeric widening: Go producer widened uint8 to uint16; JS consumer coerces to Number and forwards large values; downstream Go consumer overflows. Guard size limits and bump contracts.",
   };
   selectors.scenarioNarrative.textContent = narratives[presetId] || "Choose a preset to see the drift story and impact.";
+}
+
+function updateNarrativeFromSnapshot(snapshot) {
+  if (!selectors.scenarioNarrative) return;
+  const findings = snapshot.findings || [];
+  if (!findings.length) return;
+  const mutation = latestMutation(snapshot);
+  const sourceServices = inferSourceServices(snapshot, findings, mutation);
+  const sourceID = sourceServices.size ? [...sourceServices][0] : mutation?.serviceId;
+  const top = findings[0];
+  const sourceNameText = sourceID ? serviceName(snapshot, sourceID) : "Unknown source";
+  const impactNameText = serviceName(snapshot, top.serviceId);
+  selectors.scenarioNarrative.textContent = `${sourceNameText} introduced ${humanChange[top.changeType] || top.changeType} on ${top.fieldId}. Stricture flags impact in ${impactNameText}.`;
 }
 
 function renderGate(summary) {
@@ -213,7 +280,10 @@ function renderRunSummary(snapshot) {
     ? `Policy is block at ${snapshot.policy.failOn}+ severity.`
     : `Policy is warn (never blocks), threshold is ${snapshot.policy.failOn}+ for escalation.`;
   const mutation = latestMutation(snapshot);
-  const sourceText = mutation ? `Changed source: ${serviceName(snapshot, mutation.serviceId)}.` : "";
+  const sources = inferSourceServices(snapshot, snapshot.findings || [], mutation);
+  const sourceText = sources.size
+    ? `Changed source: ${listServiceNames(snapshot, [...sources], 2)}.`
+    : mutation ? `Changed source: ${serviceName(snapshot, mutation.serviceId)}.` : "";
   const impactedText = summary.findingCount
     ? `Flagged services: ${listServiceNames(snapshot, snapshot.findings.map((finding) => finding.serviceId))}.`
     : "No services were flagged.";
@@ -306,6 +376,7 @@ function render(snapshot) {
   renderRunSummary(snapshot);
   renderTopology(snapshot);
   updateControlStats(snapshot);
+  updateNarrativeFromSnapshot(snapshot);
 
   renderList(
     selectors.findings,
@@ -315,7 +386,8 @@ function render(snapshot) {
       className: (finding) => `list-item sev-${finding.severity}`,
       html: (finding) => {
         const mutation = latestMutation(snapshot);
-        const source = mutation ? serviceName(snapshot, mutation.serviceId) : "unknown";
+        const sources = inferSourceServices(snapshot, [finding], mutation);
+        const source = sources.size ? serviceName(snapshot, [...sources][0]) : mutation ? serviceName(snapshot, mutation.serviceId) : "unknown";
         const impacted = serviceName(snapshot, finding.serviceId);
         const owner = serviceOwner(snapshot, finding.serviceId);
         const flowServices = (snapshot.edges || [])
@@ -551,7 +623,7 @@ function renderGraph(snapshot) {
   container.innerHTML = "";
   const label = document.createElement("div");
   label.className = "graph-label";
-  label.textContent = "Orange node = source change, red node = impacted service, orange edge = affected path";
+  label.textContent = "Left to right: cause -> impact. Orange node = source change, red node = impacted service, orange edge = affected path";
   container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
@@ -593,7 +665,7 @@ function renderGraph(snapshot) {
     focusFieldSeverity,
   } = computeImpacts(snapshot);
   const positions = normalizePositions(
-    computeLayeredLayout(nodes, edges, width, height, { affectedServices, sourceServices, flowNodes }),
+    computeLayeredLayout(nodes, edges, width, height, { affectedServices, sourceServices, impactedServices, flowNodes }),
     width,
     height,
     {
@@ -721,6 +793,61 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
     incoming.set(e.to, (incoming.get(e.to) || 0) + 1);
     outgoing.set(e.from, (outgoing.get(e.from) || 0) + 1);
   });
+  const topStart = 56;
+  const topEnd = Math.max(topStart + 120, Math.floor(height * 0.6));
+  const bottomStart = Math.max(topEnd + 20, Math.floor(height * 0.74));
+  const bottomEnd = Math.max(bottomStart + 30, height - 40);
+
+  const placeInBand = (ids, x, startY, endY) => {
+    if (!ids.length) return;
+    if (ids.length === 1) {
+      positions.set(ids[0], { x, y: (startY + endY) / 2 });
+      return;
+    }
+    const gap = (endY - startY) / (ids.length - 1);
+    ids.forEach((nodeID, idx) => {
+      positions.set(nodeID, { x, y: startY + gap * idx });
+    });
+  };
+
+  if (focusedNodes.size > 0) {
+    const sourceSet = new Set([...(focus.sourceServices || [])]);
+    const impactedSet = new Set([...(focus.impactedServices || [])].filter((id) => !sourceSet.has(id)));
+    const keySet = new Set([...focusedNodes, ...sourceSet, ...impactedSet]);
+    const allNodeIDs = nodes.map((n) => n.id);
+    const source = allNodeIDs.filter((id) => sourceSet.has(id));
+    const impacted = allNodeIDs.filter((id) => impactedSet.has(id));
+    const bridge = allNodeIDs.filter((id) => keySet.has(id) && !sourceSet.has(id) && !impactedSet.has(id));
+    const background = allNodeIDs.filter((id) => !keySet.has(id));
+
+    if (!source.length && bridge.length) {
+      source.push(bridge.shift());
+    }
+    if (!impacted.length && bridge.length > 1) {
+      impacted.push(bridge.pop());
+    }
+
+    const columns = [source, bridge, impacted, background];
+    const laneCount = 4;
+    const laneWidth = Math.max((width - 40) / laneCount, 120);
+    const laneX = (idx) => 20 + laneWidth * idx + laneWidth / 2;
+
+    columns.forEach((ids, idx) => {
+      const isBackground = idx === 3;
+      placeInBand(
+        ids,
+        laneX(idx),
+        isBackground ? bottomStart : topStart,
+        isBackground ? bottomEnd : topEnd,
+      );
+    });
+
+    nodes.forEach((node) => {
+      node.edgeDegree = (incoming.get(node.id) || 0) + (outgoing.get(node.id) || 0);
+    });
+    return positions;
+  }
+
   const roots = nodes.filter((n) => (incoming.get(n.id) || 0) === 0);
   const layers = [];
   const queue = [...roots];
@@ -754,26 +881,9 @@ function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
   });
 
   const columnCount = layers.length || 1;
-  // Reserve at least four horizontal slots so dense groups can spread.
   const slotCount = Math.max(columnCount, 4);
   const slotWidth = Math.max((width - 40) / slotCount, 120);
   const slotX = (slotIndex) => 20 + slotWidth * slotIndex + slotWidth / 2;
-  const topStart = 56;
-  const topEnd = Math.max(topStart + 120, Math.floor(height * 0.6));
-  const bottomStart = Math.max(topEnd + 20, Math.floor(height * 0.74));
-  const bottomEnd = Math.max(bottomStart + 30, height - 40);
-
-  const placeInBand = (ids, x, startY, endY) => {
-    if (!ids.length) return;
-    if (ids.length === 1) {
-      positions.set(ids[0], { x, y: (startY + endY) / 2 });
-      return;
-    }
-    const gap = (endY - startY) / (ids.length - 1);
-    ids.forEach((nodeID, idx) => {
-      positions.set(nodeID, { x, y: startY + gap * idx });
-    });
-  };
 
   const placeInBandAcrossSlots = (ids, slots, startY, endY) => {
     if (!ids.length || !slots.length) return;
@@ -906,17 +1016,15 @@ function computeImpacts(snapshot) {
   if (activeFields.size === 0 && focus?.fieldId) {
     activeFields.add(focus.fieldId);
   }
-  const sourceServices = new Set();
-  if (latest?.serviceId) {
-    sourceServices.add(latest.serviceId);
-  } else if (focus?.serviceId) {
-    sourceServices.add(focus.serviceId);
-  }
+  const sourceServices = inferSourceServices(snapshot, findings, latest || focus);
   const impactedServices = new Set(
     findings
       .map((item) => item.serviceId)
       .filter((value) => typeof value === "string" && value.length > 0),
   );
+  if (impactedServices.size === 0 && focus?.serviceId) {
+    impactedServices.add(focus.serviceId);
+  }
   const failedServices = new Set(
     findings
       .filter((item) => item.severity === "high")
@@ -940,13 +1048,10 @@ function computeImpacts(snapshot) {
       flowNodes.add(e.to);
       affectedServices.add(e.from);
       affectedServices.add(e.to);
-      impactedServices.add(e.from);
-      impactedServices.add(e.to);
     }
   });
-  sourceServices.forEach((serviceId) => {
-    impactedServices.delete(serviceId);
-  });
+  sourceServices.forEach((serviceId) => affectedServices.add(serviceId));
+  impactedServices.forEach((serviceId) => affectedServices.add(serviceId));
   return {
     activeFields,
     sourceServices,
