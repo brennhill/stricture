@@ -192,6 +192,7 @@ function updateControlStats(snapshot) {
 }
 
 function buildPresets(snapshot) {
+  const nonePreset = { id: "__none", label: "No scenario (baseline)" };
   const candidates = [
     { id: "enum_changed", label: "Payments enum drift" },
     { id: "type_changed", label: "Orders type drift" },
@@ -199,12 +200,12 @@ function buildPresets(snapshot) {
     { id: "annotation_missing", label: "Missing annotation" },
     { id: "numeric_widen", label: "Numeric widening: uint8→uint16" },
   ];
-  const presets = candidates
+  const presets = [nonePreset, ...candidates
     .map((item) => {
       const fields = snapshot.fieldsByMutation?.[item.id] || [];
       return fields.length ? { ...item, fieldId: fields[0] } : null;
     })
-    .filter(Boolean);
+    .filter(Boolean)];
   if (selectors.presetScenario) {
     const current = selectors.presetScenario.value;
     setOptions(
@@ -216,7 +217,7 @@ function buildPresets(snapshot) {
       if (current && presets.find((p) => p.id === current)) {
         selectors.presetScenario.value = current;
       } else {
-        selectors.presetScenario.value = presets[0].id;
+        selectors.presetScenario.value = nonePreset.id;
       }
       updateNarrative(selectors.presetScenario.value);
     }
@@ -229,6 +230,7 @@ function updateNarrative(presetId) {
     return;
   }
   const narratives = {
+    __none: "No mutation scenario selected. This shows the baseline topology with no active drift findings.",
     enum_changed: "Payments enum drift: a producer changed payment status handling without a coordinated contract update. Downstream services can misclassify payment state until contracts and consumers align.",
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
@@ -578,6 +580,11 @@ async function applyPreset() {
     return;
   }
   const id = selectors.presetScenario.value;
+  if (id === "__none") {
+    updateNarrative(id);
+    await bootstrap();
+    return;
+  }
   const fields = state.snapshot.fieldsByMutation?.[id] || [];
   const fieldId = fields[0];
   if (!fieldId) {
