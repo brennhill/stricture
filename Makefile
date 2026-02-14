@@ -1,7 +1,9 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
 
 GOFLAGS ?=
+GOCACHE ?= $(PWD)/.cache/go-build
+export GOCACHE
 LINEAGE_MODE ?= block
 TEST_PKGS := ./cmd/... ./internal/...
 BENCH_PKGS := ./cmd/... ./internal/...
@@ -37,6 +39,13 @@ test-phase5: test-phase4
 test-phase6: test-phase5
 	go test $(GOFLAGS) ./internal/fix/... ./internal/plugins/... ./internal/suppression/...
 
+test-integration:
+	mkdir -p .cache/go-build
+	GOCACHE=$(PWD)/.cache/go-build go test $(GOFLAGS) -tags=integration -count=1 -timeout=180s ./tests/integration/...
+
+test-tool-quality:
+	./scripts/check-tool-quality.sh
+
 lint:
 	mkdir -p .cache/go-build .cache/golangci-lint
 	GOCACHE=$(PWD)/.cache/go-build GOLANGCI_LINT_CACHE=$(PWD)/.cache/golangci-lint golangci-lint run ./cmd/... ./internal/...
@@ -56,6 +65,7 @@ ci: lint quality-gate benchmark validate
 quality-gate:
 	$(MAKE) build
 	$(MAKE) test-phase6
+	$(MAKE) test-integration
 	./scripts/check-lineage-drift.sh
 	./scripts/validate-gate.sh --phase 1
 	./scripts/validate-error-messages.sh
@@ -65,6 +75,7 @@ quality-gate:
 	./scripts/check-bash-syntax.sh
 	./scripts/check-tree-sitter-pinning.sh
 	./scripts/usecase-agent.sh run
+	./scripts/check-tool-quality.sh
 	VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh
 
 check-rules:

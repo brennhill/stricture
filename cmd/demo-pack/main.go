@@ -330,7 +330,7 @@ func mutateArtifact(base lineage.Artifact, fieldIndex int, typ mutationType) (li
 		if len(head.Fields[fieldIndex].Sources) == 0 {
 			return lineage.Artifact{}, false
 		}
-		head.Fields[fieldIndex].Sources[0].ContractRef = head.Fields[fieldIndex].Sources[0].ContractRef + "#type-v2"
+		head.Fields[fieldIndex].Sources[0].ContractRef += "#type-v2"
 		return head, true
 	case mutationEnumChanged:
 		head.Fields[fieldIndex].MergeStrategy = nextMergeStrategy(head.Fields[fieldIndex].MergeStrategy)

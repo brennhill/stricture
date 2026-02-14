@@ -3,7 +3,7 @@ bin/
 *.exe
 coverage.out
 phase1.out
-stricture
+/stricture
 .phase-agent/
 .overseer-agent/
 .usecase-agent/
