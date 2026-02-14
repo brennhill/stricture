@@ -83,6 +83,18 @@ curl -s -X POST https://stricture-lint.com/api/session | jq .
 
 - Build fails with missing dependencies:
   - Ensure `site/package-lock.json` is committed.
+- Deploy fails with `Uncaught ReferenceError: DurableObject is not defined`:
+  - First confirm the deployment is running the newest Git commit SHA (Cloudflare retry can replay an older failing commit).
+  - If needed, push a new commit to `main` to force a fresh Git-triggered build instead of using `Retry`.
+  - Confirm Cloudflare build config still points to:
+    - `Path` / root directory: `site`
+    - deploy command: `npx wrangler deploy --config worker/wrangler.toml`
+  - Keep the durable object implementation pattern in `site/worker/src/index.ts` as:
+    - `export class DemoSession { ... }` (typed with `DurableObjectState`)
+    - avoid runtime `DurableObject` symbol imports/extends that can trigger validator load-time failures.
+  - Confirm durable object binding and migration exist in `site/worker/wrangler.toml`:
+    - `[[durable_objects.bindings]] name = "DEMO_SESSIONS" class_name = "DemoSession"`
+    - `[[migrations]] ... new_sqlite_classes = ["DemoSession"]`
 - Worker deploy fails on Durable Object migration:
   - Confirm `site/worker/wrangler.toml` includes migration tags and `DemoSession`.
 - Domain not resolving:
