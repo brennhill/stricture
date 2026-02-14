@@ -803,12 +803,14 @@ function renderGraph(snapshot) {
     const inFlow = flowNodes.has(node.id);
     const isSource = sourceServices.has(node.id);
     const isImpacted = impactedServices.has(node.id);
+    const isTransit = inFlow && !isSource && !isImpacted;
     const isFailing = failedServices.has(node.id);
     const classes = ["graph-node", statusClass];
     if (isolated) classes.push("isolated");
     if (!inFlow && !isSource && !isImpacted) classes.push("dimmed");
     if (isSource) classes.push("source");
     if (isImpacted) classes.push("impacted");
+    if (isTransit) classes.push("transit");
     if (isFailing) classes.push("failing");
     g.setAttribute("class", classes.join(" "));
     const circle = document.createElementNS(svgNS, "circle");
