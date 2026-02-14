@@ -34,6 +34,7 @@ const selectors = {
   resetSession: document.querySelector("#reset-session"),
   loadEscalation: document.querySelector("#load-escalation"),
   applyScenario: document.querySelector("#apply-scenario"),
+  toggleEdges: document.querySelector("#toggle-edges"),
 };
 
 async function request(path, method = "GET", body) {
@@ -382,6 +383,7 @@ function bindEvents() {
     const target = event.target;
     updateNarrative(target?.value);
   });
+  selectors.toggleEdges?.addEventListener("click", () => toggleEdgeList());
   selectors.mutationType?.addEventListener("change", () => {
     if (state.snapshot) {
       refreshMutationFieldOptions(state.snapshot);
@@ -436,6 +438,12 @@ async function applyPreset() {
   await run();
 }
 
+function toggleEdgeList() {
+  if (!selectors.edgeList || !selectors.toggleEdges) return;
+  const isCollapsed = selectors.edgeList.classList.toggle("is-collapsed");
+  selectors.toggleEdges.textContent = isCollapsed ? "Show details" : "Hide details";
+}
+
 bindEvents();
 bootstrap().catch(showError);
 
@@ -451,8 +459,8 @@ function renderGraph(snapshot) {
   container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
-  const width = boxWidth || 640;
-  const height = 420;
+  const width = Math.max(boxWidth || 640, 1100);
+  const height = Math.max(420, Math.ceil((snapshot.services?.length || 8) / 4) * 120);
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
@@ -475,6 +483,8 @@ function renderGraph(snapshot) {
   const edges = snapshot.edges || [];
   const positions = computeLayeredLayout(nodes, edges, width, height);
 
+  const { activeFields, sourceServices, flowNodes, flowEdges, focusFieldSeverity } = computeImpacts(snapshot);
+
   const edgeColor = (status) => {
     if (status === "blocked") return "var(--danger)";
     if (status === "warning") return "var(--warn)";
@@ -491,8 +501,14 @@ function renderGraph(snapshot) {
     const midY = (from.y + to.y) / 2 - 18;
     const d = `M ${from.x} ${from.y} Q ${midX} ${midY} ${to.x} ${to.y}`;
     curve.setAttribute("d", d);
-    curve.setAttribute("class", `graph-edge edge-${edge.status} flow`);
-    curve.setAttribute("stroke", edgeColor(edge.status));
+    const isFlow = flowEdges.has(edge.id);
+    const isActiveField = activeFields.has(edge.fieldId);
+    const color = isActiveField ? "var(--accent-2)" : isFlow ? "#2563eb" : edgeColor(edge.status);
+    curve.setAttribute("stroke", color);
+    const classes = [`graph-edge`, `edge-${edge.status}`, "flow"];
+    if (!isFlow) classes.push("dimmed");
+    if (isActiveField) classes.push("focus");
+    curve.setAttribute("class", classes.join(" "));
     const title = document.createElementNS(svgNS, "title");
     title.textContent = `${edge.from} → ${edge.to} • ${edge.fieldId} • ${edge.status}`;
     curve.appendChild(title);
@@ -505,11 +521,17 @@ function renderGraph(snapshot) {
     const g = document.createElementNS(svgNS, "g");
     const statusClass = nodeStatusForService(node.id, snapshot.findings);
     const isolated = (node.edgeDegree || 0) === 0;
-    g.setAttribute("class", `graph-node ${statusClass} ${isolated ? "isolated" : ""}`);
+    const inFlow = flowNodes.has(node.id);
+    const isSource = sourceServices.has(node.id);
+    const classes = ["graph-node", statusClass];
+    if (isolated) classes.push("isolated");
+    if (!inFlow) classes.push("dimmed");
+    if (isSource) classes.push("source", "focus");
+    g.setAttribute("class", classes.join(" "));
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", pos.x);
     circle.setAttribute("cy", pos.y);
-    circle.setAttribute("r", "22");
+    circle.setAttribute("r", inFlow ? "26" : "18");
     g.appendChild(circle);
     const label = document.createElementNS(svgNS, "text");
     label.setAttribute("x", pos.x);
@@ -525,7 +547,7 @@ function renderGraph(snapshot) {
   container.appendChild(svg);
 
   if (selectors.flowPathSummary) {
-    selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges);
+    selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges, focusFieldSeverity);
   }
 }
 

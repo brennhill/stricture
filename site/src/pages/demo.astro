@@ -118,8 +118,11 @@ export const prerender = true;
           <p class="muted tight" id="flow-path-summary">Loading flow...</p>
           <div id="topology" class="topology"></div>
           <div class="edge-list-wrap">
-            <p class="muted tight">Field-level flows (per edge). Each row: source → target | field | status.</p>
-            <div id="edge-list" class="edge-list"></div>
+            <div class="edge-list-header">
+              <p class="muted tight">Field-level flows (per edge). Each row: source → target | field | status.</p>
+              <button id="toggle-edges" class="button button-secondary button-ghost">Show details</button>
+            </div>
+            <div id="edge-list" class="edge-list is-collapsed"></div>
           </div>
         </article>
 
