@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -23,11 +25,25 @@ type flow struct {
 	Description string   `json:"description"`
 }
 
+type strictureTruth struct {
+	TruthVersion          string   `json:"truthVersion"`
+	GeneratedAt           string   `json:"generatedAt"`
+	Service               string   `json:"service"`
+	Domain                string   `json:"domain"`
+	SupportedFlows        int      `json:"supportedFlows"`
+	AnnotatedFlows        int      `json:"annotatedFlows"`
+	AnnotationCoveragePct float64  `json:"annotationCoveragePct"`
+	ExpectedUseCases      []string `json:"expectedUseCases"`
+	ExpectedLanguages     []string `json:"expectedLanguages"`
+	LineageChecksum       string   `json:"lineageChecksum"`
+}
+
 type apiServer struct {
 	domain    string
 	service   string
 	flows     []flow
 	flowsByID map[string]flow
+	truth     strictureTruth
 }
 
 func main() {
@@ -61,6 +77,7 @@ func main() {
 		service:   service,
 		flows:     flows,
 		flowsByID: indexFlows(flows),
+		truth:     buildStrictureTruth(flows, domain, service, time.Now().UTC()),
 	}
 
 	mux := http.NewServeMux()
@@ -69,6 +86,7 @@ func main() {
 	mux.HandleFunc("/api/v1/flows/", server.handleFlowByID)
 	mux.HandleFunc("/api/v1/simulate/", server.handleSimulate)
 	mux.HandleFunc("/api/v1/use-cases", server.handleUseCases)
+	mux.HandleFunc("/api/v1/stricture-truth", server.handleStrictureTruth)
 
 	addr := ":" + port
 	log.Printf("fake-api domain=%s service=%s flow_count=%d listen=%s", domain, service, len(flows), addr)
@@ -100,11 +118,10 @@ func indexFlows(flows []flow) map[string]flow {
 
 func (s *apiServer) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status":    "ok",
-		"service":   s.service,
-		"domain":    s.domain,
-		"flowCount": len(s.flows),
-		"asOf":      time.Now().UTC().Format(time.RFC3339),
+		"status":  "ok",
+		"service": s.service,
+		"domain":  s.domain,
+		"asOf":    time.Now().UTC().Format(time.RFC3339),
 	})
 }
 
@@ -191,6 +208,10 @@ func (s *apiServer) handleUseCases(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
+func (s *apiServer) handleStrictureTruth(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.truth)
+}
+
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -206,4 +227,71 @@ func titleCase(raw string) string {
 	}
 	raw = strings.ToLower(raw)
 	return strings.ToUpper(raw[:1]) + raw[1:]
+}
+
+func buildStrictureTruth(flows []flow, domain string, service string, generatedAt time.Time) strictureTruth {
+	signatures := make([]string, 0, len(flows))
+	useCaseSet := map[string]bool{}
+	languageSet := map[string]bool{}
+	annotatedFlows := 0
+
+	for _, candidate := range flows {
+		useCases := append([]string{}, candidate.UseCases...)
+		languages := append([]string{}, candidate.Languages...)
+		sort.Strings(useCases)
+		sort.Strings(languages)
+
+		if strings.TrimSpace(candidate.FieldID) != "" && len(useCases) > 0 {
+			annotatedFlows++
+		}
+
+		for _, useCase := range useCases {
+			useCaseSet[useCase] = true
+		}
+		for _, language := range languages {
+			languageSet[language] = true
+		}
+
+		signatures = append(signatures,
+			fmt.Sprintf("%s|%s|%s|%s|%s",
+				candidate.ID,
+				candidate.FieldID,
+				candidate.Workflow,
+				strings.Join(useCases, ","),
+				strings.Join(languages, ",")),
+		)
+	}
+
+	sort.Strings(signatures)
+	digest := sha256.Sum256([]byte(strings.Join(signatures, "\n")))
+
+	expectedUseCases := make([]string, 0, len(useCaseSet))
+	for useCase := range useCaseSet {
+		expectedUseCases = append(expectedUseCases, useCase)
+	}
+	sort.Strings(expectedUseCases)
+
+	expectedLanguages := make([]string, 0, len(languageSet))
+	for language := range languageSet {
+		expectedLanguages = append(expectedLanguages, language)
+	}
+	sort.Strings(expectedLanguages)
+
+	coverage := 100.0
+	if len(flows) > 0 {
+		coverage = (float64(annotatedFlows) / float64(len(flows))) * 100
+	}
+
+	return strictureTruth{
+		TruthVersion:          "1",
+		GeneratedAt:           generatedAt.Format(time.RFC3339),
+		Service:               service,
+		Domain:                domain,
+		SupportedFlows:        len(flows),
+		AnnotatedFlows:        annotatedFlows,
+		AnnotationCoveragePct: coverage,
+		ExpectedUseCases:      expectedUseCases,
+		ExpectedLanguages:     expectedLanguages,
+		LineageChecksum:       "sha256:" + hex.EncodeToString(digest[:]),
+	}
 }

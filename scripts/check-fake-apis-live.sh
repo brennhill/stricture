@@ -146,7 +146,7 @@ for check in "${checks[@]}"; do
 	record_output_dump "${domain} /health" "$health_body"
 	assert_contains "$health_body" "\"service\":\"${service}\"" "${domain} /health has expected service"
 	assert_contains "$health_body" "\"domain\":\"${domain}\"" "${domain} /health has expected domain"
-	assert_contains "$health_body" "\"flowCount\":10" "${domain} /health reports 10 flows"
+	assert_contains "$health_body" "\"status\":\"ok\"" "${domain} /health reports ok status"
 
 	flows_body="$(fetch_json_200 "$base_url/api/v1/flows" "${domain} /api/v1/flows")"
 	record_output_dump "${domain} /api/v1/flows" "$flows_body"
@@ -168,6 +168,16 @@ for check in "${checks[@]}"; do
 	assert_contains "$use_cases_body" "\"useCase\":\"escalation_chain\"" "${domain} /api/v1/use-cases includes escalation_chain"
 	assert_contains "$use_cases_body" "\"useCase\":\"compliance_traceability\"" "${domain} /api/v1/use-cases includes compliance_traceability"
 	assert_contains "$use_cases_body" "\"useCase\":\"multilang_contract_parity\"" "${domain} /api/v1/use-cases includes multilang_contract_parity"
+
+	truth_body="$(fetch_json_200 "$base_url/api/v1/stricture-truth" "${domain} /api/v1/stricture-truth")"
+	record_output_dump "${domain} /api/v1/stricture-truth" "$truth_body"
+	assert_contains "$truth_body" "\"service\":\"${service}\"" "${domain} /api/v1/stricture-truth has expected service"
+	assert_contains "$truth_body" "\"domain\":\"${domain}\"" "${domain} /api/v1/stricture-truth has expected domain"
+	assert_contains "$truth_body" "\"supportedFlows\":10" "${domain} /api/v1/stricture-truth reports supportedFlows=10"
+	assert_contains "$truth_body" "\"annotatedFlows\":10" "${domain} /api/v1/stricture-truth reports annotatedFlows=10"
+	assert_contains "$truth_body" "\"annotationCoveragePct\":100" "${domain} /api/v1/stricture-truth reports full annotation coverage"
+	assert_contains "$truth_body" "\"lineageChecksum\":\"sha256:" "${domain} /api/v1/stricture-truth includes checksum"
+	assert_contains "$truth_body" "\"truthVersion\":\"1\"" "${domain} /api/v1/stricture-truth reports truthVersion=1"
 done
 
 echo "INFO: collected lineage outputs (ordered)"
@@ -180,6 +190,6 @@ duration="$(( $(date +%s) - START_EPOCH ))"
 
 echo "PASS: fake API live docker-compose smoke checks succeeded."
 echo "  domains_tested: 5"
-echo "  endpoints_tested_per_domain: 4"
+echo "  endpoints_tested_per_domain: 5"
 echo "  assertions_passed: ${ASSERTIONS_PASSED}/${ASSERTIONS_TOTAL}"
 echo "  duration_seconds: ${duration}"

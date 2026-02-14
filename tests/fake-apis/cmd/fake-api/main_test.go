@@ -6,7 +6,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func testServer() *apiServer {
@@ -31,6 +33,7 @@ func testServer() *apiServer {
 		service:   "LogisticsGateway",
 		flows:     flows,
 		flowsByID: indexFlows(flows),
+		truth:     buildStrictureTruth(flows, "logistics", "LogisticsGateway", time.Date(2026, time.February, 14, 0, 0, 0, 0, time.UTC)),
 	}
 }
 
@@ -50,6 +53,9 @@ func TestHandleHealth(t *testing.T) {
 	}
 	if payload["service"] != "LogisticsGateway" {
 		t.Fatalf("service = %v, want LogisticsGateway", payload["service"])
+	}
+	if _, ok := payload["flowCount"]; ok {
+		t.Fatalf("flowCount should not be present in /health payload")
 	}
 }
 
@@ -147,6 +153,64 @@ func TestHandleUseCases(t *testing.T) {
 	}
 	if payload.Summary[1].UseCase != "escalation_chain" || payload.Summary[1].Count != 1 {
 		t.Fatalf("summary[1] = %+v, want escalation_chain=1", payload.Summary[1])
+	}
+}
+
+func TestHandleStrictureTruth(t *testing.T) {
+	server := testServer()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/stricture-truth", nil)
+	rr := httptest.NewRecorder()
+
+	server.handleStrictureTruth(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	var payload struct {
+		TruthVersion          string   `json:"truthVersion"`
+		GeneratedAt           string   `json:"generatedAt"`
+		Service               string   `json:"service"`
+		Domain                string   `json:"domain"`
+		SupportedFlows        int      `json:"supportedFlows"`
+		AnnotatedFlows        int      `json:"annotatedFlows"`
+		AnnotationCoveragePct float64  `json:"annotationCoveragePct"`
+		ExpectedUseCases      []string `json:"expectedUseCases"`
+		ExpectedLanguages     []string `json:"expectedLanguages"`
+		LineageChecksum       string   `json:"lineageChecksum"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	if payload.TruthVersion != "1" {
+		t.Fatalf("truthVersion = %q, want 1", payload.TruthVersion)
+	}
+	if payload.Service != "LogisticsGateway" {
+		t.Fatalf("service = %q, want LogisticsGateway", payload.Service)
+	}
+	if payload.Domain != "logistics" {
+		t.Fatalf("domain = %q, want logistics", payload.Domain)
+	}
+	if payload.SupportedFlows != 1 {
+		t.Fatalf("supportedFlows = %d, want 1", payload.SupportedFlows)
+	}
+	if payload.AnnotatedFlows != 1 {
+		t.Fatalf("annotatedFlows = %d, want 1", payload.AnnotatedFlows)
+	}
+	if payload.AnnotationCoveragePct != 100 {
+		t.Fatalf("annotationCoveragePct = %v, want 100", payload.AnnotationCoveragePct)
+	}
+	if len(payload.ExpectedUseCases) != 2 {
+		t.Fatalf("expectedUseCases len = %d, want 2", len(payload.ExpectedUseCases))
+	}
+	if len(payload.ExpectedLanguages) != 2 {
+		t.Fatalf("expectedLanguages len = %d, want 2", len(payload.ExpectedLanguages))
+	}
+	if payload.GeneratedAt == "" {
+		t.Fatalf("generatedAt should not be empty")
+	}
+	if !strings.HasPrefix(payload.LineageChecksum, "sha256:") {
+		t.Fatalf("lineageChecksum = %q, want prefix sha256:", payload.LineageChecksum)
 	}
 }
 
