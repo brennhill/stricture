@@ -244,8 +244,8 @@ function render(snapshot) {
     {
       className: (finding) => `list-item sev-${finding.severity}`,
       html: (finding) => `
-        <h3>${friendlyTitle(finding)} (${finding.severity.toUpperCase()})</h3>
-        <p>${friendlyDetail(finding)}</p>
+        <h3>${humanChange[finding.changeType] || finding.changeType} — ${finding.fieldId} (${finding.severity.toUpperCase()})</h3>
+        <p>${finding.summary}</p>
         <p class="item-meta">Field: ${finding.fieldId} • Service: ${finding.serviceId}</p>
         <p class="item-meta">Remediation: ${finding.remediation}</p>
       `,
