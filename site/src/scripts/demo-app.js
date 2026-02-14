@@ -175,7 +175,7 @@ function updateNarrative(presetId) {
     return;
   }
   const narratives = {
-    enum_changed: "Payments enum drift: payment service provider (PSP) adds a new status without a contract bump. Downstream billing and notifications can misclassify payments until consumers update.",
+    enum_changed: "Payments enum drift: payment service provider (PSP, Stripe) adds a new status without a contract bump. Downstream billing and notifications can misclassify payments until consumers update.",
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
     annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
