@@ -49,6 +49,21 @@ const humanChange = {
   enum_changed: "enum changed",
 };
 
+const mutationTypeLabels = {
+  annotation_missing: "Annotation Missing",
+  enum_changed: "Merge Strategy Changed",
+  external_as_of_stale: "External As-Of Stale",
+  field_removed: "Field Removed",
+  source_version_changed: "Source Version Changed",
+  type_changed: "Type Changed",
+};
+
+function fieldLabel(fieldId) {
+  return String(fieldId || "")
+    .replace(/^response_/, "response.")
+    .replace(/_/g, ".");
+}
+
 function serviceById(snapshot) {
   return new Map((snapshot.services || []).map((service) => [service.id, service]));
 }
@@ -141,9 +156,51 @@ function inferSourceServices(snapshot, findings, latest) {
   return sourceServices;
 }
 
-function findingSummaryText(snapshot, finding) {
-  void snapshot;
-  return finding.summary || "";
+function parseFindingDelta(finding) {
+  const summary = String(finding.summary || "");
+  const fromTo = /from\s+([^\s,]+)\s+to\s+([^\s,]+)/i.exec(summary);
+
+  if (finding.changeType === "merge_strategy_changed" && fromTo) {
+    return { whatChanged: `Merge strategy changed from ${fromTo[1]} to ${fromTo[2]}.`, shortDelta: `${fromTo[1]} -> ${fromTo[2]}` };
+  }
+  if (finding.changeType === "source_version_changed" && fromTo) {
+    return { whatChanged: `Source version changed from ${fromTo[1]} to ${fromTo[2]}.`, shortDelta: `${fromTo[1]} -> ${fromTo[2]}` };
+  }
+  if (finding.changeType === "external_as_of_rollback" && fromTo) {
+    return { whatChanged: `External snapshot date moved from ${fromTo[1]} to ${fromTo[2]}.`, shortDelta: `${fromTo[1]} -> ${fromTo[2]}` };
+  }
+  if (finding.changeType === "field_removed") {
+    return { whatChanged: "Field was removed from the lineage contract.", shortDelta: "field removed" };
+  }
+  if (finding.changeType === "source_removed") {
+    return { whatChanged: "A required upstream source mapping was removed.", shortDelta: "source removed" };
+  }
+  if (finding.changeType === "source_contract_ref_changed") {
+    return { whatChanged: "Upstream contract reference changed.", shortDelta: "contract ref changed" };
+  }
+  return {
+    whatChanged: summary ? `${summary}.` : "Contract behavior changed.",
+    shortDelta: humanChange[finding.changeType] || finding.changeType,
+  };
+}
+
+function findingCauseImpact(snapshot, finding, mutation) {
+  const inferredSources = inferSourceServices(snapshot, [finding], mutation);
+  const sourceId = finding.source?.serviceId
+    || (inferredSources.size ? [...inferredSources][0] : "")
+    || mutation?.serviceId
+    || "";
+  const impactId = finding.impact?.serviceId || finding.serviceId || "";
+  return {
+    sourceName: sourceId ? serviceName(snapshot, sourceId) : "unknown source",
+    impactName: impactId ? serviceName(snapshot, impactId) : "unknown impacted service",
+  };
+}
+
+function findingStory(snapshot, finding, mutation) {
+  const { sourceName, impactName } = findingCauseImpact(snapshot, finding, mutation);
+  const delta = parseFindingDelta(finding);
+  return `${sourceName} changed ${fieldLabel(finding.fieldId)}. ${delta.whatChanged} Stricture flags ${impactName} as impacted by this drift.`;
 }
 
 async function request(path, method = "GET", body) {
@@ -194,7 +251,7 @@ function updateControlStats(snapshot) {
 function buildPresets(snapshot) {
   const nonePreset = { id: "__none", label: "No scenario (baseline)" };
   const candidates = [
-    { id: "enum_changed", label: "Payments enum drift" },
+    { id: "enum_changed", label: "Payments merge strategy drift" },
     { id: "type_changed", label: "Orders type drift" },
     { id: "external_as_of_stale", label: "External as-of stale" },
     { id: "annotation_missing", label: "Missing annotation" },
@@ -219,7 +276,6 @@ function buildPresets(snapshot) {
       } else {
         selectors.presetScenario.value = nonePreset.id;
       }
-      updateNarrative(selectors.presetScenario.value);
     }
   }
   return presets;
@@ -231,7 +287,7 @@ function updateNarrative(presetId) {
   }
   const narratives = {
     __none: "No mutation scenario selected. This shows the baseline topology with no active drift findings.",
-    enum_changed: "Payments enum drift: a producer changed payment status handling without a coordinated contract update. Downstream services can misclassify payment state until contracts and consumers align.",
+    enum_changed: "Payments merge strategy drift: the producer changed how pricing sources are combined. Downstream services can misread the final value unless merge expectations stay aligned.",
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
     annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
@@ -243,14 +299,15 @@ function updateNarrative(presetId) {
 function updateNarrativeFromSnapshot(snapshot) {
   if (!selectors.scenarioNarrative) return;
   const findings = snapshot.findings || [];
-  if (!findings.length) return;
   const mutation = latestMutation(snapshot);
-  const sourceServices = inferSourceServices(snapshot, findings, mutation);
-  const sourceID = sourceServices.size ? [...sourceServices][0] : mutation?.serviceId;
+  if (!findings.length) {
+    if (snapshot.runSummary?.runCount > 0 && mutation) {
+      selectors.scenarioNarrative.textContent = `No downstream impact found for ${fieldLabel(mutation.fieldId)}. Stricture tracked the mutation but did not flag a finding under current policy.`;
+    }
+    return;
+  }
   const top = findings[0];
-  const sourceNameText = sourceID ? serviceName(snapshot, sourceID) : "Unknown source";
-  const impactNameText = serviceName(snapshot, top.serviceId);
-  selectors.scenarioNarrative.textContent = `${sourceNameText} introduced ${humanChange[top.changeType] || top.changeType} on ${top.fieldId}. Stricture flags impact in ${impactNameText}.`;
+  selectors.scenarioNarrative.textContent = findingStory(snapshot, top, mutation);
 }
 
 function renderGate(summary) {
@@ -273,20 +330,16 @@ function renderRunSummary(snapshot) {
     selectors.runSummaryText.textContent = "Awaiting first run. Apply a mutation then rerun to see how Stricture flags drift.";
     return;
   }
-  const findingWord = summary.findingCount === 1 ? "finding" : "findings";
-  const gateText = summary.gate === "BLOCK" ? "Deploy blocked." : "Deploy allowed.";
-  const policyText = summary.mode === "block"
-    ? `Policy is block at ${snapshot.policy.failOn}+ severity.`
-    : `Policy is warn (never blocks), threshold is ${snapshot.policy.failOn}+ for escalation.`;
   const mutation = latestMutation(snapshot);
-  const sources = inferSourceServices(snapshot, snapshot.findings || [], mutation);
-  const sourceText = sources.size
-    ? `Changed source: ${listServiceNames(snapshot, [...sources], 2)}.`
-    : mutation ? `Changed source: ${serviceName(snapshot, mutation.serviceId)}.` : "";
-  const impactedText = summary.findingCount
-    ? `Flagged services: ${listServiceNames(snapshot, snapshot.findings.map((finding) => finding.serviceId))}.`
-    : "No services were flagged.";
-  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} ${findingWord} (${summary.blockedCount} high, ${summary.warningCount} warning). ${gateText} ${policyText} ${sourceText} ${impactedText}`;
+  if (!summary.findingCount) {
+    selectors.runSummaryText.textContent = `Run #${summary.runCount}: no downstream-impact findings. Deploy allowed. Stricture tracked the change but found no affected downstream service.`;
+    return;
+  }
+  const top = snapshot.findings[0];
+  const delta = parseFindingDelta(top);
+  const { sourceName, impactName } = findingCauseImpact(snapshot, top, mutation);
+  const gateText = summary.gate === "BLOCK" ? "Deploy blocked." : "Deploy allowed.";
+  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} high, ${summary.warningCount} warning). ${gateText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
 }
 
 function nodeStatusForService(serviceId, findings) {
@@ -375,7 +428,6 @@ function render(snapshot) {
   renderRunSummary(snapshot);
   renderTopology(snapshot);
   updateControlStats(snapshot);
-  updateNarrativeFromSnapshot(snapshot);
 
   renderList(
     selectors.findings,
@@ -385,17 +437,17 @@ function render(snapshot) {
       className: (finding) => `list-item sev-${finding.severity}`,
       html: (finding) => {
         const mutation = latestMutation(snapshot);
-        const sources = inferSourceServices(snapshot, [finding], mutation);
-        const source = sources.size ? serviceName(snapshot, [...sources][0]) : mutation ? serviceName(snapshot, mutation.serviceId) : "unknown";
-        const impacted = serviceName(snapshot, finding.serviceId);
+        const { sourceName: source, impactName: impacted } = findingCauseImpact(snapshot, finding, mutation);
+        const delta = parseFindingDelta(finding);
         const owner = serviceOwner(snapshot, finding.serviceId);
         const flowServices = (snapshot.edges || [])
           .filter((edge) => edge.fieldId === finding.fieldId)
           .flatMap((edge) => [edge.from, edge.to]);
         const blastRadius = listServiceNames(snapshot, [...flowServices, finding.serviceId], 4);
         return `
-        <h3>${humanChange[finding.changeType] || finding.changeType} — ${finding.fieldId} (${finding.severity.toUpperCase()}) in ${impacted}</h3>
-        <p>${findingSummaryText(snapshot, finding)}</p>
+        <h3>${humanChange[finding.changeType] || finding.changeType} — ${fieldLabel(finding.fieldId)} (${finding.severity.toUpperCase()}) in ${impacted}</h3>
+        <p><strong>What changed:</strong> ${delta.whatChanged}</p>
+        <p><strong>Why flagged:</strong> ${source} changed the producer contract/path and ${impacted} is downstream on this flow.</p>
         <p class="item-meta chips">
           <span class="chip">Cause: ${source}</span>
           <span class="chip">Impact: ${impacted}</span>
@@ -425,7 +477,7 @@ function render(snapshot) {
 
   if (selectors.mutationType && Array.isArray(snapshot.mutationTypes)) {
     const selected = selectors.mutationType.value;
-    setOptions(selectors.mutationType, snapshot.mutationTypes, (id) => id);
+    setOptions(selectors.mutationType, snapshot.mutationTypes, (id) => mutationTypeLabels[id] || id);
     if (snapshot.mutationTypes.includes(selected)) {
       selectors.mutationType.value = selected;
     }
@@ -437,6 +489,7 @@ function render(snapshot) {
 
   refreshMutationFieldOptions(snapshot);
   buildPresets(snapshot);
+  updateNarrativeFromSnapshot(snapshot);
 
   if (selectors.policyMode) {
     selectors.policyMode.value = snapshot.policy.mode;
