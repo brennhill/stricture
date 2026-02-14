@@ -57,6 +57,23 @@ type TypeDelta struct {
 	AfterLabel        string `json:"after_label,omitempty"`
 }
 
+func edgeOrNil(service string, api string) *DriftEdge {
+	service = strings.TrimSpace(service)
+	api = strings.TrimSpace(api)
+	if service == "" && api == "" {
+		return nil
+	}
+	return &DriftEdge{Service: service, API: api}
+}
+
+func edgeCopy(edge *DriftEdge) *DriftEdge {
+	if edge == nil {
+		return nil
+	}
+	copy := *edge
+	return &copy
+}
+
 // DiffSummary aggregates change counts by severity.
 type DiffSummary struct {
 	Total  int `json:"total"`
@@ -70,6 +87,42 @@ type DiffSummary struct {
 type DiffResult struct {
 	Summary DiffSummary   `json:"summary"`
 	Changes []DriftChange `json:"changes"`
+}
+
+type plainLanguageGuidance struct {
+	Impact   string
+	NextStep string
+}
+
+var plainLanguageGuidanceByChangeType = map[string]plainLanguageGuidance{
+	"field_removed": {
+		Impact:   "Consumers expecting this field can crash or silently mis-handle payloads.",
+		NextStep: "Restore the field or ship a compatibility adapter and coordinated rollout.",
+	},
+	"source_version_changed": {
+		Impact:   "Version bumps can change producer semantics even when type shape is unchanged.",
+		NextStep: "Run compatibility tests and communicate rollout plan to consumers.",
+	},
+	"merge_strategy_changed": {
+		Impact:   "Different merge behavior can change output values without any schema/type diff.",
+		NextStep: "Add merge semantic regression tests with representative multi-source fixtures.",
+	},
+	"source_contract_ref_changed": {
+		Impact:   "Contract reference changes can introduce enum/type drift across service boundaries.",
+		NextStep: "Run contract tests for producer and consumers before promoting the new reference.",
+	},
+	"source_removed": {
+		Impact:   "Removing a source can change or null out producer output values.",
+		NextStep: "Confirm fallback behavior and downstream assumptions with integration tests.",
+	},
+	"source_added": {
+		Impact:   "Adding a source can alter precedence and value composition.",
+		NextStep: "Validate precedence rules and update consumer expectations.",
+	},
+	"external_as_of_rollback": {
+		Impact:   "Older external snapshots can reintroduce stale or incompatible values.",
+		NextStep: "Refresh provider snapshot and verify time-sensitive invariants.",
+	},
 }
 
 // DiffArtifacts classifies drift from base -> head.
@@ -140,6 +193,10 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 		})
 	}
 
+	for i := range changes {
+		enrichPlainLanguage(&changes[i])
+	}
+
 	applyOverrides(changes, head.Overrides)
 
 	sort.Slice(changes, func(i, j int) bool {
@@ -178,49 +235,49 @@ func compareField(base Annotation, head Annotation) []DriftChange {
 		fieldID = base.FieldID
 	}
 
-	if base.Field != head.Field {
+	producerService := strings.TrimSpace(head.SourceSystem)
+	if producerService == "" {
+		producerService = strings.TrimSpace(base.SourceSystem)
+	}
+	producerField := strings.TrimSpace(head.Field)
+	if producerField == "" {
+		producerField = strings.TrimSpace(base.Field)
+	}
+	if producerField == "" {
+		producerField = fieldID
+	}
+	producerEdge := edgeOrNil(producerService, producerField)
+	impactEdge := edgeOrNil(producerService, fieldID)
+
+	appendProducerChange := func(severity Severity, changeType string, message string) {
 		changes = append(changes, DriftChange{
-			Severity:   SeverityMedium,
-			ChangeType: "field_path_changed",
+			Severity:   severity,
+			ChangeType: changeType,
 			FieldID:    fieldID,
-			Message:    fmt.Sprintf("Field path changed from %s to %s", base.Field, head.Field),
+			Message:    message,
+			Source:     edgeCopy(producerEdge),
+			Impact:     edgeCopy(impactEdge),
 		})
+	}
+
+	if base.Field != head.Field {
+		appendProducerChange(SeverityMedium, "field_path_changed", fmt.Sprintf("Producer %s changed field path from %s to %s for %s.", producerServiceLabel(producerService), base.Field, head.Field, fieldID))
 	}
 
 	if base.SourceSystem != head.SourceSystem {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityHigh,
-			ChangeType: "source_system_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("source_system changed from %s to %s", base.SourceSystem, head.SourceSystem),
-		})
+		appendProducerChange(SeverityHigh, "source_system_changed", fmt.Sprintf("Producer system changed from %s to %s for %s.", base.SourceSystem, head.SourceSystem, fieldID))
 	}
 
 	if base.SourceVersion != head.SourceVersion {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityMedium,
-			ChangeType: "source_version_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("source_version changed from %s to %s", base.SourceVersion, head.SourceVersion),
-		})
+		appendProducerChange(SeverityMedium, "source_version_changed", fmt.Sprintf("Producer %s changed source version for %s from %s to %s. Consumers pinned to previous semantics should verify compatibility.", producerServiceLabel(producerService), fieldID, base.SourceVersion, head.SourceVersion))
 	}
 
 	if base.MinSupportedSourceVersion != head.MinSupportedSourceVersion {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityHigh,
-			ChangeType: "min_supported_source_version_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("min_supported_source_version changed from %s to %s", base.MinSupportedSourceVersion, head.MinSupportedSourceVersion),
-		})
+		appendProducerChange(SeverityHigh, "min_supported_source_version_changed", fmt.Sprintf("Producer %s changed min supported source version for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.MinSupportedSourceVersion, head.MinSupportedSourceVersion))
 	}
 
 	if base.TransformType != head.TransformType {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityMedium,
-			ChangeType: "transform_type_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("transform_type changed from %s to %s", base.TransformType, head.TransformType),
-		})
+		appendProducerChange(SeverityMedium, "transform_type_changed", fmt.Sprintf("Producer %s changed transform type for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.TransformType, head.TransformType))
 	}
 
 	if base.MergeStrategy != head.MergeStrategy {
@@ -228,17 +285,16 @@ func compareField(base Annotation, head Annotation) []DriftChange {
 			Severity:   SeverityMedium,
 			ChangeType: "merge_strategy_changed",
 			FieldID:    fieldID,
-			Message:    fmt.Sprintf("merge_strategy changed from %s to %s", base.MergeStrategy, head.MergeStrategy),
+			Message:    fmt.Sprintf("Producer %s changed merge strategy for %s from %s (%s) to %s (%s). This changes how upstream values are combined and can change downstream behavior even when schema/type stays the same.", producerServiceLabel(producerService), fieldID, base.MergeStrategy, mergeStrategyMeaning(base.MergeStrategy), head.MergeStrategy, mergeStrategyMeaning(head.MergeStrategy)),
+			Source:     edgeCopy(producerEdge),
+			Impact:     edgeCopy(impactEdge),
+			Validation: "merge semantics regression check for precedence/fallback behavior",
+			Suggestion: "add fixture tests for representative source combinations and verify downstream expectations before rollout",
 		})
 	}
 
 	if base.BreakPolicy != head.BreakPolicy {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityHigh,
-			ChangeType: "break_policy_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("break_policy changed from %s to %s", base.BreakPolicy, head.BreakPolicy),
-		})
+		appendProducerChange(SeverityHigh, "break_policy_changed", fmt.Sprintf("Producer %s changed break policy for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.BreakPolicy, head.BreakPolicy))
 	}
 
 	if base.Confidence != head.Confidence {
@@ -246,86 +302,41 @@ func compareField(base Annotation, head Annotation) []DriftChange {
 		if base.Confidence == "declared" && head.Confidence == "inferred" {
 			severity = SeverityMedium
 		}
-		changes = append(changes, DriftChange{
-			Severity:   severity,
-			ChangeType: "confidence_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("confidence changed from %s to %s", base.Confidence, head.Confidence),
-		})
+		appendProducerChange(severity, "confidence_changed", fmt.Sprintf("Producer %s changed confidence for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.Confidence, head.Confidence))
 	}
 
 	if base.DataClassification != head.DataClassification {
 		baseRank := classificationRank(base.DataClassification)
 		headRank := classificationRank(head.DataClassification)
 		if headRank < baseRank {
-			changes = append(changes, DriftChange{
-				Severity:   SeverityHigh,
-				ChangeType: "classification_relaxed",
-				FieldID:    fieldID,
-				Message:    fmt.Sprintf("data_classification relaxed from %s to %s", base.DataClassification, head.DataClassification),
-			})
+			appendProducerChange(SeverityHigh, "classification_relaxed", fmt.Sprintf("Producer %s relaxed data classification for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.DataClassification, head.DataClassification))
 		} else {
-			changes = append(changes, DriftChange{
-				Severity:   SeverityLow,
-				ChangeType: "classification_tightened",
-				FieldID:    fieldID,
-				Message:    fmt.Sprintf("data_classification tightened from %s to %s", base.DataClassification, head.DataClassification),
-			})
+			appendProducerChange(SeverityLow, "classification_tightened", fmt.Sprintf("Producer %s tightened data classification for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.DataClassification, head.DataClassification))
 		}
 	}
 
 	if base.Owner != head.Owner {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityLow,
-			ChangeType: "owner_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("owner changed from %s to %s", base.Owner, head.Owner),
-		})
+		appendProducerChange(SeverityLow, "owner_changed", fmt.Sprintf("Owner changed from %s to %s for %s.", base.Owner, head.Owner, fieldID))
 	}
 
 	if base.Escalation != head.Escalation {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityLow,
-			ChangeType: "escalation_changed",
-			FieldID:    fieldID,
-			Message:    "escalation reference changed",
-		})
+		appendProducerChange(SeverityLow, "escalation_changed", fmt.Sprintf("Escalation contact changed for %s.", fieldID))
 	}
 
 	if base.ContractTestID != head.ContractTestID {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityMedium,
-			ChangeType: "contract_test_id_changed",
-			FieldID:    fieldID,
-			Message:    "contract_test_id changed",
-		})
+		appendProducerChange(SeverityMedium, "contract_test_id_changed", fmt.Sprintf("Contract test reference changed for %s.", fieldID))
 	}
 
 	if base.SunsetAt != head.SunsetAt {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityMedium,
-			ChangeType: "sunset_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("sunset_at changed from %s to %s", base.SunsetAt, head.SunsetAt),
-		})
+		appendProducerChange(SeverityMedium, "sunset_changed", fmt.Sprintf("Sunset date changed for %s from %s to %s.", fieldID, base.SunsetAt, head.SunsetAt))
 	}
 
 	if base.Flow != head.Flow {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityLow,
-			ChangeType: "flow_changed",
-			FieldID:    fieldID,
-			Message:    "flow changed",
-		})
+		appendProducerChange(SeverityLow, "flow_changed", fmt.Sprintf("Flow narrative changed for %s.", fieldID))
 	}
 
 	if base.Note != head.Note {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityInfo,
-			ChangeType: "note_changed",
-			FieldID:    fieldID,
-			Message:    "note changed",
-		})
+		appendProducerChange(SeverityInfo, "note_changed", fmt.Sprintf("Annotation note changed for %s.", fieldID))
 	}
 
 	changes = append(changes, compareSources(fieldID, head.SourceSystem, head.Flow, base.Sources, head.Sources)...)
@@ -346,18 +357,22 @@ func compareSources(fieldID string, impactedService string, flow string, baseSou
 
 	for id, src := range baseByIdentity {
 		headSrc, exists := headByIdentity[id]
+		sourceService := sourceServiceForRef(src)
+		sourceEdge := edgeOrNil(sourceService, src.Target)
+		impactEdge := edgeOrNil(impactedService, fieldID)
 		if !exists {
 			changes = append(changes, DriftChange{
 				Severity:   SeverityHigh,
 				ChangeType: "source_removed",
 				FieldID:    fieldID,
-				Message:    fmt.Sprintf("source removed: %s", src.Raw),
+				Message:    fmt.Sprintf("Source %s no longer contributes to %s in producer %s. This can change downstream values.", sourceServiceLabel(sourceService), fieldID, producerServiceLabel(impactedService)),
+				Source:     edgeCopy(sourceEdge),
+				Impact:     edgeCopy(impactEdge),
 			})
 			continue
 		}
 
 		if src.ContractRef != headSrc.ContractRef {
-			sourceService := sourceServiceForRef(src)
 			modifiers := flowModifiers(flow, sourceService, impactedService)
 			fromRef := contractRefLabel(src.ContractRef)
 			toRef := contractRefLabel(headSrc.ContractRef)
@@ -393,7 +408,9 @@ func compareSources(fieldID string, impactedService string, flow string, baseSou
 				Severity:   SeverityMedium,
 				ChangeType: "source_provider_changed",
 				FieldID:    fieldID,
-				Message:    fmt.Sprintf("provider_id changed for source %s", id),
+				Message:    fmt.Sprintf("Provider changed for source %s from %s to %s in %s.", id, src.ProviderID, headSrc.ProviderID, fieldID),
+				Source:     edgeCopy(sourceEdge),
+				Impact:     edgeCopy(impactEdge),
 			})
 		}
 		if src.UpstreamSystem != headSrc.UpstreamSystem {
@@ -401,7 +418,9 @@ func compareSources(fieldID string, impactedService string, flow string, baseSou
 				Severity:   SeverityMedium,
 				ChangeType: "source_upstream_system_changed",
 				FieldID:    fieldID,
-				Message:    fmt.Sprintf("upstream_system changed for source %s", id),
+				Message:    fmt.Sprintf("Upstream system changed for source %s from %s to %s in %s.", id, src.UpstreamSystem, headSrc.UpstreamSystem, fieldID),
+				Source:     edgeCopy(sourceEdge),
+				Impact:     edgeCopy(impactEdge),
 			})
 		}
 		if src.Scope == "external" && headSrc.Scope == "external" && src.AsOf != headSrc.AsOf {
@@ -410,7 +429,9 @@ func compareSources(fieldID string, impactedService string, flow string, baseSou
 				Severity:   severity,
 				ChangeType: changeType,
 				FieldID:    fieldID,
-				Message:    fmt.Sprintf("external as_of changed for source %s from %s to %s", id, src.AsOf, headSrc.AsOf),
+				Message:    fmt.Sprintf("External snapshot date changed for source %s from %s to %s in %s.", id, src.AsOf, headSrc.AsOf, fieldID),
+				Source:     edgeCopy(sourceEdge),
+				Impact:     edgeCopy(impactEdge),
 			})
 		}
 	}
@@ -419,11 +440,14 @@ func compareSources(fieldID string, impactedService string, flow string, baseSou
 		if _, exists := baseByIdentity[id]; exists {
 			continue
 		}
+		sourceService := sourceServiceForRef(src)
 		changes = append(changes, DriftChange{
 			Severity:   SeverityMedium,
 			ChangeType: "source_added",
 			FieldID:    fieldID,
-			Message:    fmt.Sprintf("source added: %s", src.Raw),
+			Message:    fmt.Sprintf("Source %s was added for %s in producer %s.", sourceServiceLabel(sourceService), fieldID, producerServiceLabel(impactedService)),
+			Source:     edgeOrNil(sourceService, src.Target),
+			Impact:     edgeOrNil(impactedService, fieldID),
 		})
 	}
 
@@ -538,17 +562,63 @@ func contractRefNarrative(
 		modText = strings.Join(modifiers, ", ")
 	}
 	return fmt.Sprintf(
-		"%s changed its contract for %s in %s. This may impact %s that consumes this field. This field is modified by %s en-route. Validation failure: %s. Suggestion: %s (from %s to %s).",
+		"Producer %s changed contract reference for %s in %s from %s to %s. Stricture flags potential impact in %s. Field modifiers en-route: %s. Validation that can fail: %s. Suggestion: %s.",
 		sourceService,
 		fieldID,
 		sourceAPI,
+		fromLabel,
+		toLabel,
 		impactedService,
 		modText,
 		validation,
 		suggestion,
-		fromLabel,
-		toLabel,
 	)
+}
+
+func enrichPlainLanguage(change *DriftChange) {
+	template, ok := plainLanguageGuidanceByChangeType[change.ChangeType]
+	if !ok {
+		return
+	}
+	if change.Validation == "" {
+		change.Validation = template.Impact
+	}
+	if change.Suggestion == "" {
+		change.Suggestion = template.NextStep
+	}
+}
+
+func producerServiceLabel(service string) string {
+	service = strings.TrimSpace(service)
+	if service == "" {
+		return "unknown producer"
+	}
+	return service
+}
+
+func sourceServiceLabel(service string) string {
+	service = strings.TrimSpace(service)
+	if service == "" {
+		return "unknown source"
+	}
+	return service
+}
+
+func mergeStrategyMeaning(strategy string) string {
+	switch strings.TrimSpace(strategy) {
+	case "single_source":
+		return "one source is selected; other sources are ignored"
+	case "priority":
+		return "sources are evaluated in priority order"
+	case "first_non_null":
+		return "first non-null source value wins"
+	case "union":
+		return "values from multiple sources are combined"
+	case "custom":
+		return "custom merge logic applies service-specific rules"
+	default:
+		return "strategy semantics are custom/unknown"
+	}
 }
 
 func classificationRank(classification string) int {

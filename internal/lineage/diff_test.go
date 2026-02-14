@@ -147,7 +147,7 @@ func TestDiffArtifacts_ContractRefChangedMessageIncludesFromToAndImpactHint(t *t
 		if !strings.Contains(change.Message, "from a1 to b7c9") {
 			t.Fatalf("message missing from/to revisions: %q", change.Message)
 		}
-		if !strings.Contains(change.Message, "Validation failure: enum/type compatibility check against the consumer contract") {
+		if !strings.Contains(change.Message, "Validation that can fail: enum/type compatibility check against the consumer contract") {
 			t.Fatalf("message missing validation hint: %q", change.Message)
 		}
 		if change.Source == nil || change.Source.Service != "identity" || change.Source.API != "identity.GetUser" {
@@ -184,7 +184,7 @@ func TestDiffArtifacts_ContractRefChangedCarriesFlowModifiers(t *testing.T) {
 		if len(change.ModifiedBy) != 1 || change.ModifiedBy[0] != "Normalizer" {
 			t.Fatalf("modified_by = %#v, want [Normalizer]", change.ModifiedBy)
 		}
-		if !strings.Contains(change.Message, "modified by Normalizer en-route") {
+		if !strings.Contains(change.Message, "Field modifiers en-route: Normalizer") {
 			t.Fatalf("message missing modifier details: %q", change.Message)
 		}
 		return
@@ -311,4 +311,37 @@ func TestDiffArtifacts_OverrideExpiresTodayIsActive(t *testing.T) {
 	if !result.Changes[0].Overridden {
 		t.Fatalf("expected override expiring today to remain active")
 	}
+}
+
+func TestDiffArtifacts_MergeStrategyChangedIsProducerCausedWithPlainGuidance(t *testing.T) {
+	base := mkField("response_user_id")
+	base.MergeStrategy = "custom"
+	head := mkField("response_user_id")
+	head.MergeStrategy = "single_source"
+
+	result := DiffArtifacts(
+		Artifact{SchemaVersion: "1", Fields: []Annotation{base}},
+		Artifact{SchemaVersion: "1", Fields: []Annotation{head}},
+	)
+
+	for _, change := range result.Changes {
+		if change.ChangeType != "merge_strategy_changed" {
+			continue
+		}
+		if !strings.Contains(change.Message, "changed merge strategy") || !strings.Contains(change.Message, "custom merge logic") {
+			t.Fatalf("expected plain-language merge message, got %q", change.Message)
+		}
+		if change.Source == nil || change.Source.Service != "Identity" {
+			t.Fatalf("source context missing or wrong: %#v", change.Source)
+		}
+		if change.Impact == nil || change.Impact.Service != "Identity" {
+			t.Fatalf("impact context missing or wrong: %#v", change.Impact)
+		}
+		if change.Validation == "" || change.Suggestion == "" {
+			t.Fatalf("expected plain-language guidance for merge strategy change")
+		}
+		return
+	}
+
+	t.Fatalf("expected merge_strategy_changed change")
 }

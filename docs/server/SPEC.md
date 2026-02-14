@@ -63,6 +63,8 @@ default interpretation:
 3. `unknown` impact -> low-severity finding by default unless policy overrides.
 
 This keeps CI noise low while still publishing provider-facing contract changes.
+Published human-readable messages should follow the plain-language template
+library in `docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.
 
 ## Runtime + Operation Model (Day 1 Requirement)
 

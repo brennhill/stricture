@@ -198,3 +198,6 @@ Each finding summary should include:
 
 This ensures both humans and AI agents can act without reconstructing context
 from raw diffs.
+
+Plain-language templates for change/impact/next-step wording are standardized in
+`docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.

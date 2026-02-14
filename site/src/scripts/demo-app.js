@@ -161,7 +161,17 @@ function parseFindingDelta(finding) {
   const fromTo = /from\s+([^\s,]+)\s+to\s+([^\s,]+)/i.exec(summary);
 
   if (finding.changeType === "merge_strategy_changed" && fromTo) {
-    return { whatChanged: `Merge strategy changed from ${fromTo[1]} to ${fromTo[2]}.`, shortDelta: `${fromTo[1]} -> ${fromTo[2]}` };
+    const meanings = {
+      custom: "custom logic combines sources with service-specific rules",
+      single_source: "one source is selected and others are ignored",
+      priority: "sources are evaluated in priority order",
+      first_non_null: "first non-null source wins",
+      union: "values from multiple sources are combined",
+    };
+    return {
+      whatChanged: `Merge strategy changed from ${fromTo[1]} (${meanings[fromTo[1]] || "previous merge behavior"}) to ${fromTo[2]} (${meanings[fromTo[2]] || "new merge behavior"}).`,
+      shortDelta: `${fromTo[1]} -> ${fromTo[2]}`,
+    };
   }
   if (finding.changeType === "source_version_changed" && fromTo) {
     return { whatChanged: `Source version changed from ${fromTo[1]} to ${fromTo[2]}.`, shortDelta: `${fromTo[1]} -> ${fromTo[2]}` };

@@ -14,6 +14,9 @@ see `OVERLAY.md`.
 For build/CI automation and version-history workflow design, see
 `docs/LINEAGE-AUTOMATION-SPEC.md`.
 
+For plain-language finding templates (change -> impact -> next step), see
+`docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.
+
 ## Goals
 
 - Detect breaking drift across services before deploy.
@@ -204,6 +207,19 @@ Default behavior:
 
 This keeps deploy gates focused on actual blast radius while still preserving a
 complete change history for internal/external consumers.
+
+## Plain-Language Finding Requirement
+
+Findings should be understandable without lineage internals context.
+
+For every emitted finding, Stricture should provide:
+
+1. a direct "what changed" statement
+2. a plain-language impact explanation
+3. a plain-language next step
+4. explicit cause (`source`) and impacted context (`impact`) when known
+
+Normative template library: `docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.
 
 ## Temporary Overrides
 
