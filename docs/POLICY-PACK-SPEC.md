@@ -179,6 +179,8 @@ Recommended rule:
 2. value must match the org-approved URL (or approved allowlist)
 3. CI should fail when repo binding deviates
 
+See CLI command contract: `docs/POLICY-CLI-CONTRACT.md`.
+
 ## Finding Classes (Draft)
 
 1. `missing_required_key`

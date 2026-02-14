@@ -81,6 +81,7 @@ Stricture is being formalized as an open standard.
 - Product roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 - Lineage automation spec: [docs/LINEAGE-AUTOMATION-SPEC.md](docs/LINEAGE-AUTOMATION-SPEC.md)
 - Policy pack spec (draft): [docs/POLICY-PACK-SPEC.md](docs/POLICY-PACK-SPEC.md)
+- Policy CLI contract (draft): [docs/POLICY-CLI-CONTRACT.md](docs/POLICY-CLI-CONTRACT.md)
 - Stricture Helper draft spec: [docs/helper/SPEC.md](docs/helper/SPEC.md)
 - Stricture Server spec: [docs/server/SPEC.md](docs/server/SPEC.md)
 - Stricture Server storage/auth design: [docs/server/STORAGE.md](docs/server/STORAGE.md)

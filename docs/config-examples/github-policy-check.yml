@@ -1,0 +1,27 @@
+name: stricture-policy-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify-policy-binding:
+    runs-on: ubuntu-latest
+    env:
+      STRICTURE_POLICY_URL: https://policies.example.com/stricture/prod.yml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Stricture
+        run: |
+          # Replace with pinned release install flow for your org.
+          go install github.com/stricture/stricture/cmd/stricture@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Verify policy URL binding
+        run: |
+          stricture policy verify-ref \
+            --config .stricture.yml \
+            --expected-url "$STRICTURE_POLICY_URL"
