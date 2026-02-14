@@ -46,21 +46,34 @@
         },
         "findings": {
           "type": "object",
+          "default": {
+            "require_downstream_impact": true,
+            "unknown_impact_severity": "low",
+            "self_only": {
+              "emit_finding": false,
+              "publish_change_event": true
+            }
+          },
           "properties": {
-            "require_downstream_impact": { "type": "boolean" },
+            "require_downstream_impact": { "type": "boolean", "default": true },
             "unknown_impact_severity": {
               "type": "string",
-              "enum": ["high", "medium", "low", "info"]
+              "enum": ["high", "medium", "low", "info"],
+              "default": "low"
             },
             "self_only": {
               "type": "object",
+              "default": {
+                "emit_finding": false,
+                "publish_change_event": true
+              },
               "properties": {
-                "emit_finding": { "type": "boolean" },
+                "emit_finding": { "type": "boolean", "default": false },
                 "severity": {
                   "type": "string",
                   "enum": ["high", "medium", "low", "info"]
                 },
-                "publish_change_event": { "type": "boolean" }
+                "publish_change_event": { "type": "boolean", "default": true }
               },
               "additionalProperties": false
             }
