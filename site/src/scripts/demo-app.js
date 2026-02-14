@@ -622,7 +622,7 @@ function renderGraph(snapshot) {
   container.innerHTML = "";
   const label = document.createElement("div");
   label.className = "graph-label";
-  label.textContent = "Left to right: cause -> impact. Orange node = source change, red node = impacted service, orange edge = affected path";
+  label.textContent = "Left to right: cause -> impact. Red node = source change, orange node = impacted service, orange edge = affected path";
   container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();

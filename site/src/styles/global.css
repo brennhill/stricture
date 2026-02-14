@@ -849,13 +849,13 @@ select {
 }
 
 .legend-node-source::before {
-  background: #f59e0b;
-  border-color: #b45309;
+  background: #ef4444;
+  border-color: #b91c1c;
 }
 
 .legend-node-impacted::before {
-  background: #ef4444;
-  border-color: #b91c1c;
+  background: #f59e0b;
+  border-color: #b45309;
 }
 
 .legend-edge-affected::before {
@@ -998,27 +998,27 @@ select {
 }
 
 .graph-node.source {
-  filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.7));
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.7));
 }
 
 .graph-node.source circle {
-  fill: rgba(249, 115, 22, 0.16);
-  stroke: #d97706;
+  fill: rgba(239, 68, 68, 0.15);
+  stroke: #dc2626;
   stroke-width: 2.6;
 }
 
 .graph-node.source text {
-  fill: #9a3412;
+  fill: #7f1d1d;
 }
 
 .graph-node.impacted circle {
-  fill: rgba(239, 68, 68, 0.15);
-  stroke: #dc2626;
+  fill: rgba(249, 115, 22, 0.16);
+  stroke: #d97706;
   stroke-width: 2.8;
 }
 
 .graph-node.impacted text {
-  fill: #7f1d1d;
+  fill: #9a3412;
 }
 
 .graph-node.isolated circle {
@@ -1034,6 +1034,16 @@ select {
 .graph-node.status-warn circle {
   stroke: var(--warn);
   stroke-width: 2;
+}
+
+.graph-node.source.status-warn circle,
+.graph-node.source.status-blocked circle {
+  stroke: #dc2626;
+}
+
+.graph-node.impacted.status-warn circle,
+.graph-node.impacted.status-blocked circle {
+  stroke: #d97706;
 }
 
 .graph-edge {
