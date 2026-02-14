@@ -933,7 +933,20 @@ select {
 }
 
 .what-hero h1 {
-  max-width: 22ch;
+  max-width: 27ch;
+}
+
+.what-hero-title {
+  line-height: 1.08;
+}
+
+.headline-line {
+  display: block;
+}
+
+.headline-emphasis {
+  color: var(--accent-2);
+  font-weight: 900;
 }
 
 .what-section {
