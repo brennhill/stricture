@@ -1,3 +1,4 @@
+import { DurableObject } from "cloudflare:workers";
 import { DEMO_PACK } from "./generated/demo-pack";
 
 export interface Env {
@@ -363,8 +364,10 @@ export default {
   },
 };
 
-export class DemoSession {
-  constructor(private readonly ctx: DurableObjectState, _env: Env) {}
+export class DemoSession extends DurableObject {
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+  }
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
