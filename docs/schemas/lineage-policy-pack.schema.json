@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "SPDX-License-Identifier: CC-BY-4.0; Copyright (c) 2026 Brenn Hill",
+  "$id": "https://stricture.dev/schemas/lineage-policy-pack.schema.json",
+  "title": "Stricture Lineage Policy Pack",
+  "type": "object",
+  "required": ["schema_version", "policy_id", "lineage"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "enum": [1]
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extends": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "lineage": {
+      "type": "object",
+      "properties": {
+        "require": {
+          "type": "object",
+          "properties": {
+            "field_keys": { "$ref": "#/$defs/stringArray" },
+            "source_query_keys": { "$ref": "#/$defs/stringArray" },
+            "system_registry_keys": { "$ref": "#/$defs/stringArray" },
+            "override_keys": { "$ref": "#/$defs/stringArray" }
+          },
+          "additionalProperties": false
+        },
+        "defaults": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"]
+          }
+        },
+        "severity_overrides": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["high", "medium", "low", "info"]
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

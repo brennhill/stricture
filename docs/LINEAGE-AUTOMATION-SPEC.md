@@ -129,6 +129,13 @@ Notes:
 3. `strict:policy` naming is a draft reference handle; concrete CLI/config
    wiring is part of helper/server roadmap phases.
 
+Policy source and cache model:
+
+1. repo declares `'strict:policy_url'`
+2. local tool resolves from cache first, then URL
+3. URL may point to stricture-server or GitHub-hosted policy
+4. local cache is used for offline runs
+
 ## CI Workflow (Reference)
 
 1. Generate `current.json` (`lineage-export`).

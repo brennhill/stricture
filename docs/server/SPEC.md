@@ -129,6 +129,10 @@ docs/server/
 3. Optional compact index artifacts for faster queries without SQL.
 4. Webhook/alerting for high-severity blast radius.
 5. Tenant-aware authz and audit trail endpoints.
+6. Policy distribution APIs for CI/local clients:
+   - `GET /v1/policies/{policy_id}`
+   - `GET /v1/policies/{policy_id}/versions/{version}`
+   - metadata endpoint for caching hints.
 
 ## Day 1 Acceptance Criteria
 

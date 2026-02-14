@@ -43,6 +43,13 @@ Optional helper objects:
 <prefix>/v1/org=<organization>/project=<project>/service=<service>/manifests/date=<YYYY-MM-DD>.jsonl
 ```
 
+Policy objects (draft):
+
+```text
+<prefix>/v1/policies/<policy_id>/versions/<version>/policy.yml
+<prefix>/v1/policies/<policy_id>/latest.json
+```
+
 Notes:
 
 - `payload.json` is immutable.

@@ -75,6 +75,8 @@ Scope:
 4. Provide tenant/project/service dashboards and incident timelines.
 5. Expose APIs/webhooks for CI, chatops, ticketing, and SIEM pipelines.
 6. Support policy packs at org/team/service levels.
+7. Serve policy packs to CI/local tooling with offline cache support and GitHub fallback refs.
+8. Add org compliance check to ensure repos reference approved `strict:policy_url` values.
 
 Planned phases:
 

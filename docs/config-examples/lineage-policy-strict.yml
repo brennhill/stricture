@@ -1,0 +1,27 @@
+# lineage-policy-strict.yml - Example strict lineage policy pack.
+# Usage: cp docs/config-examples/lineage-policy-strict.yml .stricture-policy.yml
+schema_version: 1
+policy_id: strict:policy
+
+lineage:
+  require:
+    field_keys:
+      - owner
+      - escalation
+    source_query_keys:
+      - contract_ref
+    system_registry_keys:
+      - escalation
+      - escalation[].role
+      - escalation[].name
+      - escalation[].channel
+    override_keys:
+      - ticket
+
+  defaults:
+    break_policy: strict
+    data_classification: internal
+
+  severity_overrides:
+    missing_required_key: high
+    invalid_default_value: medium

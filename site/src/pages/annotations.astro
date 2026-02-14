@@ -262,9 +262,15 @@ const modeMeta = {
   <section class="card">
     <h2>Policy packs can change required/default behavior</h2>
     <p class="muted">
-      Teams can keep base annotations lightweight, then enforce stricter org rules through policy. Example draft shape:
+      Teams can keep base annotations lightweight, then enforce stricter org rules through a single policy URL. Repo binding:
     </p>
-    <pre><code>{`'strict:policy':
+    <pre><code>{`'strict:policy_url': https://policies.example.com/stricture/prod.yml
+'strict:policy_sha256': <optional_sha256_pin>`}</code></pre>
+    <p class="muted">Example policy pack at that URL:</p>
+    <pre><code>{`schema_version: 1
+policy_id: strict:policy
+
+lineage:
   require:
     field_keys:
       - owner
@@ -288,6 +294,7 @@ const modeMeta = {
       <li><a href="/annotation-quality">Annotation Quality Guide</a></li>
       <li><a href="https://github.com/brennhill/stricture/blob/main/docs/data-lineage-annotations.md" target="_blank" rel="noopener noreferrer">Canonical annotation spec (GitHub)</a></li>
       <li><a href="https://github.com/brennhill/stricture/blob/main/docs/LINEAGE-AUTOMATION-SPEC.md" target="_blank" rel="noopener noreferrer">Automation/defaults spec (GitHub)</a></li>
+      <li><a href="https://github.com/brennhill/stricture/blob/main/docs/POLICY-PACK-SPEC.md" target="_blank" rel="noopener noreferrer">Policy pack spec (GitHub)</a></li>
     </ul>
   </section>
 </MainLayout>
