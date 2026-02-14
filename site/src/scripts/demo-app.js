@@ -8,6 +8,7 @@ const selectors = {
   topology: document.querySelector("#topology"),
   topologyGraph: document.querySelector("#topology-graph"),
   edgeList: document.querySelector("#edge-list"),
+  flowPathSummary: document.querySelector("#flow-path-summary"),
   findings: document.querySelector("#findings"),
   overrides: document.querySelector("#overrides"),
   escalation: document.querySelector("#escalation"),
@@ -444,26 +445,35 @@ function renderGraph(snapshot) {
   }
   const container = selectors.topologyGraph;
   container.innerHTML = "";
+  const label = document.createElement("div");
+  label.className = "graph-label";
+  label.textContent = "Animated arrows show field flow direction";
+  container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
   const width = boxWidth || 640;
-  const height = 320;
+  const height = 420;
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
+  const defs = document.createElementNS(svgNS, "defs");
+  const marker = document.createElementNS(svgNS, "marker");
+  marker.setAttribute("id", "arrowhead");
+  marker.setAttribute("markerWidth", "8");
+  marker.setAttribute("markerHeight", "8");
+  marker.setAttribute("refX", "4");
+  marker.setAttribute("refY", "3.5");
+  marker.setAttribute("orient", "auto");
+  const arrowPath = document.createElementNS(svgNS, "path");
+  arrowPath.setAttribute("d", "M0,0 L8,3.5 L0,7 z");
+  arrowPath.setAttribute("fill", "currentColor");
+  marker.appendChild(arrowPath);
+  defs.appendChild(marker);
+  svg.appendChild(defs);
+
   const nodes = snapshot.services || [];
   const edges = snapshot.edges || [];
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const radius = Math.max(Math.min(width, height) / 2 - 60, 120);
-
-  const positions = new Map();
-  nodes.forEach((node, idx) => {
-    const angle = (2 * Math.PI * idx) / Math.max(nodes.length, 1) - Math.PI / 2;
-    const x = centerX + radius * Math.cos(angle);
-    const y = centerY + radius * Math.sin(angle);
-    positions.set(node.id, { x, y });
-  });
+  const positions = computeLayeredLayout(nodes, edges, width, height);
 
   const edgeColor = (status) => {
     if (status === "blocked") return "var(--danger)";
@@ -476,24 +486,26 @@ function renderGraph(snapshot) {
     const from = positions.get(edge.from);
     const to = positions.get(edge.to);
     if (!from || !to) return;
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", from.x);
-    line.setAttribute("y1", from.y);
-    line.setAttribute("x2", to.x);
-    line.setAttribute("y2", to.y);
-    line.setAttribute("class", `graph-edge edge-${edge.status}`);
-    line.setAttribute("stroke", edgeColor(edge.status));
+    const curve = document.createElementNS(svgNS, "path");
+    const midX = (from.x + to.x) / 2;
+    const midY = (from.y + to.y) / 2 - 18;
+    const d = `M ${from.x} ${from.y} Q ${midX} ${midY} ${to.x} ${to.y}`;
+    curve.setAttribute("d", d);
+    curve.setAttribute("class", `graph-edge edge-${edge.status} flow`);
+    curve.setAttribute("stroke", edgeColor(edge.status));
     const title = document.createElementNS(svgNS, "title");
     title.textContent = `${edge.from} → ${edge.to} • ${edge.fieldId} • ${edge.status}`;
-    line.appendChild(title);
-    svg.appendChild(line);
+    curve.appendChild(title);
+    svg.appendChild(curve);
   });
 
   nodes.forEach((node) => {
     const pos = positions.get(node.id);
     if (!pos) return;
     const g = document.createElementNS(svgNS, "g");
-    g.setAttribute("class", `graph-node ${nodeStatusForService(node.id, snapshot.findings)} `);
+    const statusClass = nodeStatusForService(node.id, snapshot.findings);
+    const isolated = (node.edgeDegree || 0) === 0;
+    g.setAttribute("class", `graph-node ${statusClass} ${isolated ? "isolated" : ""}`);
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", pos.x);
     circle.setAttribute("cy", pos.y);
@@ -511,4 +523,91 @@ function renderGraph(snapshot) {
   });
 
   container.appendChild(svg);
+
+  if (selectors.flowPathSummary) {
+    selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges);
+  }
+}
+
+function computeLayeredLayout(nodes, edges, width, height) {
+  const positions = new Map();
+  const incoming = new Map();
+  const outgoing = new Map();
+  nodes.forEach((n) => {
+    incoming.set(n.id, 0);
+    outgoing.set(n.id, 0);
+  });
+  edges.forEach((e) => {
+    incoming.set(e.to, (incoming.get(e.to) || 0) + 1);
+    outgoing.set(e.from, (outgoing.get(e.from) || 0) + 1);
+  });
+  const roots = nodes.filter((n) => (incoming.get(n.id) || 0) === 0);
+  const layers = [];
+  const queue = [...roots];
+  const depth = new Map();
+  queue.forEach((r) => depth.set(r.id, 0));
+
+  while (queue.length) {
+    const current = queue.shift();
+    const d = depth.get(current.id) || 0;
+    layers[d] = layers[d] || [];
+    layers[d].push(current.id);
+    edges
+      .filter((e) => e.from === current.id)
+      .forEach((e) => {
+        if (!depth.has(e.to)) {
+          depth.set(e.to, d + 1);
+          const nextNode = nodes.find((n) => n.id === e.to);
+          if (nextNode) {
+            queue.push(nextNode);
+          }
+        }
+      });
+  }
+
+  nodes.forEach((n) => {
+    if (!depth.has(n.id)) {
+      depth.set(n.id, layers.length);
+      layers[layers.length] = layers[layers.length] || [];
+      layers[layers.length - 1].push(n.id);
+    }
+  });
+
+  const columnCount = layers.length || 1;
+  const colWidth = Math.max((width - 40) / columnCount, 140);
+  layers.forEach((layerNodeIds, colIdx) => {
+    const rowCount = layerNodeIds.length;
+    const rowGap = Math.max((height - 80) / (rowCount || 1), 70);
+    layerNodeIds.forEach((nodeId, rowIdx) => {
+      const x = 20 + colWidth * colIdx + colWidth / 2;
+      const y = 50 + rowGap * rowIdx;
+      positions.set(nodeId, { x, y });
+      const node = nodes.find((n) => n.id === nodeId);
+      if (node) {
+        node.edgeDegree = (incoming.get(nodeId) || 0) + (outgoing.get(nodeId) || 0);
+      }
+    });
+  });
+  return positions;
+}
+
+function summarizeFlow(nodes, edges) {
+  if (!nodes.length) return "No services loaded.";
+  const incoming = new Map();
+  edges.forEach((e) => incoming.set(e.to, (incoming.get(e.to) || 0) + 1));
+  let start = nodes.find((n) => !incoming.get(n.id)) || nodes[0];
+  const path = [start.name];
+  const seen = new Set();
+  let current = start.id;
+  while (true) {
+    seen.add(current);
+    const nextEdge = edges.find((e) => e.from === current && !seen.has(e.to));
+    if (!nextEdge) break;
+    const nextNode = nodes.find((n) => n.id === nextEdge.to);
+    if (!nextNode) break;
+    path.push(nextNode.name);
+    current = nextNode.id;
+    if (seen.has(current)) break;
+  }
+  return `Sample flow: ${path.join(" → ")}`;
 }
