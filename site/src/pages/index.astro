@@ -27,18 +27,21 @@ const specLinks = {
 >
   <section class="hero">
     <p class="kicker">Stricture</p>
-    <h1 class="hero-rotator" data-headlines={heroHeadlines.join("||")}>
+    <div>
+      <h1 class="hero-rotator" data-headlines={heroHeadlines.join("||")}>
+        <span class="hero-rotate-text" aria-live="polite">{heroHeadlines[0]}</span>
+      </h1>
+    <p class="lead hero-lead" data-headlines={heroHeadlines.join("||")}>
       <span class="hero-rotate-text" aria-live="polite">{heroHeadlines[0]}</span>
-    </h1>
-    <p class="lead">
-      AI-generated code can silently drift APIs and contracts without warning, creating massive risk across
-      service boundaries. Stricture catches that drift, enforces the contract, and blocks unsafe deploys
-      before incidents hit customers.
     </p>
-    <div class="hero-actions">
-      <a class="button button-primary" href="/demo">Open Interactive Demo</a>
-      <a class="button button-secondary" href="/open-standard">Read Open Standard</a>
-      <a class="button button-secondary" href="https://github.com/brennhill/stricture">View GitHub</a>
+      <div class="hero-actions">
+        <a class="button button-primary" href="/demo">Open Interactive Demo</a>
+        <a class="button button-secondary" href="/open-standard">Read Open Standard</a>
+        <a class="button button-secondary" href="https://github.com/brennhill/stricture">View GitHub</a>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <span>Architecture map + live findings (demo)</span>
     </div>
   </section>
 
@@ -240,7 +243,7 @@ const specLinks = {
 
       if (text && headlines.length > 1) {
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const intervalMs = reduceMotion ? 7000 : 4600;
+        const intervalMs = reduceMotion ? 12000 : 9000;
         let idx = 0;
 
         window.setInterval(() => {

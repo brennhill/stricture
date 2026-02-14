@@ -290,12 +290,15 @@ main {
 
 .hero {
   margin-top: 3rem;
-  padding: 2.2rem;
+  padding: 2.6rem;
   border-radius: 14px;
   background: var(--card);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
   animation: reveal 0.7s ease;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.5rem;
 }
 
 .kicker {
@@ -313,7 +316,7 @@ main {
 
 .hero-rotator {
   min-height: 2.45em;
-  max-width: 24ch;
+  max-width: none;
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
@@ -328,7 +331,12 @@ main {
 
 .lead {
   color: var(--ink-soft);
-  max-width: 62ch;
+  max-width: 75ch;
+}
+
+.hero-lead {
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
 .hero-actions {
@@ -336,6 +344,18 @@ main {
   gap: 0.7rem;
   flex-wrap: wrap;
   margin-top: 1.1rem;
+}
+
+.hero-visual {
+  width: 100%;
+  min-height: 220px;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.12), rgba(249, 115, 22, 0.12));
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
 }
 
 .button {
