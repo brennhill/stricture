@@ -39,7 +39,9 @@ Pass criteria:
 - Prints all endpoint payloads in-order (all domains, all endpoints) so consumers can inspect every lineage output from one run.
 - Prints assertion totals and duration.
 
-This exits `0` with a `SKIP:` message when Docker daemon or required local image is unavailable.
+This exits `0` with a `SKIP:` message when Docker daemon is unavailable.
+
+If `golang:1.22` is missing locally, the script automatically runs `docker pull golang:1.22` before starting the stack (and fails if pull cannot complete).
 
 ## Example calls
 

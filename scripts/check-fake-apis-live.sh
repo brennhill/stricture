@@ -41,13 +41,23 @@ if ! docker info >/dev/null 2>&1; then
 	exit 0
 fi
 
-if ! docker image inspect "$REQUIRED_IMAGE" >/dev/null 2>&1; then
-	echo "SKIP: required image '$REQUIRED_IMAGE' is not cached locally."
-	exit 0
-fi
-
 compose() {
 	docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" "$@"
+}
+
+ensure_required_image() {
+	if docker image inspect "$REQUIRED_IMAGE" >/dev/null 2>&1; then
+		echo "INFO: docker image '$REQUIRED_IMAGE' already available."
+		return 0
+	fi
+
+	echo "INFO: pulling missing docker image '$REQUIRED_IMAGE'..."
+	if docker pull "$REQUIRED_IMAGE" >/dev/null; then
+		echo "INFO: pulled docker image '$REQUIRED_IMAGE'."
+		return 0
+	fi
+
+	fail_assertion "failed to pull required image '$REQUIRED_IMAGE'"
 }
 
 cleanup() {
@@ -116,6 +126,7 @@ record_output_dump() {
 ${body}")
 }
 
+ensure_required_image
 compose up -d >/dev/null
 
 checks=(
