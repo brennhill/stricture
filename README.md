@@ -80,6 +80,8 @@ Stricture is being formalized as an open standard.
 - Product spec: [docs/product-spec.md](docs/product-spec.md)
 - Product roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 - Lineage automation spec: [docs/LINEAGE-AUTOMATION-SPEC.md](docs/LINEAGE-AUTOMATION-SPEC.md)
+- Stricture Server spec: [docs/server/SPEC.md](docs/server/SPEC.md)
+- Stricture Server storage/auth design: [docs/server/STORAGE.md](docs/server/STORAGE.md)
 - Technical spec: [docs/tech-spec.md](docs/tech-spec.md)
 - Invariants: [docs/INVARIANTS.md](docs/INVARIANTS.md)
 - Lineage annotations: [docs/data-lineage-annotations.md](docs/data-lineage-annotations.md)

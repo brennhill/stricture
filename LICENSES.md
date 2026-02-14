@@ -7,10 +7,13 @@ Unless a file states otherwise, this repository is licensed under AGPL-3.0.
 Applies to:
 
 - `cmd/**`
+- `cmd/stricture-server/**`
 - `internal/**`
+- `internal/server/**`
 - `pkg/**`
 - `scripts/**`
 - `site/**` (application/site source)
+- `docs/server/**`
 - all other repository files not listed under CC BY 4.0 below
 
 Reference: `LICENSE`
