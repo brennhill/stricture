@@ -851,8 +851,8 @@ select {
 }
 
 .topology-graph svg {
-  width: 1400px;
-  max-width: none;
+  width: 100%;
+  max-width: 100%;
   height: auto;
 }
 

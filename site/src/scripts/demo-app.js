@@ -446,6 +446,7 @@ function toggleEdgeList() {
 
 bindEvents();
 bootstrap().catch(showError);
+scheduleResizeRender();
 
 function renderGraph(snapshot) {
   if (!selectors.topologyGraph) {
@@ -459,8 +460,8 @@ function renderGraph(snapshot) {
   container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
-  const width = Math.max(boxWidth || 640, 1100);
-  const height = Math.max(420, Math.ceil((snapshot.services?.length || 8) / 4) * 120);
+  const width = Math.max(boxWidth || 640, 820);
+  const height = Math.max(420, Math.ceil((snapshot.services?.length || 8) / 3) * 120);
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
@@ -549,6 +550,16 @@ function renderGraph(snapshot) {
   if (selectors.flowPathSummary) {
     selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges, focusFieldSeverity, activeFields);
   }
+}
+
+function scheduleResizeRender() {
+  let timer = null;
+  const handler = () => {
+    if (!state.snapshot) return;
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => renderGraph(state.snapshot), 120);
+  };
+  window.addEventListener("resize", handler);
 }
 
 function computeLayeredLayout(nodes, edges, width, height) {
