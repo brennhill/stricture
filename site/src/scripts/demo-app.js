@@ -547,7 +547,7 @@ function renderGraph(snapshot) {
   container.appendChild(svg);
 
   if (selectors.flowPathSummary) {
-    selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges, focusFieldSeverity);
+    selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges, focusFieldSeverity, activeFields);
   }
 }
 
@@ -613,7 +613,7 @@ function computeLayeredLayout(nodes, edges, width, height) {
   return positions;
 }
 
-function summarizeFlow(nodes, edges) {
+function summarizeFlow(nodes, edges, severity, activeFields) {
   if (!nodes.length) return "No services loaded.";
   const incoming = new Map();
   edges.forEach((e) => incoming.set(e.to, (incoming.get(e.to) || 0) + 1));
@@ -623,7 +623,7 @@ function summarizeFlow(nodes, edges) {
   let current = start.id;
   while (true) {
     seen.add(current);
-    const nextEdge = edges.find((e) => e.from === current && !seen.has(e.to));
+    const nextEdge = edges.find((e) => e.from === current && !seen.has(e.to) && (!activeFields || activeFields.size === 0 || activeFields.has(e.fieldId)));
     if (!nextEdge) break;
     const nextNode = nodes.find((n) => n.id === nextEdge.to);
     if (!nextNode) break;
@@ -631,5 +631,35 @@ function summarizeFlow(nodes, edges) {
     current = nextNode.id;
     if (seen.has(current)) break;
   }
-  return `Sample flow: ${path.join(" → ")}`;
+  const sevText = severity ? ` | severity=${severity}` : "";
+  return `Sample flow: ${path.join(" → ")}${sevText}`;
+}
+
+function computeImpacts(snapshot) {
+  const sevRank = { high: 3, medium: 2, low: 1, info: 0 };
+  const findings = snapshot.findings || [];
+  const sorted = [...findings].sort((a, b) => (sevRank[b.severity] || 0) - (sevRank[a.severity] || 0));
+  let focus = sorted[0];
+  if (!focus && snapshot.mutations?.length) {
+    const last = snapshot.mutations[snapshot.mutations.length - 1];
+    focus = { fieldId: last.fieldId, serviceId: last.serviceId, severity: "info" };
+  }
+  const activeFields = new Set(focus ? [focus.fieldId] : []);
+  const sourceServices = new Set(focus && focus.serviceId ? [focus.serviceId] : []);
+  const flowEdges = new Set();
+  const flowNodes = new Set();
+  (snapshot.edges || []).forEach((e) => {
+    if (activeFields.has(e.fieldId)) {
+      flowEdges.add(e.id);
+      flowNodes.add(e.from);
+      flowNodes.add(e.to);
+    }
+  });
+  return {
+    activeFields,
+    sourceServices,
+    flowNodes,
+    flowEdges,
+    focusFieldSeverity: focus?.severity || null,
+  };
 }
