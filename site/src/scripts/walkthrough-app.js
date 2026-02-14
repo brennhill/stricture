@@ -386,6 +386,7 @@ const state = {
 };
 
 const selectors = {
+  runtimeStatus: document.querySelector("#wt-runtime-status"),
   gate: document.querySelector("#walkthrough-gate"),
   scenario: document.querySelector("#wt-scenario"),
   profile: document.querySelector("#wt-profile"),
@@ -408,6 +409,39 @@ const selectors = {
   paneB: document.querySelector("#wt-pane-b-status"),
   paneD: document.querySelector("#wt-pane-d-status"),
 };
+
+const requiredSelectorKeys = [
+  "gate",
+  "scenario",
+  "profile",
+  "aliases",
+  "changedOnly",
+  "prev",
+  "next",
+  "autoplay",
+  "copyLink",
+  "steps",
+  "stepDescription",
+  "contract",
+  "source",
+  "graph",
+  "edges",
+  "summary",
+  "findings",
+  "escalation",
+  "paneA",
+  "paneB",
+  "paneD",
+];
+
+function setRuntimeStatus(kind, message) {
+  if (!selectors.runtimeStatus) {
+    return;
+  }
+  selectors.runtimeStatus.classList.remove("walkthrough-status-loading", "walkthrough-status-ready", "walkthrough-status-error");
+  selectors.runtimeStatus.classList.add(`walkthrough-status-${kind}`);
+  selectors.runtimeStatus.textContent = message;
+}
 
 function buildDefaultSteps(params) {
   return [
@@ -990,14 +1024,44 @@ function parseInitialStateFromUrl() {
   }
 }
 
+function renderInitFailure(error) {
+  const message = "Walkthrough failed to initialize. Reload and try again.";
+  setRuntimeStatus("error", `${message} (${error.message})`);
+  if (selectors.gate) {
+    selectors.gate.classList.remove("gate-ok", "gate-warn");
+    selectors.gate.classList.add("gate-block");
+    selectors.gate.textContent = "Walkthrough unavailable";
+  }
+  if (selectors.contract) {
+    selectors.contract.textContent = `Initialization error:\n${error.message}`;
+  }
+  if (selectors.source) {
+    selectors.source.textContent = "Source annotation view unavailable until initialization succeeds.";
+  }
+}
+
 function init() {
-  parseInitialStateFromUrl();
-  bindEvents();
-  render();
-  if (state.autoplay) {
-    state.autoplayTimer = window.setInterval(() => {
-      nextStep();
-    }, 2500);
+  try {
+    const missingSelectors = requiredSelectorKeys.filter((key) => !selectors[key]);
+    if (missingSelectors.length > 0) {
+      throw new Error(`missing DOM nodes: ${missingSelectors.join(", ")}`);
+    }
+    setRuntimeStatus("loading", "Loading walkthrough data...");
+    parseInitialStateFromUrl();
+    bindEvents();
+    render();
+    setRuntimeStatus("ready", "Walkthrough ready.");
+    window.setTimeout(() => {
+      setRuntimeStatus("ready", "Use Scenario and Profile to explore each lifecycle step.");
+    }, 1500);
+    if (state.autoplay) {
+      state.autoplayTimer = window.setInterval(() => {
+        nextStep();
+      }, 2500);
+    }
+  } catch (error) {
+    console.error("[walkthrough] init failed", error);
+    renderInitFailure(error instanceof Error ? error : new Error("unknown initialization error"));
   }
 }
 

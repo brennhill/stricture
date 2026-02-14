@@ -52,10 +52,16 @@ export const prerender = true;
       </div>
     </section>
 
+    <p id="wt-runtime-status" class="walkthrough-status walkthrough-status-loading">
+      Loading walkthrough data...
+    </p>
+
     <section class="walkthrough-rail card">
       <h2>Lifecycle Steps</h2>
-      <div id="wt-steps" class="step-list"></div>
-      <p id="wt-step-description" class="muted"></p>
+      <div id="wt-steps" class="step-list">
+        <button class="step-pill step-pill-active" aria-current="step">1. Baseline Contract</button>
+      </div>
+      <p id="wt-step-description" class="muted">Preparing walkthrough lifecycle...</p>
     </section>
 
     <section class="walkthrough-grid">
@@ -64,7 +70,7 @@ export const prerender = true;
           <h2>Pane A: API Contract</h2>
           <span id="wt-pane-a-status" class="pane-tag">OpenAPI</span>
         </header>
-        <pre id="wt-contract" class="code-view"></pre>
+        <pre id="wt-contract" class="code-view">Loading contract view...</pre>
       </article>
 
       <article class="card walkthrough-pane">
@@ -72,7 +78,7 @@ export const prerender = true;
           <h2>Pane B: Source Annotation</h2>
           <span id="wt-pane-b-status" class="pane-tag">stricture-source</span>
         </header>
-        <pre id="wt-source" class="code-view"></pre>
+        <pre id="wt-source" class="code-view">Loading source annotation view...</pre>
       </article>
 
       <article class="card walkthrough-pane">
@@ -80,8 +86,16 @@ export const prerender = true;
           <h2>Pane C: Lineage Graph</h2>
           <span class="pane-tag">Runtime Shape</span>
         </header>
-        <div id="wt-graph" class="walkthrough-graph"></div>
-        <div id="wt-edges" class="edge-list"></div>
+        <div id="wt-graph" class="walkthrough-graph">
+          <article class="node node-ok">
+            <h3>Loading...</h3>
+            <p>owner=initializing</p>
+            <span class="node-badge">INIT</span>
+          </article>
+        </div>
+        <div id="wt-edges" class="edge-list">
+          <article class="edge edge-healthy">Loading edges...</article>
+        </div>
       </article>
 
       <article class="card walkthrough-pane">
@@ -89,9 +103,18 @@ export const prerender = true;
           <h2>Pane D: Findings + Escalation</h2>
           <span id="wt-pane-d-status" class="pane-tag">Gate</span>
         </header>
-        <div id="wt-summary" class="summary-grid"></div>
-        <div id="wt-findings" class="list"></div>
-        <div id="wt-escalation" class="list"></div>
+        <div id="wt-summary" class="summary-grid">
+          <article class="summary-item"><h3>Gate</h3><p>INIT</p></article>
+          <article class="summary-item"><h3>Findings</h3><p>0</p></article>
+          <article class="summary-item"><h3>High</h3><p>0</p></article>
+          <article class="summary-item"><h3>Changed</h3><p>0</p></article>
+        </div>
+        <div id="wt-findings" class="list">
+          <article class="list-item">Preparing findings...</article>
+        </div>
+        <div id="wt-escalation" class="list">
+          <article class="list-item">Preparing escalation chain...</article>
+        </div>
       </article>
     </section>
   </section>

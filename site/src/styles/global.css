@@ -1149,6 +1149,32 @@ select {
   align-items: end;
 }
 
+.walkthrough-status {
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  min-height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.walkthrough-status-loading {
+  color: var(--ink-soft);
+  background: rgba(29, 78, 216, 0.08);
+}
+
+.walkthrough-status-ready {
+  color: var(--ok);
+  background: rgba(15, 140, 79, 0.12);
+}
+
+.walkthrough-status-error {
+  color: var(--danger);
+  background: rgba(201, 60, 34, 0.12);
+}
+
 .walkthrough-actions {
   display: flex;
   flex-wrap: wrap;
