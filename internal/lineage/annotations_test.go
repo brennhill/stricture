@@ -10,6 +10,10 @@ func validAnnotationLine() string {
 	return `// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=priority break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2,db:users.user_profile#user_id@internal?contract_ref=internal://db/users.user_profile flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply; spec=https://specs.example.com/user-id"`
 }
 
+func compactAnnotationLine() string {
+	return `// stricture-source field=response.user_id source_system=IdentityGateway source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2`
+}
+
 func TestParse_ValidAnnotation_AllRequiredFields(t *testing.T) {
 	source := []byte(validAnnotationLine() + "\n")
 
@@ -109,6 +113,92 @@ func TestParse_RejectsMissingRequiredKeys(t *testing.T) {
 	_, errs := Parse(source)
 	if len(errs) != 1 {
 		t.Fatalf("errors len = %d, want 1", len(errs))
+	}
+}
+
+func TestParse_AppliesDefaultsFromCompactAnnotation(t *testing.T) {
+	source := []byte(compactAnnotationLine() + "\n")
+
+	annotations, errs := Parse(source)
+	if len(errs) != 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+
+	a := annotations[0]
+	if a.AnnotationSchemaVersion != "1" {
+		t.Fatalf("annotation_schema_version = %q, want 1", a.AnnotationSchemaVersion)
+	}
+	if a.FieldID != "response_user_id" {
+		t.Fatalf("field_id = %q, want response_user_id", a.FieldID)
+	}
+	if a.MinSupportedSourceVersion != "v2026.02" {
+		t.Fatalf("min_supported_source_version = %q, want v2026.02", a.MinSupportedSourceVersion)
+	}
+	if a.TransformType != "passthrough" {
+		t.Fatalf("transform_type = %q, want passthrough", a.TransformType)
+	}
+	if a.MergeStrategy != "single_source" {
+		t.Fatalf("merge_strategy = %q, want single_source", a.MergeStrategy)
+	}
+	if a.BreakPolicy != "strict" {
+		t.Fatalf("break_policy = %q, want strict", a.BreakPolicy)
+	}
+	if a.Confidence != "declared" {
+		t.Fatalf("confidence = %q, want declared", a.Confidence)
+	}
+	if a.DataClassification != "internal" {
+		t.Fatalf("data_classification = %q, want internal", a.DataClassification)
+	}
+	if a.Owner != "team.identity-gateway" {
+		t.Fatalf("owner = %q, want team.identity-gateway", a.Owner)
+	}
+	if a.Escalation != "slack:#identity-gateway-oncall" {
+		t.Fatalf("escalation = %q, want slack:#identity-gateway-oncall", a.Escalation)
+	}
+	if a.ContractTestID != "ci://contracts/identity-gateway/response_user_id" {
+		t.Fatalf("contract_test_id = %q, want ci://contracts/identity-gateway/response_user_id", a.ContractTestID)
+	}
+	if a.IntroducedAt != "1970-01-01" {
+		t.Fatalf("introduced_at = %q, want 1970-01-01", a.IntroducedAt)
+	}
+	if a.Flow != "from @IdentityGateway mapped @self" {
+		t.Fatalf("flow = %q, want from @IdentityGateway mapped @self", a.Flow)
+	}
+	if a.Note != "defaulted_by=stricture" {
+		t.Fatalf("note = %q, want defaulted_by=stricture", a.Note)
+	}
+}
+
+func TestParse_AppliesPriorityMergeDefaultForMultiSource(t *testing.T) {
+	source := []byte(`// stricture-source field=response.user_profile source_system=Identity source_version=v1 sources=api:identity.GetUser#response.user@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2,db:profiles.user#payload@internal?contract_ref=internal://db/profiles.user`)
+
+	annotations, errs := Parse(source)
+	if len(errs) != 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+	if annotations[0].MergeStrategy != "priority" {
+		t.Fatalf("merge_strategy = %q, want priority", annotations[0].MergeStrategy)
+	}
+}
+
+func TestParse_DerivesFieldFromFieldIDWhenMissing(t *testing.T) {
+	source := []byte(`// stricture-source field_id=response_user_id source_system=Identity source_version=v1 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2`)
+
+	annotations, errs := Parse(source)
+	if len(errs) != 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+	if annotations[0].Field != "response.user.id" {
+		t.Fatalf("field = %q, want response.user.id", annotations[0].Field)
 	}
 }
 

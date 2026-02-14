@@ -64,3 +64,36 @@ func TestLineageExportRejectsInvalidProfile(t *testing.T) {
 		t.Fatalf("stderr should mention invalid profile, got %q", stderr)
 	}
 }
+
+func TestLineageExportCompactAnnotationAppliesDefaults(t *testing.T) {
+	tmp := t.TempDir()
+	sourcePath := filepath.Join(tmp, "lineage.go")
+	content := `// stricture-source field=response.user_id source_system=IdentityGateway source_version=v1 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2` + "\n"
+	if err := os.WriteFile(sourcePath, []byte(content), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	stdout, stderr, code := runInDir(t, tmp, "lineage-export", "--profile", "stricture", ".")
+	if code != 0 {
+		t.Fatalf("lineage-export stricture exit code = %d, want 0\nstderr=%q\nstdout=%q", code, stderr, stdout)
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("unmarshal output: %v\noutput=%q", err, stdout)
+	}
+	fields, ok := payload["fields"].([]interface{})
+	if !ok || len(fields) != 1 {
+		t.Fatalf("fields payload invalid: %#v", payload["fields"])
+	}
+	field, ok := fields[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("field payload invalid: %#v", fields[0])
+	}
+	if field["owner"] != "team.identity-gateway" {
+		t.Fatalf("owner = %v, want team.identity-gateway", field["owner"])
+	}
+	if field["contract_test_id"] != "ci://contracts/identity-gateway/response_user_id" {
+		t.Fatalf("contract_test_id = %v, want ci://contracts/identity-gateway/response_user_id", field["contract_test_id"])
+	}
+}

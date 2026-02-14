@@ -381,6 +381,7 @@ const state = {
   profile: "stricture",
   showAliases: false,
   changedOnly: false,
+  sourceExpanded: false,
   autoplay: false,
   autoplayTimer: null,
 };
@@ -392,6 +393,7 @@ const selectors = {
   profile: document.querySelector("#wt-profile"),
   aliases: document.querySelector("#wt-aliases"),
   changedOnly: document.querySelector("#wt-changed-only"),
+  sourceView: document.querySelector("#wt-source-view"),
   prev: document.querySelector("#wt-prev"),
   next: document.querySelector("#wt-next"),
   autoplay: document.querySelector("#wt-autoplay"),
@@ -416,6 +418,7 @@ const requiredSelectorKeys = [
   "profile",
   "aliases",
   "changedOnly",
+  "sourceView",
   "prev",
   "next",
   "autoplay",
@@ -694,6 +697,17 @@ function buildSourcePane(field, step) {
       .join("\n")}`;
   }
 
+  const sourceLines = field.sources.map((source) => sourceRefToRaw(source));
+  const compactParts = [
+    `field=${formatValue("field", field.fieldPath, changed)}`,
+    `source_system=${escapeHtml(field.sourceSystem)}`,
+    `source_version=${formatValue("source_version", field.sourceVersion, changed)}`,
+    `sources=${escapeHtml(sourceLines.join(","))}`,
+  ];
+  if (!state.sourceExpanded) {
+    return `// stricture-source ${compactParts.join(" ")}`;
+  }
+
   const aliases = state.showAliases ? profileAliasMap(state.profile, field) : [];
   const canonicalLines = [
     `annotation_schema_version=1`,
@@ -718,9 +732,9 @@ function buildSourcePane(field, step) {
     canonicalLines.push(`${entry[0]}=${entry[1]}`);
   });
 
-  const sourceLines = field.sources.map((source) => sourceRefToRaw(source));
   return [
     "// handlers/lineage_handler.go",
+    `// compact: ${compactParts.join(" ")}`,
     "// stricture-source",
     ...canonicalLines.map((line) => `//   ${line}`),
     `//   sources=${escapeHtml(sourceLines.join(","))}`,
@@ -860,7 +874,8 @@ function renderGate(step) {
   selectors.gate.textContent = `Step ${state.stepIndex + 1} | ${step.status.toUpperCase()} | findings=${step.findings.length} | profile=${state.profile}`;
   selectors.paneD.textContent = `Gate: ${step.status}`;
   selectors.paneA.textContent = state.profile === "stricture" ? "OpenAPI" : `Profile: ${state.profile}`;
-  selectors.paneB.textContent = state.showAliases ? "Canonical + Aliases" : "Canonical";
+  const sourceMode = state.changedOnly ? "Changed Only" : state.sourceExpanded ? "Full" : "Compact";
+  selectors.paneB.textContent = state.showAliases ? `${sourceMode} + Aliases` : sourceMode;
 }
 
 function updateUrl() {
@@ -870,6 +885,7 @@ function updateUrl() {
   url.searchParams.set("profile", state.profile);
   url.searchParams.set("aliases", state.showAliases ? "1" : "0");
   url.searchParams.set("changed", state.changedOnly ? "1" : "0");
+  url.searchParams.set("source", state.sourceExpanded ? "full" : "compact");
   url.searchParams.set("autoplay", state.autoplay ? "1" : "0");
   history.replaceState({}, "", url);
 }
@@ -886,6 +902,8 @@ function syncControls(scenario) {
   selectors.profile.value = state.profile;
   selectors.aliases.checked = state.showAliases;
   selectors.changedOnly.checked = state.changedOnly;
+  selectors.sourceView.textContent = state.sourceExpanded ? "Show Compact" : "Show Full";
+  selectors.sourceView.disabled = state.changedOnly;
   selectors.autoplay.textContent = state.autoplay ? "Stop Auto" : "Auto Play";
 }
 
@@ -986,6 +1004,10 @@ function bindEvents() {
     state.changedOnly = selectors.changedOnly.checked;
     render();
   });
+  selectors.sourceView.addEventListener("click", () => {
+    state.sourceExpanded = !state.sourceExpanded;
+    render();
+  });
   selectors.prev.addEventListener("click", () => {
     stopAutoplay();
     previousStep();
@@ -1019,6 +1041,10 @@ function parseInitialStateFromUrl() {
   }
   state.showAliases = url.searchParams.get("aliases") === "1";
   state.changedOnly = url.searchParams.get("changed") === "1";
+  const source = (url.searchParams.get("source") || "").toLowerCase();
+  if (source === "full") {
+    state.sourceExpanded = true;
+  }
   if (url.searchParams.get("autoplay") === "1") {
     state.autoplay = true;
   }

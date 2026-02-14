@@ -32,26 +32,39 @@ Accepted comment prefixes:
 - `# stricture-source ...`
 - `# stricture:source ...`
 
-## Required Keys
+## Authoring-Minimal Keys
 
-- `annotation_schema_version`: currently `1`.
-- `field_id`: immutable field identity (snake_case).
-- `field`: output field path (`response.user.id`).
-- `source_system`: system producing this output.
-- `source_version`: current producer version/schema tag.
-- `min_supported_source_version`: minimum compatible upstream version.
-- `transform_type`: `passthrough|normalize|derive|aggregate|mask|join`.
-- `merge_strategy`: `single_source|priority|first_non_null|union|custom`.
-- `break_policy`: `additive_only|strict|opaque`.
-- `confidence`: `declared|inferred`.
-- `data_classification`: `public|internal|sensitive|regulated`.
-- `owner`: normalized team ID (`team.identity`).
-- `escalation`: emergency route (`slack:#team-oncall`, `pagerduty:service`).
-- `contract_test_id`: CI or contract test reference proving compatibility.
-- `introduced_at`: `YYYY-MM-DD`.
-- `sources`: one or more source refs (comma-separated).
-- `flow`: provenance chain (`from @X enriched @self`).
-- `note`: human explanation (can include URL/spec/class/method).
+To keep annotations compact, only these keys are required in source comments:
+
+- `field` or `field_id`
+- `source_system`
+- `source_version`
+- `sources`
+
+All other canonical keys are defaulted during parsing/normalization.
+
+## Normalization Defaults
+
+If omitted, Stricture fills:
+
+- `annotation_schema_version`: `1`
+- `field_id`: derived from `field` (`.` / `-` / `[` / `]` -> `_`)
+- `field`: derived from `field_id` (`_` -> `.`) when needed
+- `min_supported_source_version`: equals `source_version`
+- `transform_type`: `passthrough`
+- `merge_strategy`: `single_source` (one source) or `priority` (multi-source)
+- `break_policy`: `strict`
+- `confidence`: `declared`
+- `data_classification`: `internal`
+- `owner`: `team.<source_system_slug>`
+- `escalation`: `slack:#<source_system_slug>-oncall`
+- `contract_test_id`: `ci://contracts/<source_system_slug>/<field_id>`
+- `introduced_at`: `1970-01-01`
+- `flow`: `from @<source_system> mapped @self`
+- `note`: `defaulted_by=stricture`
+
+Normalized artifacts still emit explicit canonical fields so diffs remain
+deterministic.
 
 ## Accepted Synonyms (No-Rename Adoption)
 
@@ -106,7 +119,13 @@ Accepted source query synonyms:
 
 ## Examples
 
-Single-source internal:
+Compact single-source internal (recommended):
+
+```go
+// stricture-source field=response.user_id source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2
+```
+
+Expanded (all canonical fields explicit):
 
 ```go
 // stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply; spec=https://specs.example.com/user-id"

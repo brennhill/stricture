@@ -78,6 +78,7 @@ Stricture is being formalized as an open standard.
 ## Documentation Map
 
 - Product spec: [docs/product-spec.md](docs/product-spec.md)
+- Product roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 - Technical spec: [docs/tech-spec.md](docs/tech-spec.md)
 - Invariants: [docs/INVARIANTS.md](docs/INVARIANTS.md)
 - Lineage annotations: [docs/data-lineage-annotations.md](docs/data-lineage-annotations.md)

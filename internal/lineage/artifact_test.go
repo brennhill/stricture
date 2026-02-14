@@ -11,6 +11,10 @@ func validLine(fieldID string, fieldPath string) string {
 	return "// stricture-source annotation_schema_version=1 field_id=" + fieldID + " field=" + fieldPath + " source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow=\"from @Identity normalized @self\" note=\"normalized by UserNormalizer.Apply\""
 }
 
+func compactLine(fieldPath string) string {
+	return "// stricture-source field=" + fieldPath + " source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2"
+}
+
 func TestCollect_BuildsDeterministicArtifact(t *testing.T) {
 	tmp := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tmp, "b.go"), []byte(validLine("response_user_name", "response.user_name")+"\n"), 0o644); err != nil {
@@ -95,5 +99,36 @@ func TestCollect_IncludesOverrides(t *testing.T) {
 	}
 	if artifact.Overrides[0].Line != 1 {
 		t.Fatalf("line = %d, want 1", artifact.Overrides[0].Line)
+	}
+}
+
+func TestCollect_AppliesDefaultsForCompactAnnotation(t *testing.T) {
+	tmp := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmp, "compact.go"), []byte(compactLine("response.user_id")+"\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	artifact, parseErrs, err := Collect([]string{tmp})
+	if err != nil {
+		t.Fatalf("collect error: %v", err)
+	}
+	if len(parseErrs) != 0 {
+		t.Fatalf("parseErrs len = %d, want 0", len(parseErrs))
+	}
+	if len(artifact.Fields) != 1 {
+		t.Fatalf("fields len = %d, want 1", len(artifact.Fields))
+	}
+	field := artifact.Fields[0]
+	if field.FieldID != "response_user_id" {
+		t.Fatalf("field_id = %q, want response_user_id", field.FieldID)
+	}
+	if field.Owner != "team.identity" {
+		t.Fatalf("owner = %q, want team.identity", field.Owner)
+	}
+	if field.ContractTestID != "ci://contracts/identity/response_user_id" {
+		t.Fatalf("contract_test_id = %q, want ci://contracts/identity/response_user_id", field.ContractTestID)
+	}
+	if field.Note != "defaulted_by=stricture" {
+		t.Fatalf("note = %q, want defaulted_by=stricture", field.Note)
 	}
 }

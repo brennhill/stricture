@@ -76,7 +76,10 @@ export const prerender = true;
       <article class="card walkthrough-pane">
         <header class="pane-header">
           <h2>Pane B: Source Annotation</h2>
-          <span id="wt-pane-b-status" class="pane-tag">stricture-source</span>
+          <div class="pane-controls">
+            <span id="wt-pane-b-status" class="pane-tag">Compact</span>
+            <button id="wt-source-view" class="button button-secondary button-ghost pane-toggle" type="button">Show Full</button>
+          </div>
         </header>
         <pre id="wt-source" class="code-view">Loading source annotation view...</pre>
       </article>

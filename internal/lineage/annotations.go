@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var (
@@ -21,6 +22,16 @@ var (
 	providerIDRe    = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,63}$`)
 	changeTypeRe    = regexp.MustCompile(`^(\*|[a-z][a-z0-9_-]{1,63})$`)
 	flowRe          = regexp.MustCompile(`(?i)^from @[A-Za-z][A-Za-z0-9_-]*( (enriched|normalized|derived|validated|mapped|merged) @[A-Za-z][A-Za-z0-9_-]*)*$`)
+)
+
+const (
+	defaultAnnotationSchemaVersion = "1"
+	defaultTransformType           = "passthrough"
+	defaultBreakPolicy             = "strict"
+	defaultConfidence              = "declared"
+	defaultDataClassification      = "internal"
+	defaultIntroducedAt            = "1970-01-01"
+	defaultNote                    = "defaulted_by=stricture"
 )
 
 // Annotation describes lineage metadata for one API output field.
@@ -197,33 +208,20 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 	}
 	mappedFrom = append(mappedFrom, normalizedMapped...)
 
-	required := []string{
-		"annotation_schema_version",
-		"field_id",
-		"field",
-		"source_system",
-		"source_version",
-		"min_supported_source_version",
-		"transform_type",
-		"merge_strategy",
-		"break_policy",
-		"confidence",
-		"data_classification",
-		"owner",
-		"escalation",
-		"contract_test_id",
-		"introduced_at",
-		"sources",
-		"flow",
-		"note",
+	applyAnnotationDefaults(fields)
+
+	if strings.TrimSpace(fields["field_id"]) == "" && strings.TrimSpace(fields["field"]) == "" {
+		return Annotation{}, parseErr(line, "missing required key \"field\" or \"field_id\"")
 	}
+
+	required := []string{"source_system", "source_version", "sources"}
 	for _, key := range required {
 		if strings.TrimSpace(fields[key]) == "" {
 			return Annotation{}, parseErr(line, fmt.Sprintf("missing required key %q", key))
 		}
 	}
 
-	if fields["annotation_schema_version"] != "1" {
+	if fields["annotation_schema_version"] != defaultAnnotationSchemaVersion {
 		return Annotation{}, parseErr(line, "annotation_schema_version must be '1'")
 	}
 
@@ -653,6 +651,166 @@ func normalizeAliases(fields map[string]string, aliases map[string][]string) ([]
 		}
 	}
 	return uniqueSortedStrings(mappedFrom), nil
+}
+
+func applyAnnotationDefaults(fields map[string]string) {
+	field := strings.TrimSpace(fields["field"])
+	fieldID := strings.TrimSpace(fields["field_id"])
+
+	if strings.TrimSpace(fields["annotation_schema_version"]) == "" {
+		fields["annotation_schema_version"] = defaultAnnotationSchemaVersion
+	}
+	if fieldID == "" && field != "" {
+		fieldID = deriveFieldID(field)
+		fields["field_id"] = fieldID
+	}
+	if field == "" && fieldID != "" {
+		field = deriveFieldPath(fieldID)
+		fields["field"] = field
+	}
+	if strings.TrimSpace(fields["min_supported_source_version"]) == "" && strings.TrimSpace(fields["source_version"]) != "" {
+		fields["min_supported_source_version"] = strings.TrimSpace(fields["source_version"])
+	}
+	if strings.TrimSpace(fields["transform_type"]) == "" {
+		fields["transform_type"] = defaultTransformType
+	}
+	if strings.TrimSpace(fields["merge_strategy"]) == "" {
+		if hasMultipleSources(fields["sources"]) {
+			fields["merge_strategy"] = "priority"
+		} else {
+			fields["merge_strategy"] = "single_source"
+		}
+	}
+	if strings.TrimSpace(fields["break_policy"]) == "" {
+		fields["break_policy"] = defaultBreakPolicy
+	}
+	if strings.TrimSpace(fields["confidence"]) == "" {
+		fields["confidence"] = defaultConfidence
+	}
+	if strings.TrimSpace(fields["data_classification"]) == "" {
+		fields["data_classification"] = defaultDataClassification
+	}
+	systemSlug := slugifySystemID(fields["source_system"])
+	if strings.TrimSpace(fields["owner"]) == "" {
+		fields["owner"] = "team." + systemSlug
+	}
+	if strings.TrimSpace(fields["escalation"]) == "" {
+		fields["escalation"] = "slack:#" + systemSlug + "-oncall"
+	}
+	if strings.TrimSpace(fields["contract_test_id"]) == "" && strings.TrimSpace(fields["field_id"]) != "" {
+		fields["contract_test_id"] = "ci://contracts/" + systemSlug + "/" + strings.TrimSpace(fields["field_id"])
+	}
+	if strings.TrimSpace(fields["introduced_at"]) == "" {
+		fields["introduced_at"] = defaultIntroducedAt
+	}
+	if strings.TrimSpace(fields["flow"]) == "" && strings.TrimSpace(fields["source_system"]) != "" {
+		fields["flow"] = "from @" + strings.TrimSpace(fields["source_system"]) + " mapped @self"
+	}
+	if strings.TrimSpace(fields["note"]) == "" {
+		fields["note"] = defaultNote
+	}
+}
+
+func hasMultipleSources(raw string) bool {
+	count := 0
+	for _, part := range strings.Split(raw, ",") {
+		if strings.TrimSpace(part) == "" {
+			continue
+		}
+		count++
+		if count > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+func deriveFieldID(field string) string {
+	var b strings.Builder
+	b.Grow(len(field))
+	lastUnderscore := false
+	for _, r := range field {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsNumber(r):
+			b.WriteRune(unicode.ToLower(r))
+			lastUnderscore = false
+		case r == '_' || r == '.' || r == '-' || r == '[' || r == ']' || r == '/' || r == ':':
+			if !lastUnderscore {
+				b.WriteRune('_')
+				lastUnderscore = true
+			}
+		default:
+			if !lastUnderscore {
+				b.WriteRune('_')
+				lastUnderscore = true
+			}
+		}
+	}
+	out := strings.Trim(b.String(), "_")
+	if out == "" {
+		out = "field_unknown"
+	}
+	if out[0] < 'a' || out[0] > 'z' {
+		out = "f_" + out
+	}
+	if len(out) < 3 {
+		out += "_id"
+	}
+	if len(out) > 64 {
+		out = strings.TrimRight(out[:64], "_")
+		if len(out) < 3 {
+			out = "field_unknown"
+		}
+	}
+	return out
+}
+
+func deriveFieldPath(fieldID string) string {
+	return strings.ReplaceAll(strings.TrimSpace(fieldID), "_", ".")
+}
+
+func slugifySystemID(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "unknown"
+	}
+
+	var b strings.Builder
+	lastDash := false
+	prevAlphaNum := false
+	prevLowerOrDigit := false
+
+	for _, r := range trimmed {
+		switch {
+		case unicode.IsLetter(r) || unicode.IsNumber(r):
+			isUpper := unicode.IsUpper(r)
+			if isUpper && prevLowerOrDigit && !lastDash {
+				b.WriteRune('-')
+				lastDash = true
+			}
+			b.WriteRune(unicode.ToLower(r))
+			lastDash = false
+			prevAlphaNum = true
+			prevLowerOrDigit = unicode.IsLower(r) || unicode.IsNumber(r)
+		default:
+			if prevAlphaNum && !lastDash {
+				b.WriteRune('-')
+				lastDash = true
+			}
+			prevAlphaNum = false
+			prevLowerOrDigit = false
+		}
+	}
+
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		out = "unknown"
+	}
+	first := rune(out[0])
+	if !unicode.IsLetter(first) {
+		out = "sys-" + out
+	}
+	return out
 }
 
 func uniqueSortedStrings(values []string) []string {
