@@ -95,14 +95,19 @@ function buildPresets(snapshot) {
     })
     .filter(Boolean);
   if (selectors.presetScenario) {
+    const current = selectors.presetScenario.value;
     setOptions(
       selectors.presetScenario,
       presets.map((p) => p.id),
       (id) => presets.find((p) => p.id === id)?.label || id,
     );
     if (presets.length) {
-      selectors.presetScenario.value = presets[0].id;
-      updateNarrative(presets[0].id);
+      if (current && presets.find((p) => p.id === current)) {
+        selectors.presetScenario.value = current;
+      } else {
+        selectors.presetScenario.value = presets[0].id;
+      }
+      updateNarrative(selectors.presetScenario.value);
     }
   }
   return presets;
@@ -239,10 +244,10 @@ function render(snapshot) {
     {
       className: (finding) => `list-item sev-${finding.severity}`,
       html: (finding) => `
-        <h3>${finding.changeType} (${finding.severity})</h3>
-        <p>${finding.summary}</p>
-        <p class="item-meta">service=${finding.serviceId} field=${finding.fieldId}</p>
-        <p class="item-meta">Fix: ${finding.remediation}</p>
+        <h3>${friendlyTitle(finding)} (${finding.severity.toUpperCase()})</h3>
+        <p>${friendlyDetail(finding)}</p>
+        <p class="item-meta">Field: ${finding.fieldId} • Service: ${finding.serviceId}</p>
+        <p class="item-meta">Remediation: ${finding.remediation}</p>
       `,
     },
   );
@@ -433,6 +438,7 @@ async function applyPreset() {
     selectors.mutationService.value = selectors.mutationService.options[0].value;
   }
   updateNarrative(id);
+  await bootstrap(); // reset session so findings don’t pile up
   await mutate();
   await run();
 }

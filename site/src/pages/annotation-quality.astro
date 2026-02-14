@@ -1,0 +1,53 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout title="Annotation Quality" description="How to write clear, actionable annotations so Stricture findings stay understandable.">
+  <section class="card">
+    <p class="kicker">Guide</p>
+    <h1>Annotation quality that keeps findings readable.</h1>
+    <p class="lead">Better annotations → clearer findings → faster fixes. Use this checklist when tagging fields.</p>
+    <ul>
+      <li><strong>Owner & escalation:</strong> team slug + on-call channel.</li>
+      <li><strong>Contract ref:</strong> link or git ref to API/schema/event.</li>
+      <li><strong>Type shape:</strong> exact type, ranges, enum values, units, nullable?, max sizes.</li>
+      <li><strong>Freshness:</strong> as-of, max staleness, provider SLA.</li>
+      <li><strong>Versioning:</strong> source_version + min_supported_source_version.</li>
+      <li><strong>Examples:</strong> realistic payloads, including edge values.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Good vs bad examples</h2>
+    <ul>
+      <li><strong>Type/size</strong>: Bad “number”; Good “uint8, range 0–255, unit=count”.</li>
+      <li><strong>Enum</strong>: Bad missing cadence; Good lists values and warns PSP adds quarterly.</li>
+      <li><strong>Ownership</strong>: Always include owner + escalation.</li>
+      <li><strong>Freshness</strong>: External providers need as-of + max_staleness.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Template</h2>
+    <pre><code>field_id: response.payments.status
+owner: team.payments-platform
+escalation: pagerduty:payments-oncall
+contract_ref: git https://github.com/acme/payments-api//openapi.yaml@v1.4.2
+source_version: v2026.04
+min_supported_source_version: v2026.02
+confidence: declared
+transform_type: passthrough
+merge_strategy: priority
+break_policy: strict
+note: type=uint8 (0-255), enum=[pending, success, failed, pending_review]; PSP may add values quarterly; downstream JS consumers must guard >253.
+</code></pre>
+  </section>
+
+  <section class="card">
+    <h2>When to block vs warn</h2>
+    <ul>
+      <li><strong>Block</strong>: type narrowing/widening that exceeds consumer limits, enum removals, missing owner/contract for regulated data.</li>
+      <li><strong>Warn</strong>: additive enum, docs-only changes, optional fields with owners set.</li>
+    </ul>
+  </section>
+</MainLayout>
