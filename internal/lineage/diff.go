@@ -28,12 +28,33 @@ const (
 
 // DriftChange is one classified difference between artifacts.
 type DriftChange struct {
-	Severity   Severity  `json:"severity"`
-	ChangeType string    `json:"change_type"`
-	FieldID    string    `json:"field_id"`
-	Message    string    `json:"message"`
-	Overridden bool      `json:"overridden,omitempty"`
-	Override   *Override `json:"override,omitempty"`
+	Severity   Severity   `json:"severity"`
+	ChangeType string     `json:"change_type"`
+	FieldID    string     `json:"field_id"`
+	Message    string     `json:"message"`
+	Source     *DriftEdge `json:"source,omitempty"`
+	Impact     *DriftEdge `json:"impact,omitempty"`
+	TypeDelta  *TypeDelta `json:"type_delta,omitempty"`
+	ModifiedBy []string   `json:"modified_by,omitempty"`
+	Validation string     `json:"validation,omitempty"`
+	Suggestion string     `json:"suggestion,omitempty"`
+	Overridden bool       `json:"overridden,omitempty"`
+	Override   *Override  `json:"override,omitempty"`
+}
+
+// DriftEdge describes the producer/consumer side of a drift change.
+type DriftEdge struct {
+	Service string `json:"service,omitempty"`
+	API     string `json:"api,omitempty"`
+}
+
+// TypeDelta captures typed-shape metadata when available.
+type TypeDelta struct {
+	Change            string `json:"change,omitempty"` // expanded|contracted|changed|unknown
+	BeforeContractRef string `json:"before_contract_ref,omitempty"`
+	AfterContractRef  string `json:"after_contract_ref,omitempty"`
+	BeforeLabel       string `json:"before_label,omitempty"`
+	AfterLabel        string `json:"after_label,omitempty"`
 }
 
 // DiffSummary aggregates change counts by severity.
@@ -307,11 +328,11 @@ func compareField(base Annotation, head Annotation) []DriftChange {
 		})
 	}
 
-	changes = append(changes, compareSources(fieldID, base.Sources, head.Sources)...)
+	changes = append(changes, compareSources(fieldID, head.SourceSystem, head.Flow, base.Sources, head.Sources)...)
 	return changes
 }
 
-func compareSources(fieldID string, baseSources []SourceRef, headSources []SourceRef) []DriftChange {
+func compareSources(fieldID string, impactedService string, flow string, baseSources []SourceRef, headSources []SourceRef) []DriftChange {
 	changes := make([]DriftChange, 0)
 
 	baseByIdentity := map[string]SourceRef{}
@@ -336,13 +357,35 @@ func compareSources(fieldID string, baseSources []SourceRef, headSources []Sourc
 		}
 
 		if src.ContractRef != headSrc.ContractRef {
+			sourceService := sourceServiceForRef(src)
+			modifiers := flowModifiers(flow, sourceService, impactedService)
 			fromRef := contractRefLabel(src.ContractRef)
 			toRef := contractRefLabel(headSrc.ContractRef)
+			validation := "enum/type compatibility check against the consumer contract"
+			suggestion := "add unit tests + contract assertions for allowed enums/types, then roll out producer and consumers together"
 			changes = append(changes, DriftChange{
 				Severity:   SeverityMedium,
 				ChangeType: "source_contract_ref_changed",
 				FieldID:    fieldID,
-				Message:    fmt.Sprintf("contract_ref changed for source %s from %s to %s; types may have expanded, contracted, or changed, which can fail enum/type checks downstream until consumers update", id, fromRef, toRef),
+				Message:    contractRefNarrative(sourceService, impactedService, fieldID, src.Target, modifiers, validation, suggestion, fromRef, toRef),
+				Source: &DriftEdge{
+					Service: sourceService,
+					API:     src.Target,
+				},
+				Impact: &DriftEdge{
+					Service: impactedService,
+					API:     fieldID,
+				},
+				TypeDelta: &TypeDelta{
+					Change:            "changed",
+					BeforeContractRef: src.ContractRef,
+					AfterContractRef:  headSrc.ContractRef,
+					BeforeLabel:       fromRef,
+					AfterLabel:        toRef,
+				},
+				ModifiedBy: modifiers,
+				Validation: validation,
+				Suggestion: suggestion,
 			})
 		}
 		if src.ProviderID != headSrc.ProviderID {
@@ -428,6 +471,84 @@ func contractRefRevision(ref string) string {
 		}
 	}
 	return rev
+}
+
+func sourceServiceForRef(src SourceRef) string {
+	if up := strings.TrimSpace(src.UpstreamSystem); up != "" {
+		return up
+	}
+	target := strings.TrimSpace(src.Target)
+	if target == "" {
+		return "unknown_source"
+	}
+	if dot := strings.Index(target, "."); dot > 0 {
+		return target[:dot]
+	}
+	return target
+}
+
+func flowModifiers(flow string, sourceService string, impactedService string) []string {
+	parts := strings.Fields(flow)
+	if len(parts) == 0 {
+		return nil
+	}
+	nodes := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if !strings.HasPrefix(part, "@") {
+			continue
+		}
+		node := strings.TrimPrefix(part, "@")
+		if strings.EqualFold(node, "self") {
+			node = impactedService
+		}
+		node = strings.TrimSpace(node)
+		if node == "" {
+			continue
+		}
+		nodes = append(nodes, node)
+	}
+	if len(nodes) <= 2 {
+		return nil
+	}
+	mods := make([]string, 0, len(nodes))
+	seen := map[string]bool{}
+	for _, node := range nodes[1 : len(nodes)-1] {
+		if node == sourceService || node == impactedService || seen[node] {
+			continue
+		}
+		seen[node] = true
+		mods = append(mods, node)
+	}
+	return mods
+}
+
+func contractRefNarrative(
+	sourceService string,
+	impactedService string,
+	fieldID string,
+	sourceAPI string,
+	modifiers []string,
+	validation string,
+	suggestion string,
+	fromLabel string,
+	toLabel string,
+) string {
+	modText := "none"
+	if len(modifiers) > 0 {
+		modText = strings.Join(modifiers, ", ")
+	}
+	return fmt.Sprintf(
+		"%s changed its contract for %s in %s. This may impact %s that consumes this field. This field is modified by %s en-route. Validation failure: %s. Suggestion: %s (from %s to %s).",
+		sourceService,
+		fieldID,
+		sourceAPI,
+		impactedService,
+		modText,
+		validation,
+		suggestion,
+		fromLabel,
+		toLabel,
+	)
 }
 
 func classificationRank(classification string) int {

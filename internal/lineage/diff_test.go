@@ -147,13 +147,50 @@ func TestDiffArtifacts_ContractRefChangedMessageIncludesFromToAndImpactHint(t *t
 		if !strings.Contains(change.Message, "from a1 to b7c9") {
 			t.Fatalf("message missing from/to revisions: %q", change.Message)
 		}
-		if !strings.Contains(change.Message, "expanded, contracted, or changed") {
-			t.Fatalf("message missing type-impact hint: %q", change.Message)
+		if !strings.Contains(change.Message, "Validation failure: enum/type compatibility check against the consumer contract") {
+			t.Fatalf("message missing validation hint: %q", change.Message)
+		}
+		if change.Source == nil || change.Source.Service != "identity" || change.Source.API != "identity.GetUser" {
+			t.Fatalf("source context missing or wrong: %#v", change.Source)
+		}
+		if change.Impact == nil || change.Impact.Service != "Identity" || change.Impact.API != "response_user_id" {
+			t.Fatalf("impact context missing or wrong: %#v", change.Impact)
+		}
+		if change.TypeDelta == nil || change.TypeDelta.Change != "changed" {
+			t.Fatalf("type delta missing: %#v", change.TypeDelta)
 		}
 		return
 	}
 
 	t.Fatalf("expected source_contract_ref_changed message")
+}
+
+func TestDiffArtifacts_ContractRefChangedCarriesFlowModifiers(t *testing.T) {
+	baseField := mkField("response_user_id")
+	baseField.Flow = "from @Identity normalized @Normalizer enriched @self"
+	headField := mkField("response_user_id")
+	headField.Flow = baseField.Flow
+	headField.Sources[0].ContractRef = "git+https://github.com/acme/identity//openapi.yaml@b7c9"
+
+	result := DiffArtifacts(
+		Artifact{SchemaVersion: "1", Fields: []Annotation{baseField}},
+		Artifact{SchemaVersion: "1", Fields: []Annotation{headField}},
+	)
+
+	for _, change := range result.Changes {
+		if change.ChangeType != "source_contract_ref_changed" {
+			continue
+		}
+		if len(change.ModifiedBy) != 1 || change.ModifiedBy[0] != "Normalizer" {
+			t.Fatalf("modified_by = %#v, want [Normalizer]", change.ModifiedBy)
+		}
+		if !strings.Contains(change.Message, "modified by Normalizer en-route") {
+			t.Fatalf("message missing modifier details: %q", change.Message)
+		}
+		return
+	}
+
+	t.Fatalf("expected source_contract_ref_changed change")
 }
 
 func TestDiffArtifacts_ActiveOverrideSuppressesFailure(t *testing.T) {

@@ -171,7 +171,7 @@ func TestCompareSourcesInvalidAsOfFallsBackToMedium(t *testing.T) {
 		Raw:         "head",
 	}}
 
-	changes := compareSources("field_id", base, head)
+	changes := compareSources("field_id", "consumer", "", base, head)
 	if len(changes) != 1 {
 		t.Fatalf("changes len = %d, want 1", len(changes))
 	}
