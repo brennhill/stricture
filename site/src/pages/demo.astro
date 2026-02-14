@@ -1,5 +1,6 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
+import demoScript from "../scripts/demo-app.js?url";
 
 export const prerender = true;
 ---
@@ -116,7 +117,5 @@ export const prerender = true;
     </div>
   </section>
 
-  <script type="module">
-    import "../scripts/demo-app.js";
-  </script>
+  <script type="module" src={demoScript}></script>
 </MainLayout>
