@@ -1,0 +1,167 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+export const prerender = true;
+
+const principles = [
+  {
+    title: "Semantic intent before code generation",
+    body:
+      "LLMs are language engines first. Stricture gives them structured semantic targets: field provenance, ownership, source versions, and invariants."
+  },
+  {
+    title: "Deterministic checks after generation",
+    body:
+      "AI can propose changes quickly; release gates must remain deterministic. Stricture validates drift and invariant rules with block/warn outcomes."
+  },
+  {
+    title: "Overlay, don’t duplicate",
+    body:
+      "Use one annotation model and map it into OpenAPI, OpenTelemetry, OpenLineage, and AsyncAPI profiles to avoid redundant metadata work."
+  },
+  {
+    title: "Operational accountability",
+    body:
+      "When an AI-assisted change causes drift, Stricture pinpoints impacted fields and escalates to owning teams in dependency order."
+  }
+];
+
+const workflow = [
+  "LLM proposes schema, handler, or mapping changes.",
+  "Developer or agent updates field lineage and invariant metadata.",
+  "Stricture resolves cross-repo lineage graph and compares against baseline.",
+  "CI returns deterministic warn/block decisions with evidence.",
+  "Overrides require reason, owner, and expiry for controlled exceptions.",
+  "Release proceeds only when policy is satisfied."
+];
+
+const references = [
+  {
+    label: "GitHub research: Copilot productivity and developer experience",
+    href: "https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/"
+  },
+  {
+    label: "DORA 2024 report (AI impact on software delivery)",
+    href: "https://dora.dev/report/2024"
+  },
+  {
+    label: "CACM: Asleep at the Keyboard? Assessing the Security of GitHub Copilot’s Code Contributions",
+    href: "https://cacm.acm.org/research-highlights/asleep-at-the-keyboard-assessing-the-security-of-github-copilots-code-contributions/"
+  },
+  {
+    label: "OpenAI Structured Outputs (deterministic constrained decoding)",
+    href: "https://openai.com/index/introducing-structured-outputs-in-the-api/"
+  },
+  {
+    label: "Anthropic: Reduce hallucinations",
+    href: "https://docs.anthropic.com/en/docs/test-and-evaluate/strengthen-guardrails/reduce-hallucinations"
+  },
+  {
+    label: "NIST Secure Software Development Framework (SSDF)",
+    href: "https://csrc.nist.gov/Projects/ssdf"
+  },
+  {
+    label: "OpenAPI Initiative",
+    href: "https://www.openapis.org/"
+  },
+  {
+    label: "OpenTelemetry documentation",
+    href: "https://opentelemetry.io/docs/"
+  },
+  {
+    label: "OpenLineage documentation",
+    href: "https://openlineage.io/docs/"
+  }
+];
+---
+
+<MainLayout title="With AI | Stricture for LLM-Accelerated Engineering">
+  <section class="hero compare-hero">
+    <p class="kicker">With AI</p>
+    <h1>Build fast with LLMs without accepting AI slop in production.</h1>
+    <p class="lead">
+      Stricture provides a semantic and verifiable control layer across APIs and systems.
+      AI can accelerate change; Stricture keeps those changes provable, governed, and safe to ship.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/demo">Run Live Demo</a>
+      <a class="button button-secondary" href="/architecture-invariants">Read Invariants Guide</a>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Why this matters for AI-native teams</h2>
+    <p>
+      LLM coding assistants increase throughput. The risk is that teams move faster than their architecture
+      and contract controls. In multi-repo systems, that creates silent drift, brittle dependencies,
+      and on-call volatility.
+    </p>
+    <p>
+      Stricture solves that gap by adding deterministic verification on top of semantic annotations.
+      It lets agents generate aggressively while enforcing system-level correctness constraints before deploy.
+    </p>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Core principles for safe LLM-accelerated delivery</h2>
+    <div class="ai-grid">
+      {
+        principles.map((item) => (
+          <article class="ai-card">
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>How Stricture works with Claude, ChatGPT, Copilot, and other coding agents</h2>
+    <ol>
+      {workflow.map((step) => <li>{step}</li>)}
+    </ol>
+
+    <pre class="code-view compare-code"><code>{`# Example AI-safe gate profile
+policy:
+  mode: block
+  fail_on: high
+
+invariants:
+  - id: ARC-DEP-001
+    assert: "edge -> domain -> data"
+  - id: ARC-PROV-002
+    assert: "every external field has source + owner"
+
+overrides:
+  require:
+    - reason
+    - owner
+    - expires_at`}</code></pre>
+  </section>
+
+  <section class="card compare-section compare-both-section">
+    <h2>Why Stricture is a strong AI pairing architecture</h2>
+    <ul>
+      <li>LLMs are probabilistic; release policy should be deterministic.</li>
+      <li>Annotations are semantic; gates are executable and auditable.</li>
+      <li>Overlays keep existing standards (OpenAPI, OTel, OpenLineage) first-class without duplicate work.</li>
+      <li>Failures include operational routing, not just lint errors, so teams can recover quickly.</li>
+    </ul>
+    <a class="button button-secondary" href="/why-not">See Tool Comparisons</a>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Research and standards</h2>
+    <ul>
+      {
+        references.map((ref) => (
+          <li>
+            <a href={ref.href} target="_blank" rel="noopener noreferrer">{ref.label}</a>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="muted">Reference set reviewed on February 14, 2026.</p>
+  </section>
+</MainLayout>
