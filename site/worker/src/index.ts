@@ -467,7 +467,9 @@ export class DemoSession {
       }
 
       const metadata = PACK.field_metadata[fieldId];
-      const serviceId = metadata?.serviceId || normalizeID(serviceIdRaw);
+      const requestedServiceID = normalizeID(serviceIdRaw);
+      const hasRequestedService = !!requestedServiceID && snapshot.services.some((service) => service.id === requestedServiceID);
+      const serviceId = hasRequestedService ? requestedServiceID : (metadata?.serviceId || requestedServiceID);
       if (!serviceId) {
         return textResponse("mutation requires resolvable serviceId", 400);
       }

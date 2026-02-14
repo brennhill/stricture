@@ -627,10 +627,6 @@ function renderGraph(snapshot) {
   }
   const container = selectors.topologyGraph;
   container.innerHTML = "";
-  const label = document.createElement("div");
-  label.className = "graph-label";
-  label.textContent = "Left to right: cause -> impact. Red node = source change, orange node = impacted service, orange edge = affected path";
-  container.appendChild(label);
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
   const width = Math.max(boxWidth || 640, 820);
@@ -689,14 +685,31 @@ function renderGraph(snapshot) {
     return "var(--line)";
   };
 
+  const nodeRadius = (id) => {
+    if (sourceServices.has(id) || impactedServices.has(id)) return 28;
+    if (flowNodes.has(id)) return 24;
+    return 16;
+  };
+
   edges.forEach((edge) => {
     const from = positions.get(edge.from);
     const to = positions.get(edge.to);
     if (!from || !to) return;
+    const fromR = nodeRadius(edge.from);
+    const toR = nodeRadius(edge.to);
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const distance = Math.max(Math.hypot(dx, dy), 1);
+    const ux = dx / distance;
+    const uy = dy / distance;
+    const startX = from.x + ux * fromR;
+    const startY = from.y + uy * fromR;
+    const endX = to.x - ux * toR;
+    const endY = to.y - uy * toR;
     const curve = document.createElementNS(svgNS, "path");
-    const midX = (from.x + to.x) / 2;
-    const midY = (from.y + to.y) / 2 - 18;
-    const d = `M ${from.x} ${from.y} Q ${midX} ${midY} ${to.x} ${to.y}`;
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2 - 24;
+    const d = `M ${startX} ${startY} Q ${midX} ${midY} ${endX} ${endY}`;
     curve.setAttribute("d", d);
     const isFlow = flowEdges.has(edge.id);
     const isActiveField = activeFields.has(edge.fieldId);
