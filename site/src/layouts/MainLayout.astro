@@ -1,0 +1,31 @@
+---
+import "../styles/global.css";
+
+const { title = "Stricture" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Stricture verifies API lineage, drift, and escalation paths before deployment." />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">Stricture</a>
+      <nav>
+        <a href="/#features">Features</a>
+        <a href="/#workflow">Workflow</a>
+        <a href="/demo">Live Demo</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>Lineage-aware linting and release gates for API ecosystems.</p>
+    </footer>
+  </body>
+</html>

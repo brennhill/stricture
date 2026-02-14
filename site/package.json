@@ -1,0 +1,21 @@
+{
+  "name": "stricture-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "demo-pack": "go run ../cmd/demo-pack --artifact ../tests/lineage/usecases/current.json --systems ../tests/lineage/usecases/systems.yml --out-json public/demo/demo-pack.json --out-ts worker/src/generated/demo-pack.ts",
+    "build": "npm run demo-pack && astro build",
+    "preview": "astro preview",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
+    "check": "astro check"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260210.0",
+    "astro": "^5.2.0",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.0.0"
+  }
+}

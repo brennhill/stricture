@@ -1,0 +1,58 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+export const prerender = true;
+---
+
+<MainLayout title="Stricture | Lineage-Aware API Linting">
+  <section class="hero">
+    <p class="kicker">Stricture</p>
+    <h1>Detect API drift before it becomes an incident.</h1>
+    <p class="lead">
+      Stricture maps field lineage, validates source annotations, and blocks risky
+      deploys with explicit escalation paths.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/demo">Open Interactive Demo</a>
+      <a class="button button-secondary" href="https://github.com/brennhill/stricture">View GitHub</a>
+    </div>
+  </section>
+
+  <section id="features" class="panel-grid">
+    <article class="panel">
+      <h2>Field-Level Lineage</h2>
+      <p>Trace each output field to one or multiple source systems with enrichment notes.</p>
+    </article>
+    <article class="panel">
+      <h2>Drift Detection</h2>
+      <p>Catch schema, version, enum, and provider drift in CI or live validation runs.</p>
+    </article>
+    <article class="panel">
+      <h2>Warn, Block, Override</h2>
+      <p>Move from warning mode to strict release blocks with time-bounded override controls.</p>
+    </article>
+    <article class="panel">
+      <h2>Escalation Chains</h2>
+      <p>When data quality fails, Stricture tells responders who to call in upstream order.</p>
+    </article>
+  </section>
+
+  <section id="workflow" class="workflow">
+    <h2>How It Works</h2>
+    <ol>
+      <li>Ingest service topology and field annotations from source repos and APIs.</li>
+      <li>Export lineage artifacts and compare against a baseline release snapshot.</li>
+      <li>Classify drift by severity and enforce policy in warn or block mode.</li>
+      <li>Attach ownership and escalation routes directly to affected fields.</li>
+    </ol>
+  </section>
+
+  <section class="cta">
+    <h2>Run the full lifecycle simulation.</h2>
+    <p>
+      The demo shows 14 connected systems across logistics, fintech, media,
+      ecommerce, and governance with real-time mutation and rerun.
+    </p>
+    <a class="button button-primary" href="/demo">Launch Demo</a>
+  </section>
+</MainLayout>

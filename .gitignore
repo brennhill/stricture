@@ -8,3 +8,7 @@ stricture
 .overseer-agent/
 .usecase-agent/
 .cache/
+site/node_modules/
+site/dist/
+site/.astro/
+site/.wrangler/

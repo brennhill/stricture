@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check
+.PHONY: build test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
 
 GOFLAGS ?=
 LINEAGE_MODE ?= block
@@ -208,3 +208,23 @@ validate-all: validate-gates check-messages
 
 # Quick check: lint + test phase 1 + validate messages
 quick-check: lint test-phase1 check-messages
+
+# --- Marketing site + demo targets ---
+
+site-install:
+	cd site && npm install
+
+site-demo-pack:
+	go run ./cmd/demo-pack
+
+site-build: site-demo-pack
+	cd site && npm run build
+
+site-dev:
+	cd site && npm run dev
+
+site-worker-dev: site-build
+	cd site && npm run worker:dev
+
+site-worker-deploy: site-build
+	cd site && npm run worker:deploy
