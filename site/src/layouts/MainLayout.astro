@@ -1,7 +1,11 @@
 ---
 import "../styles/global.css";
 
-const { title = "Stricture" } = Astro.props;
+const {
+  title = "Stricture",
+  description = "Stricture verifies API lineage, drift, and escalation paths before deployment."
+} = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, "https://stricture-lint.com").toString();
 ---
 
 <!doctype html>
@@ -9,7 +13,16 @@ const { title = "Stricture" } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Stricture verifies API lineage, drift, and escalation paths before deployment." />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:site_name" content="Stricture" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
     <script is:inline>
       (() => {
         const key = "stricture_theme";
