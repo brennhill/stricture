@@ -316,6 +316,36 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		BaselineSummary:    lineage.DiffSummary{Total: 0, High: 0, Medium: 0, Low: 0, Info: 0},
 	}
 
+	// Add a custom numeric widening scenario to illustrate cross-language width drift (Go uint8 -> JS Number -> Go uint16).
+	const customType = "numeric_widen"
+	const customField = "response_ecommerce_checkout_risk_gate"
+
+	pack.MutationTypes = append(pack.MutationTypes, customType)
+	if pack.FieldsByMutation == nil {
+		pack.FieldsByMutation = map[string][]string{}
+	}
+	pack.FieldsByMutation[customType] = []string{customField}
+
+	if pack.MutationScenarios == nil {
+		pack.MutationScenarios = map[string]map[string]demoScenario{}
+	}
+	if pack.MutationScenarios[customField] == nil {
+		pack.MutationScenarios[customField] = map[string]demoScenario{}
+	}
+
+	pack.MutationScenarios[customField][customType] = demoScenario{
+		Summary: lineage.DiffSummary{Total: 1, High: 1, Medium: 0, Low: 0, Info: 0},
+		Changes: []lineage.DriftChange{
+			{
+				Severity:   lineage.SeverityHigh,
+				ChangeType: "type_changed",
+				FieldID:    customField,
+				Message:    "Producer widened from uint8 to uint16; JS consumer coerces to Number and passes through values >255; downstream Go consumer overflows.",
+			},
+		},
+	}
+
+
 	return pack, nil
 }
 

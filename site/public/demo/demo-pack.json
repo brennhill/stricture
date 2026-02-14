@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-14T18:09:29Z",
+  "generated_at": "2026-02-14T18:13:47Z",
   "truth": {
     "supportedFlows": 50,
     "annotatedFlows": 50,
@@ -1274,7 +1274,8 @@
     "field_removed",
     "source_version_changed",
     "external_as_of_stale",
-    "annotation_missing"
+    "annotation_missing",
+    "numeric_widen"
   ],
   "fields_by_mutation": {
     "annotation_missing": [
@@ -1459,6 +1460,9 @@
       "response_media_royalty_statement_projection",
       "response_media_stream_quality_signal",
       "response_media_track_metadata_unification"
+    ],
+    "numeric_widen": [
+      "response_ecommerce_checkout_risk_gate"
     ],
     "source_version_changed": [
       "response_ecommerce_cart_pricing_waterfall",
@@ -1806,6 +1810,23 @@
             "change_type": "field_removed",
             "field_id": "response_ecommerce_checkout_risk_gate",
             "message": "Field was removed from lineage artifact"
+          }
+        ]
+      },
+      "numeric_widen": {
+        "summary": {
+          "total": 1,
+          "high": 1,
+          "medium": 0,
+          "low": 0,
+          "info": 0
+        },
+        "changes": [
+          {
+            "severity": "high",
+            "change_type": "type_changed",
+            "field_id": "response_ecommerce_checkout_risk_gate",
+            "message": "Producer widened from uint8 to uint16; JS consumer coerces to Number and passes through values \u003e255; downstream Go consumer overflows."
           }
         ]
       },
