@@ -88,6 +88,33 @@ run_step() {
 	return 1
 }
 
+run_live_smoke_step() {
+	local label="docker-compose-live-smoke"
+	local cmd="./scripts/check-fake-apis-live.sh"
+	local output=""
+
+	LAST_ACTION="$label"
+	save_state
+	log_line "step=${label} cmd=${cmd}"
+
+	if output="$(cd "$PROJECT_ROOT" && $cmd 2>&1)"; then
+		printf '%s\n' "$output" >>"$LOG_FILE"
+		if printf '%s\n' "$output" | grep -q '^SKIP:'; then
+			log_line "step=${label} result=skip reason=$(printf '%s\n' "$output" | head -n 1)"
+		else
+			log_line "step=${label} result=pass"
+		fi
+		return 0
+	fi
+
+	printf '%s\n' "$output" >>"$LOG_FILE"
+	log_line "step=${label} result=fail"
+	LAST_ERROR="${label} failed"
+	STATUS=blocked
+	save_state
+	return 1
+}
+
 run_compose_check_if_available() {
 	if ! command -v docker >/dev/null 2>&1; then
 		log_line "step=docker-compose-config result=skip reason=docker-not-installed"
@@ -128,7 +155,7 @@ run_agent() {
 
 	run_step "lineage-diff-usecases" "go run ./cmd/stricture lineage-diff --base '$BASELINE_PATH' --head '$CURRENT_PATH' --fail-on high --mode block"
 	run_compose_check_if_available
-	run_step "docker-compose-live-smoke" "./scripts/check-fake-apis-live.sh"
+	run_live_smoke_step
 
 	STATUS="complete"
 	LAST_ERROR=

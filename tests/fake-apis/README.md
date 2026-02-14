@@ -32,6 +32,12 @@ Run the live endpoint smoke check used by `usecase-agent`:
 ./scripts/check-fake-apis-live.sh
 ```
 
+Pass criteria:
+- Starts all 5 services via docker-compose.
+- Validates 4 endpoints per service (`/health`, `/api/v1/flows`, `/api/v1/simulate/{id}`, `/api/v1/use-cases`).
+- Asserts service/domain identity, flow counts, requested drift simulation, and required use-case categories.
+- Prints assertion totals and duration.
+
 This exits `0` with a `SKIP:` message when Docker daemon or required local image is unavailable.
 
 ## Example calls
