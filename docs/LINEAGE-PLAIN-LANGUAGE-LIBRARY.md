@@ -35,6 +35,7 @@ When no downstream impact is detected, default behavior is:
 | Change type | Plain-language "what changed" | Plain-language impact (`validation`) | Plain-language next step (`suggestion`) |
 |---|---|---|---|
 | `merge_strategy_changed` | Producer changed how multiple sources are combined (for example custom -> single_source). | Output values can change even if schema/type did not change. | Add merge semantic regression tests with representative multi-source fixtures. |
+| `enum_changed` | Producer introduced/removed an enum value used by this field. | Consumers with stale allowlists or switch logic can fail at runtime. | Add enum compatibility tests and safe fallback handling for unknown values. |
 | `source_contract_ref_changed` | Upstream contract reference changed for this field. | Enum/type compatibility can drift across service boundaries. | Run producer+consumer contract tests before rollout. |
 | `source_version_changed` | Producer version changed for this field mapping. | Producer semantics may change while shape appears stable. | Run compatibility tests and communicate rollout plan. |
 | `field_removed` | Producer removed this field from its contract. | Consumers can crash or silently mis-handle payloads. | Restore field or ship compatibility adapter with coordinated rollout. |
@@ -57,3 +58,14 @@ This library is the source of truth for:
 1. `stricture lineage-diff` message text/guidance fields
 2. demo findings narrative
 3. future server/webhook human-readable summaries
+
+## Demo Narrative Example (Payments)
+
+Reference scenario:
+
+1. `Promotions` adds a new enum value (`promotion_type=stacked_cashback`).
+2. `PromotionsApplication` is updated in tandem and forwards the value.
+3. `CommerceGateway` forwards promotion context into checkout totals.
+4. `FintechGateway` payment authorization path still handles only legacy values.
+5. Stricture message should explicitly state: cause service, changed enum value,
+   impacted service(s), and concrete next step (allowlist + fallback + tests).

@@ -316,6 +316,50 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		BaselineSummary:    lineage.DiffSummary{Total: 0, High: 0, Medium: 0, Low: 0, Info: 0},
 	}
 
+	// Demo-specific service/flow overlay to make payment failure causality explicit:
+	// PromotionsConfig -> PromotionsApplication -> CommerceGateway -> FintechGateway.
+	ensureDemoService(&pack, demoService{
+		ID:         "promotionsconfig",
+		Name:       "PromotionsConfig Service",
+		Domain:     "ecommerce",
+		Kind:       "internal",
+		Owner:      "team.promotions-config",
+		Escalation: "pagerduty:promotions-config-oncall",
+		FlowCount:  1,
+	})
+	ensureDemoService(&pack, demoService{
+		ID:         "promotionsapp",
+		Name:       "PromotionsApplication Service",
+		Domain:     "ecommerce",
+		Kind:       "internal",
+		Owner:      "team.promotions-app",
+		Escalation: "pagerduty:promotions-app-oncall",
+		FlowCount:  1,
+	})
+	ensureDemoEdge(&pack, demoEdge{
+		ID:      "e_demo_promotionsconfig_to_promotionsapp",
+		From:    "promotionsconfig",
+		To:      "promotionsapp",
+		FieldID: "response_ecommerce_cart_pricing_waterfall",
+		Label:   "PromotionsConfig.GetPromotionType",
+	})
+	ensureDemoEdge(&pack, demoEdge{
+		ID:      "e_demo_promotionsapp_to_commercegateway",
+		From:    "promotionsapp",
+		To:      "commercegateway",
+		FieldID: "response_ecommerce_cart_pricing_waterfall",
+		Label:   "PromotionsApplication.ApplyPromotion",
+	})
+	ensureDemoEdge(&pack, demoEdge{
+		ID:      "e_demo_commercegateway_to_fintechgateway",
+		From:    "commercegateway",
+		To:      "fintechgateway",
+		FieldID: "response_ecommerce_cart_pricing_waterfall",
+		Label:   "CommerceGateway.ForwardCheckoutPricing",
+	})
+
+	overridePaymentsEnumScenario(&pack)
+
 	// Add a custom numeric widening scenario to illustrate cross-language width drift (Go uint8 -> JS Number -> Go uint16).
 	const customType = "numeric_widen"
 	const customField = "response_ecommerce_checkout_risk_gate"
@@ -361,6 +405,70 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 	}
 
 	return pack, nil
+}
+
+func ensureDemoService(pack *demoPack, service demoService) {
+	for _, existing := range pack.Services {
+		if existing.ID == service.ID {
+			return
+		}
+	}
+	pack.Services = append(pack.Services, service)
+	sort.Slice(pack.Services, func(i, j int) bool { return pack.Services[i].ID < pack.Services[j].ID })
+}
+
+func ensureDemoEdge(pack *demoPack, edge demoEdge) {
+	for _, existing := range pack.Edges {
+		if existing.From == edge.From && existing.To == edge.To && existing.FieldID == edge.FieldID {
+			return
+		}
+	}
+	pack.Edges = append(pack.Edges, edge)
+	sort.Slice(pack.Edges, func(i, j int) bool {
+		if pack.Edges[i].From != pack.Edges[j].From {
+			return pack.Edges[i].From < pack.Edges[j].From
+		}
+		if pack.Edges[i].To != pack.Edges[j].To {
+			return pack.Edges[i].To < pack.Edges[j].To
+		}
+		return pack.Edges[i].FieldID < pack.Edges[j].FieldID
+	})
+}
+
+func overridePaymentsEnumScenario(pack *demoPack) {
+	const fieldID = "response_ecommerce_cart_pricing_waterfall"
+	fieldScenarios, ok := pack.MutationScenarios[fieldID]
+	if !ok {
+		return
+	}
+	fieldScenarios[string(mutationEnumChanged)] = demoScenario{
+		Summary: lineage.DiffSummary{
+			Total:  1,
+			High:   0,
+			Medium: 1,
+			Low:    0,
+			Info:   0,
+		},
+		Changes: []lineage.DriftChange{
+			{
+				Severity:   lineage.SeverityMedium,
+				ChangeType: "enum_changed",
+				FieldID:    fieldID,
+				Message:    "PromotionsConfig added promotion_type=stacked_cashback. PromotionsApplication was updated in tandem and passes it through, but the payment path still handles only percentage,fixed_amount,bogo. Promotion-applied checkouts can fail payment authorization until payment services are updated.",
+				Source: &lineage.DriftEdge{
+					Service: "PromotionsConfig",
+					API:     "PromotionsConfig.GetPromotionType",
+				},
+				Impact: &lineage.DriftEdge{
+					Service: "FintechGateway",
+					API:     "FintechGateway.GetPaymentAuthorizationDecision",
+				},
+				ModifiedBy: []string{"PromotionsApplication", "CommerceGateway"},
+				Validation: "promotion type allowlist mismatch between config/app services and payment authorization path",
+				Suggestion: "add enum contract tests across PromotionsConfig -> PromotionsApplication -> CommerceGateway -> FintechGateway and define unknown-type fallback before rollout",
+			},
+		},
+	}
 }
 
 func mutateArtifact(base lineage.Artifact, fieldIndex int, typ mutationType) (lineage.Artifact, bool) {

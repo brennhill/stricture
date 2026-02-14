@@ -51,7 +51,7 @@ const humanChange = {
 
 const mutationTypeLabels = {
   annotation_missing: "Annotation Missing",
-  enum_changed: "Merge Strategy Changed",
+  enum_changed: "Enum Changed",
   external_as_of_stale: "External As-Of Stale",
   field_removed: "Field Removed",
   source_version_changed: "Source Version Changed",
@@ -261,7 +261,7 @@ function updateControlStats(snapshot) {
 function buildPresets(snapshot) {
   const nonePreset = { id: "__none", label: "No scenario (baseline)" };
   const candidates = [
-    { id: "enum_changed", label: "Payments merge strategy drift" },
+    { id: "enum_changed", label: "Payments promotion drift" },
     { id: "type_changed", label: "Orders type drift" },
     { id: "external_as_of_stale", label: "External as-of stale" },
     { id: "annotation_missing", label: "Missing annotation" },
@@ -297,7 +297,7 @@ function updateNarrative(presetId) {
   }
   const narratives = {
     __none: "No mutation scenario selected. This shows the baseline topology with no active drift findings.",
-    enum_changed: "Payments merge strategy drift: the producer changed how pricing sources are combined. Downstream services can misread the final value unless merge expectations stay aligned.",
+    enum_changed: "Payments promotion drift: PromotionsConfig introduced a new promotion type. PromotionsApplication forwards it, but payment services still only handle older enum values, so promotion-applied checkouts can fail.",
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
     annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
