@@ -1,5 +1,6 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
+import walkthroughScript from "../scripts/walkthrough-app.js?url";
 
 export const prerender = true;
 ---
@@ -21,7 +22,9 @@ export const prerender = true;
     <section class="walkthrough-toolbar card">
       <label>
         Scenario
-        <select id="wt-scenario"></select>
+        <select id="wt-scenario">
+          <option value="logistics">Logistics ETA Projection (logistics)</option>
+        </select>
       </label>
       <label>
         Profile
@@ -93,7 +96,5 @@ export const prerender = true;
     </section>
   </section>
 
-  <script type="module">
-    import "../scripts/walkthrough-app.js";
-  </script>
+  <script type="module" src={walkthroughScript}></script>
 </MainLayout>
