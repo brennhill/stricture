@@ -33,7 +33,6 @@ const selectors = {
   runStricture: document.querySelector("#run-stricture"),
   resetSession: document.querySelector("#reset-session"),
   loadEscalation: document.querySelector("#load-escalation"),
-  applyScenario: document.querySelector("#apply-scenario"),
   toggleEdges: document.querySelector("#toggle-edges"),
 };
 
@@ -378,10 +377,10 @@ function bindEvents() {
   selectors.runStricture?.addEventListener("click", () => run().catch(showError));
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
   selectors.loadEscalation?.addEventListener("click", () => loadEscalation().catch(showError));
-  selectors.applyScenario?.addEventListener("click", () => applyPreset().catch(showError));
   selectors.presetScenario?.addEventListener("change", (event) => {
     const target = event.target;
     updateNarrative(target?.value);
+    applyPreset().catch(showError);
   });
   selectors.toggleEdges?.addEventListener("click", () => toggleEdgeList());
   selectors.mutationType?.addEventListener("change", () => {
@@ -482,7 +481,7 @@ function renderGraph(snapshot) {
 
   const nodes = snapshot.services || [];
   const edges = snapshot.edges || [];
-  const positions = computeLayeredLayout(nodes, edges, width, height);
+  const positions = normalizePositions(computeLayeredLayout(nodes, edges, width, height), width, height);
 
   const { activeFields, sourceServices, flowNodes, flowEdges, focusFieldSeverity } = computeImpacts(snapshot);
 
@@ -622,6 +621,39 @@ function computeLayeredLayout(nodes, edges, width, height) {
     });
   });
   return positions;
+}
+
+function normalizePositions(positions, width, height) {
+  const padding = 30;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  positions.forEach((pos) => {
+    minX = Math.min(minX, pos.x);
+    maxX = Math.max(maxX, pos.x);
+    minY = Math.min(minY, pos.y);
+    maxY = Math.max(maxY, pos.y);
+  });
+
+  if (!isFinite(minX) || !isFinite(minY)) {
+    return positions;
+  }
+
+  const spanX = Math.max(maxX - minX, 1);
+  const spanY = Math.max(maxY - minY, 1);
+  const scale = Math.min((width - padding * 2) / spanX, (height - padding * 2) / spanY, 1);
+
+  const normalized = new Map();
+  positions.forEach((pos, key) => {
+    normalized.set(key, {
+      x: (pos.x - minX) * scale + padding,
+      y: (pos.y - minY) * scale + padding,
+    });
+  });
+
+  return normalized;
 }
 
 function summarizeFlow(nodes, edges, severity, activeFields) {
