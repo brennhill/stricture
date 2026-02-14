@@ -213,6 +213,13 @@ function findingStory(snapshot, finding, mutation) {
   return `${sourceName} changed ${fieldLabel(finding.fieldId)}. ${delta.whatChanged} Stricture flags ${impactName} as impacted by this drift.`;
 }
 
+function conciseLeftNarrative(snapshot, finding, mutation) {
+  if (finding?.changeType === "enum_changed") {
+    return "PromotionConfig added a promotion type and not all downstream services were properly updated. Stricture flags the problematic enum drift and impacted services.";
+  }
+  return findingStory(snapshot, finding, mutation);
+}
+
 async function request(path, method = "GET", body) {
   const response = await fetch(path, {
     method,
@@ -317,7 +324,7 @@ function updateNarrativeFromSnapshot(snapshot) {
     return;
   }
   const top = findings[0];
-  selectors.scenarioNarrative.textContent = findingStory(snapshot, top, mutation);
+  selectors.scenarioNarrative.textContent = conciseLeftNarrative(snapshot, top, mutation);
 }
 
 function renderGate(summary) {
