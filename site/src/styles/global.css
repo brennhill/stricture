@@ -535,6 +535,8 @@ main {
 
 .demo-shell {
   padding-top: 1rem;
+  width: min(1200px, 96vw);
+  margin: 0 auto;
 }
 
 .demo-header {
@@ -569,8 +571,9 @@ main {
 
 .demo-layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 0.8rem;
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
 }
 
 .demo-controls {
@@ -578,8 +581,14 @@ main {
   display: grid;
   gap: 0.7rem;
   align-content: start;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100vh - 130px);
   overflow: auto;
+  position: sticky;
+  top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
 }
 
 .demo-controls h2 {
@@ -602,6 +611,7 @@ select {
   padding: 0.48rem 0.6rem;
   font: inherit;
   background: rgba(255, 255, 255, 0.85);
+  width: 100%;
 }
 
 .demo-main {
@@ -747,6 +757,32 @@ select {
 .control-actions {
   display: grid;
   gap: 0.55rem;
+}
+
+@media (max-width: 1180px) {
+  .demo-layout {
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .demo-layout {
+    grid-template-columns: 1fr;
+  }
+  .demo-controls {
+    position: relative;
+    max-height: none;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    border-radius: 12px;
+  }
+  .control-actions {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+  .demo-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
 }
 
 .walkthrough-shell {
