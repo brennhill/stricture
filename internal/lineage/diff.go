@@ -336,11 +336,13 @@ func compareSources(fieldID string, baseSources []SourceRef, headSources []Sourc
 		}
 
 		if src.ContractRef != headSrc.ContractRef {
+			fromRef := contractRefLabel(src.ContractRef)
+			toRef := contractRefLabel(headSrc.ContractRef)
 			changes = append(changes, DriftChange{
 				Severity:   SeverityMedium,
 				ChangeType: "source_contract_ref_changed",
 				FieldID:    fieldID,
-				Message:    fmt.Sprintf("contract_ref changed for source %s", id),
+				Message:    fmt.Sprintf("contract_ref changed for source %s from %s to %s; types may have expanded, contracted, or changed, which can fail enum/type checks downstream until consumers update", id, fromRef, toRef),
 			})
 		}
 		if src.ProviderID != headSrc.ProviderID {
@@ -395,6 +397,37 @@ func classifyAsOfChange(baseDate string, headDate string) (Severity, string) {
 		return SeverityHigh, "external_as_of_rollback"
 	}
 	return SeverityLow, "external_as_of_advanced"
+}
+
+func contractRefLabel(ref string) string {
+	ref = strings.TrimSpace(ref)
+	if ref == "" {
+		return "unknown"
+	}
+	if rev := contractRefRevision(ref); rev != "" {
+		return rev
+	}
+	if len(ref) > 72 {
+		return ref[:69] + "..."
+	}
+	return ref
+}
+
+func contractRefRevision(ref string) string {
+	idx := strings.LastIndex(strings.TrimSpace(ref), "@")
+	if idx < 0 || idx == len(ref)-1 {
+		return ""
+	}
+	rev := strings.TrimSpace(ref[idx+1:])
+	if rev == "" {
+		return ""
+	}
+	for _, ch := range rev {
+		if ch == '?' || ch == '&' || ch == '/' {
+			return ""
+		}
+	}
+	return rev
 }
 
 func classificationRank(classification string) int {

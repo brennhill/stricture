@@ -77,17 +77,20 @@ function listServiceNames(snapshot, ids, limit = 3) {
   return `${names.slice(0, limit).join(", ")} +${names.length - limit} more`;
 }
 
-function findingSummaryText(finding) {
+function findingSummaryText(snapshot, finding) {
   const text = finding.summary || "";
+  const mutation = latestMutation(snapshot);
+  const source = mutation ? serviceName(snapshot, mutation.serviceId) : "the source service";
+  const impacted = serviceName(snapshot, finding.serviceId);
   const mergeMatch = /^merge_strategy changed from ([^ ]+) to ([^ ]+)$/i.exec(text);
   if (mergeMatch) {
-    return `Merge behavior changed (${mergeMatch[1]} -> ${mergeMatch[2]}). Downstream services may resolve this field differently.`;
+    return `${source} changed merge behavior (${mergeMatch[1]} -> ${mergeMatch[2]}) to alter how upstream data is resolved. ${impacted} can now consume a different value shape than expected.`;
   }
   if (text.startsWith("contract_ref changed")) {
-    return "Contract reference changed without a coordinated version rollout.";
+    return `Types were expanded, contracted, or changed in ${source} to support a new contract revision. This fails enum/type checks in ${impacted} until consumers align.`;
   }
   if (text.startsWith("source removed")) {
-    return "A required upstream source was removed, so downstream data lineage is incomplete.";
+    return `${source} removed a required upstream source. ${impacted} now receives incomplete lineage and can fail strict validation.`;
   }
   return text;
 }
@@ -321,7 +324,7 @@ function render(snapshot) {
         const blastRadius = listServiceNames(snapshot, [...flowServices, finding.serviceId], 4);
         return `
         <h3>${humanChange[finding.changeType] || finding.changeType} — ${finding.fieldId} (${finding.severity.toUpperCase()}) in ${impacted}</h3>
-        <p>${findingSummaryText(finding)}</p>
+        <p>${findingSummaryText(snapshot, finding)}</p>
         <p class="item-meta chips">
           <span class="chip">Cause: ${source}</span>
           <span class="chip">Impact: ${impacted}</span>

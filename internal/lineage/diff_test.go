@@ -2,6 +2,7 @@
 package lineage
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -127,6 +128,32 @@ func TestDiffArtifacts_ExternalAsOfRollbackIsHigh(t *testing.T) {
 	if !found {
 		t.Fatalf("expected external_as_of_rollback change")
 	}
+}
+
+func TestDiffArtifacts_ContractRefChangedMessageIncludesFromToAndImpactHint(t *testing.T) {
+	baseField := mkField("response_user_id")
+	headField := mkField("response_user_id")
+	headField.Sources[0].ContractRef = "git+https://github.com/acme/identity//openapi.yaml@b7c9"
+
+	result := DiffArtifacts(
+		Artifact{SchemaVersion: "1", Fields: []Annotation{baseField}},
+		Artifact{SchemaVersion: "1", Fields: []Annotation{headField}},
+	)
+
+	for _, change := range result.Changes {
+		if change.ChangeType != "source_contract_ref_changed" {
+			continue
+		}
+		if !strings.Contains(change.Message, "from a1 to b7c9") {
+			t.Fatalf("message missing from/to revisions: %q", change.Message)
+		}
+		if !strings.Contains(change.Message, "expanded, contracted, or changed") {
+			t.Fatalf("message missing type-impact hint: %q", change.Message)
+		}
+		return
+	}
+
+	t.Fatalf("expected source_contract_ref_changed message")
 }
 
 func TestDiffArtifacts_ActiveOverrideSuppressesFailure(t *testing.T) {
