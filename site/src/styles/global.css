@@ -812,6 +812,20 @@ select {
   font-size: 0.68rem;
 }
 
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  font-size: 0.7rem;
+}
+
 .sev-high {
   border-left: 4px solid var(--danger);
 }

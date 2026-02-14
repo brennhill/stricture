@@ -87,6 +87,7 @@ function buildPresets(snapshot) {
     { id: "type_changed", label: "Orders type drift" },
     { id: "external_as_of_stale", label: "External as-of stale" },
     { id: "annotation_missing", label: "Missing annotation" },
+    { id: "numeric_widen", label: "Numeric widening: uint8→uint16" },
   ];
   const presets = candidates
     .map((item) => {
@@ -122,6 +123,7 @@ function updateNarrative(presetId) {
     type_changed: "Orders type drift: fulfillment switched quantity from int to string for partial units. Legacy consumers treat it as numeric and will fail parsing.",
     external_as_of_stale: "External as-of stale: vendor shipping ETA feed is older than allowed freshness window, so SLAs and alerts rely on outdated data.",
     annotation_missing: "Missing annotation: a new field shipped without lineage metadata; Stricture blocks because provenance and owners are unknown.",
+    numeric_widen: "Numeric widening: Go producer widened uint8 to uint16; JS consumer coerces to Number and forwards large values; downstream Go consumer overflows. Guard size limits and bump contracts.",
   };
   selectors.scenarioNarrative.textContent = narratives[presetId] || "Choose a preset to see the drift story and impact.";
 }
@@ -246,7 +248,11 @@ function render(snapshot) {
       html: (finding) => `
         <h3>${humanChange[finding.changeType] || finding.changeType} — ${finding.fieldId} (${finding.severity.toUpperCase()})</h3>
         <p>${finding.summary}</p>
-        <p class="item-meta">Field: ${finding.fieldId} • Service: ${finding.serviceId}</p>
+        <p class="item-meta chips">
+          <span class="chip">Cause: ${humanChange[finding.changeType] || finding.changeType}</span>
+          <span class="chip">Blast radius: ${finding.serviceId}</span>
+          <span class="chip">Owner: ${finding.serviceId}</span>
+        </p>
         <p class="item-meta">Remediation: ${finding.remediation}</p>
       `,
     },
@@ -518,6 +524,9 @@ function renderGraph(snapshot) {
     const title = document.createElementNS(svgNS, "title");
     title.textContent = `${edge.from} → ${edge.to} • ${edge.fieldId} • ${edge.status}`;
     curve.appendChild(title);
+    curve.dataset.edgeId = edge.id;
+    curve.dataset.from = edge.from;
+    curve.dataset.to = edge.to;
     svg.appendChild(curve);
   });
 
@@ -547,6 +556,7 @@ function renderGraph(snapshot) {
     title.textContent = `${node.name} (${node.domain}) • owner=${node.owner}`;
     g.appendChild(title);
     g.appendChild(label);
+    g.dataset.nodeId = node.id;
     svg.appendChild(g);
   });
 
@@ -555,6 +565,8 @@ function renderGraph(snapshot) {
   if (selectors.flowPathSummary) {
     selectors.flowPathSummary.textContent = summarizeFlow(nodes, edges, focusFieldSeverity, activeFields);
   }
+
+  addGraphInteractions(svg);
 }
 
 function scheduleResizeRender() {
@@ -660,6 +672,91 @@ function normalizePositions(positions, width, height) {
   });
 
   return normalized;
+}
+
+function addGraphInteractions(svg) {
+  const defaultViewBox = svg.getAttribute("viewBox");
+  const positions = svg.__positions || new Map();
+
+  function applyFocus(nodeIds, edgeIds) {
+    const nodeSet = new Set(nodeIds || []);
+    const edgeSet = new Set(edgeIds || []);
+
+    svg.querySelectorAll(".graph-node").forEach((node) => {
+      const id = node.dataset.nodeId;
+      if (nodeSet.size === 0 || nodeSet.has(id)) {
+        node.classList.remove("dimmed");
+      } else {
+        node.classList.add("dimmed");
+      }
+    });
+
+    svg.querySelectorAll(".graph-edge").forEach((edge) => {
+      const id = edge.dataset.edgeId;
+      if (edgeSet.size === 0 || edgeSet.has(id)) {
+        edge.classList.remove("dimmed");
+        edge.classList.add("focus");
+      } else {
+        edge.classList.add("dimmed");
+        edge.classList.remove("focus");
+      }
+    });
+
+    if (nodeSet.size > 0) {
+      zoomToNodes(svg, positions, nodeSet);
+    } else if (defaultViewBox) {
+      svg.setAttribute("viewBox", defaultViewBox);
+    }
+  }
+
+  svg.querySelectorAll(".graph-node").forEach((node) => {
+    node.addEventListener("mouseenter", () => {
+      const id = node.dataset.nodeId;
+      const connectedEdges = Array.from(svg.querySelectorAll(".graph-edge")).filter((e) => {
+        return e.dataset.from === id || e.dataset.to === id;
+      }).map((e) => e.dataset.edgeId);
+      const connectedNodes = new Set([id]);
+      svg.querySelectorAll(".graph-edge").forEach((e) => {
+        if (connectedEdges.includes(e.dataset.edgeId)) {
+          connectedNodes.add(e.dataset.from);
+          connectedNodes.add(e.dataset.to);
+        }
+      });
+      applyFocus(connectedNodes, connectedEdges);
+    });
+  });
+
+  svg.querySelectorAll(".graph-edge").forEach((edge) => {
+    edge.addEventListener("mouseenter", () => {
+      const nodeIds = new Set([edge.dataset.from, edge.dataset.to]);
+      applyFocus(nodeIds, [edge.dataset.edgeId]);
+    });
+  });
+
+  svg.addEventListener("mouseleave", () => {
+    applyFocus(new Set(), new Set());
+  });
+}
+
+function zoomToNodes(svg, positions, nodeSet) {
+  const padding = 40;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  nodeSet.forEach((id) => {
+    const pos = positions.get(id);
+    if (!pos) return;
+    minX = Math.min(minX, pos.x);
+    maxX = Math.max(maxX, pos.x);
+    minY = Math.min(minY, pos.y);
+    maxY = Math.max(maxY, pos.y);
+  });
+  if (!isFinite(minX)) return;
+  const width = Math.max(maxX - minX, 1) + padding * 2;
+  const height = Math.max(maxY - minY, 1) + padding * 2;
+  const viewBox = `${minX - padding} ${minY - padding} ${width} ${height}`;
+  svg.setAttribute("viewBox", viewBox);
 }
 
 function summarizeFlow(nodes, edges, severity, activeFields) {
