@@ -493,9 +493,12 @@ function renderGraph(snapshot) {
 
   const nodes = snapshot.services || [];
   const edges = snapshot.edges || [];
-  const positions = normalizePositions(computeLayeredLayout(nodes, edges, width, height), width, height);
-
   const { activeFields, sourceServices, flowNodes, flowEdges, focusFieldSeverity } = computeImpacts(snapshot);
+  const positions = normalizePositions(
+    computeLayeredLayout(nodes, edges, width, height, { sourceServices, flowNodes }),
+    width,
+    height,
+  );
 
   const edgeColor = (status) => {
     if (status === "blocked") return "var(--danger)";
@@ -579,10 +582,11 @@ function scheduleResizeRender() {
   window.addEventListener("resize", handler);
 }
 
-function computeLayeredLayout(nodes, edges, width, height) {
+function computeLayeredLayout(nodes, edges, width, height, focus = {}) {
   const positions = new Map();
   const incoming = new Map();
   const outgoing = new Map();
+  const focusedNodes = new Set([...(focus.flowNodes || []), ...(focus.sourceServices || [])]);
   nodes.forEach((n) => {
     incoming.set(n.id, 0);
     outgoing.set(n.id, 0);
@@ -625,18 +629,43 @@ function computeLayeredLayout(nodes, edges, width, height) {
 
   const columnCount = layers.length || 1;
   const colWidth = Math.max((width - 40) / columnCount, 140);
-  layers.forEach((layerNodeIds, colIdx) => {
-    const rowCount = layerNodeIds.length;
-    const rowGap = Math.max((height - 80) / (rowCount || 1), 70);
-    layerNodeIds.forEach((nodeId, rowIdx) => {
-      const x = 20 + colWidth * colIdx + colWidth / 2;
-      const y = 50 + rowGap * rowIdx;
-      positions.set(nodeId, { x, y });
-      const node = nodes.find((n) => n.id === nodeId);
-      if (node) {
-        node.edgeDegree = (incoming.get(nodeId) || 0) + (outgoing.get(nodeId) || 0);
-      }
+  const topStart = 56;
+  const topEnd = Math.max(topStart + 120, Math.floor(height * 0.6));
+  const bottomStart = Math.max(topEnd + 20, Math.floor(height * 0.74));
+  const bottomEnd = Math.max(bottomStart + 30, height - 40);
+
+  const placeInBand = (ids, x, startY, endY) => {
+    if (!ids.length) return;
+    if (ids.length === 1) {
+      positions.set(ids[0], { x, y: (startY + endY) / 2 });
+      return;
+    }
+    const gap = (endY - startY) / (ids.length - 1);
+    ids.forEach((nodeID, idx) => {
+      positions.set(nodeID, { x, y: startY + gap * idx });
     });
+  };
+
+  layers.forEach((layerNodeIds, colIdx) => {
+    const x = 20 + colWidth * colIdx + colWidth / 2;
+    if (focusedNodes.size === 0) {
+      const rowCount = layerNodeIds.length;
+      const rowGap = Math.max((height - 80) / (rowCount || 1), 70);
+      layerNodeIds.forEach((nodeId, rowIdx) => {
+        positions.set(nodeId, { x, y: 50 + rowGap * rowIdx });
+      });
+      return;
+    }
+
+    const key = layerNodeIds.filter((id) => focusedNodes.has(id));
+    const nonKey = layerNodeIds.filter((id) => !focusedNodes.has(id));
+    placeInBand(key, x, topStart, topEnd);
+    // Keep non-key/non-affected services compressed in the lower band.
+    placeInBand(nonKey, x, bottomStart, bottomEnd);
+  });
+
+  nodes.forEach((node) => {
+    node.edgeDegree = (incoming.get(node.id) || 0) + (outgoing.get(node.id) || 0);
   });
   return positions;
 }
