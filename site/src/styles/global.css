@@ -654,9 +654,9 @@ select {
 .edge {
   border: 1px solid var(--line);
   border-radius: 9px;
-  padding: 0.45rem 0.55rem;
+  padding: 0.55rem 0.65rem;
   background: #ffffff;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .edge-healthy {
@@ -669,6 +669,65 @@ select {
 
 .edge-blocked {
   border-left: 5px solid var(--danger);
+}
+
+.edge-label {
+  font-weight: 600;
+}
+
+.edge-meta {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  margin-top: 0.18rem;
+}
+
+.edge-list-wrap {
+  margin-top: 0.6rem;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 0.72rem;
+}
+
+.legend-chip::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--ok);
+  border: 1px solid var(--line);
+}
+
+.legend-edge-healthy::before {
+  background: var(--ok);
+}
+
+.legend-edge-warning::before {
+  background: var(--warn);
+}
+
+.legend-edge-blocked::before {
+  background: var(--danger);
+}
+
+.legend-node-ok::before {
+  background: #f8fafc;
+  border: 1px solid var(--line);
 }
 
 .node {
@@ -763,6 +822,67 @@ select {
 .control-actions {
   display: grid;
   gap: 0.55rem;
+}
+
+.topology-graph {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #ffffff;
+}
+
+.topology-graph svg {
+  width: 100%;
+  height: 320px;
+}
+
+.graph-node text {
+  font-size: 0.7rem;
+  text-anchor: middle;
+  fill: var(--ink);
+}
+
+.graph-node circle {
+  fill: #f8fafc;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.graph-node.status-blocked circle {
+  stroke: var(--danger);
+  stroke-width: 2;
+}
+
+.graph-node.status-warn circle {
+  stroke: var(--warn);
+  stroke-width: 2;
+}
+
+.graph-edge {
+  stroke: var(--line);
+  stroke-width: 1.5;
+  fill: none;
+  opacity: 0.85;
+}
+
+.graph-edge.edge-blocked {
+  stroke: var(--danger);
+  stroke-width: 2.2;
+}
+
+.graph-edge.edge-warning {
+  stroke: var(--warn);
+  stroke-width: 2;
+}
+
+.graph-edge.edge-healthy {
+  stroke: var(--ok);
+}
+
+.how-it-works {
+  width: min(1200px, 96vw);
+  margin: 1.4rem auto 2rem;
+  padding: 1rem 1.2rem;
 }
 
 .pulse-once {

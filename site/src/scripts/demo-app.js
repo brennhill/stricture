@@ -6,6 +6,7 @@ const state = {
 const selectors = {
   gateBanner: document.querySelector("#gate-banner"),
   topology: document.querySelector("#topology"),
+  topologyGraph: document.querySelector("#topology-graph"),
   edgeList: document.querySelector("#edge-list"),
   findings: document.querySelector("#findings"),
   overrides: document.querySelector("#overrides"),
@@ -187,10 +188,19 @@ function renderTopology(snapshot) {
     snapshot.edges.forEach((edge) => {
       const item = document.createElement("article");
       item.className = `edge edge-${edge.status}`;
-      item.textContent = `${edge.from} -> ${edge.to} | ${edge.fieldId} | status=${edge.status}`;
+      const label = document.createElement("div");
+      label.className = "edge-label";
+      label.textContent = `${edge.from} → ${edge.to}`;
+      const meta = document.createElement("div");
+      meta.className = "edge-meta";
+      meta.textContent = `field=${edge.fieldId} • status=${edge.status}`;
+      item.appendChild(label);
+      item.appendChild(meta);
       selectors.edgeList.appendChild(item);
     });
   }
+
+  renderGraph(snapshot);
 }
 
 function renderList(element, rows, emptyText, mapper) {
@@ -427,3 +437,78 @@ async function applyPreset() {
 
 bindEvents();
 bootstrap().catch(showError);
+
+function renderGraph(snapshot) {
+  if (!selectors.topologyGraph) {
+    return;
+  }
+  const container = selectors.topologyGraph;
+  container.innerHTML = "";
+  const svgNS = "http://www.w3.org/2000/svg";
+  const { width: boxWidth } = container.getBoundingClientRect();
+  const width = boxWidth || 640;
+  const height = 320;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+  const nodes = snapshot.services || [];
+  const edges = snapshot.edges || [];
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.max(Math.min(width, height) / 2 - 60, 120);
+
+  const positions = new Map();
+  nodes.forEach((node, idx) => {
+    const angle = (2 * Math.PI * idx) / Math.max(nodes.length, 1) - Math.PI / 2;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    positions.set(node.id, { x, y });
+  });
+
+  const edgeColor = (status) => {
+    if (status === "blocked") return "var(--danger)";
+    if (status === "warning") return "var(--warn)";
+    if (status === "healthy") return "var(--ok)";
+    return "var(--line)";
+  };
+
+  edges.forEach((edge) => {
+    const from = positions.get(edge.from);
+    const to = positions.get(edge.to);
+    if (!from || !to) return;
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", from.x);
+    line.setAttribute("y1", from.y);
+    line.setAttribute("x2", to.x);
+    line.setAttribute("y2", to.y);
+    line.setAttribute("class", `graph-edge edge-${edge.status}`);
+    line.setAttribute("stroke", edgeColor(edge.status));
+    const title = document.createElementNS(svgNS, "title");
+    title.textContent = `${edge.from} → ${edge.to} • ${edge.fieldId} • ${edge.status}`;
+    line.appendChild(title);
+    svg.appendChild(line);
+  });
+
+  nodes.forEach((node) => {
+    const pos = positions.get(node.id);
+    if (!pos) return;
+    const g = document.createElementNS(svgNS, "g");
+    g.setAttribute("class", `graph-node ${nodeStatusForService(node.id, snapshot.findings)} `);
+    const circle = document.createElementNS(svgNS, "circle");
+    circle.setAttribute("cx", pos.x);
+    circle.setAttribute("cy", pos.y);
+    circle.setAttribute("r", "22");
+    g.appendChild(circle);
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", pos.x);
+    label.setAttribute("y", pos.y + 34);
+    label.textContent = node.name;
+    const title = document.createElementNS(svgNS, "title");
+    title.textContent = `${node.name} (${node.domain}) • owner=${node.owner}`;
+    g.appendChild(title);
+    g.appendChild(label);
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
+}
