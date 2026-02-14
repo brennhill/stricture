@@ -36,6 +36,7 @@ Pass criteria:
 - Starts all 5 services via docker-compose.
 - Validates 4 endpoints per service (`/health`, `/api/v1/flows`, `/api/v1/simulate/{id}`, `/api/v1/use-cases`).
 - Asserts service/domain identity, flow counts, requested drift simulation, and required use-case categories.
+- Prints all endpoint payloads in-order (all domains, all endpoints) so consumers can inspect every lineage output from one run.
 - Prints assertion totals and duration.
 
 This exits `0` with a `SKIP:` message when Docker daemon or required local image is unavailable.

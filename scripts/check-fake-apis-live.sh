@@ -11,6 +11,7 @@ START_EPOCH="$(date +%s)"
 
 ASSERTIONS_TOTAL=0
 ASSERTIONS_PASSED=0
+OUTPUT_DUMPS=()
 
 pass_assertion() {
 	local message="$1"
@@ -108,6 +109,13 @@ assert_count_equals() {
 	fail_assertion "${label} expected count=${expected}, got count=${count}"
 }
 
+record_output_dump() {
+	local label="$1"
+	local body="$2"
+	OUTPUT_DUMPS+=("### ${label}
+${body}")
+}
+
 compose up -d >/dev/null
 
 checks=(
@@ -124,27 +132,37 @@ for check in "${checks[@]}"; do
 	echo "INFO: validating domain=${domain} service=${service} port=${port}"
 
 	health_body="$(fetch_json_200 "$base_url/health" "${domain} /health")"
+	record_output_dump "${domain} /health" "$health_body"
 	assert_contains "$health_body" "\"service\":\"${service}\"" "${domain} /health has expected service"
 	assert_contains "$health_body" "\"domain\":\"${domain}\"" "${domain} /health has expected domain"
 	assert_contains "$health_body" "\"flowCount\":10" "${domain} /health reports 10 flows"
 
 	flows_body="$(fetch_json_200 "$base_url/api/v1/flows" "${domain} /api/v1/flows")"
+	record_output_dump "${domain} /api/v1/flows" "$flows_body"
 	assert_contains "$flows_body" "\"service\":\"${service}\"" "${domain} /api/v1/flows has expected service"
 	assert_contains "$flows_body" "\"domain\":\"${domain}\"" "${domain} /api/v1/flows has expected domain"
 	assert_count_equals "$flows_body" "\"id\":\"${domain}_" "10" "${domain} /api/v1/flows returns 10 flow ids"
 
 	simulate_body="$(fetch_json_200 "$base_url/api/v1/simulate/${flow_id}?drift=source_version_changed" "${domain} /api/v1/simulate")"
+	record_output_dump "${domain} /api/v1/simulate/${flow_id}" "$simulate_body"
 	assert_contains "$simulate_body" "\"flowId\":\"${flow_id}\"" "${domain} /api/v1/simulate uses requested flow id"
 	assert_contains "$simulate_body" "\"simulatedDrift\":\"source_version_changed\"" "${domain} /api/v1/simulate applies requested drift"
 	assert_contains "$simulate_body" "\"domain\":\"${domain}\"" "${domain} /api/v1/simulate has expected domain"
 
 	use_cases_body="$(fetch_json_200 "$base_url/api/v1/use-cases" "${domain} /api/v1/use-cases")"
+	record_output_dump "${domain} /api/v1/use-cases" "$use_cases_body"
 	assert_count_equals "$use_cases_body" "\"useCase\":\"" "5" "${domain} /api/v1/use-cases publishes 5 use-case counters"
 	assert_contains "$use_cases_body" "\"useCase\":\"drift_blocking\"" "${domain} /api/v1/use-cases includes drift_blocking"
 	assert_contains "$use_cases_body" "\"useCase\":\"external_provider_drift\"" "${domain} /api/v1/use-cases includes external_provider_drift"
 	assert_contains "$use_cases_body" "\"useCase\":\"escalation_chain\"" "${domain} /api/v1/use-cases includes escalation_chain"
 	assert_contains "$use_cases_body" "\"useCase\":\"compliance_traceability\"" "${domain} /api/v1/use-cases includes compliance_traceability"
 	assert_contains "$use_cases_body" "\"useCase\":\"multilang_contract_parity\"" "${domain} /api/v1/use-cases includes multilang_contract_parity"
+done
+
+echo "INFO: collected lineage outputs (ordered)"
+for dump in "${OUTPUT_DUMPS[@]}"; do
+	echo "-----"
+	printf '%s\n' "$dump"
 done
 
 duration="$(( $(date +%s) - START_EPOCH ))"
