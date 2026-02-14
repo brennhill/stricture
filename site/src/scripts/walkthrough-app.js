@@ -379,6 +379,7 @@ const state = {
   scenarioId: "logistics",
   stepIndex: 0,
   profile: "stricture",
+  sourceLanguage: "go",
   showAliases: false,
   changedOnly: false,
   sourceExpanded: false,
@@ -391,6 +392,7 @@ const selectors = {
   gate: document.querySelector("#walkthrough-gate"),
   scenario: document.querySelector("#wt-scenario"),
   profile: document.querySelector("#wt-profile"),
+  language: document.querySelector("#wt-language"),
   aliases: document.querySelector("#wt-aliases"),
   changedOnly: document.querySelector("#wt-changed-only"),
   sourceView: document.querySelector("#wt-source-view"),
@@ -416,6 +418,7 @@ const requiredSelectorKeys = [
   "gate",
   "scenario",
   "profile",
+  "language",
   "aliases",
   "changedOnly",
   "sourceView",
@@ -686,59 +689,125 @@ function sourceRefToRaw(ref) {
   return `${ref.kind}:${ref.target}#${ref.path}@${scopeSegment}?${query.join("&")}`;
 }
 
+function sourceLanguageSpec(language) {
+  switch (language) {
+    case "typescript":
+      return { path: "handlers/lineage-handler.ts", commentPrefix: "//" };
+    case "javascript":
+      return { path: "handlers/lineage-handler.js", commentPrefix: "//" };
+    case "python":
+      return { path: "handlers/lineage_handler.py", commentPrefix: "#" };
+    case "java":
+      return { path: "src/main/java/com/acme/LineageHandler.java", commentPrefix: "//" };
+    case "go":
+    default:
+      return { path: "handlers/lineage_handler.go", commentPrefix: "//" };
+  }
+}
+
+function renderAnnotationPair(entry, changed) {
+  const key = `<span class="tok-key">${escapeHtml(entry.key)}</span>`;
+  const baseClass = entry.quoted ? "tok-string" : "tok-value";
+  let value = `<span class="${baseClass}">${escapeHtml(entry.value)}</span>`;
+  if (changed.has(entry.key)) {
+    value = `<span class="wt-changed">${value}</span>`;
+  }
+  if (entry.quoted) {
+    return `${key}="${value}"`;
+  }
+  return `${key}=${value}`;
+}
+
+function sourceFunctionLines(language, commentPrefix) {
+  const cmt = `<span class="tok-comment">${escapeHtml(commentPrefix)}</span>`;
+  switch (language) {
+    case "typescript":
+    case "javascript":
+      return [
+        `<span class="tok-kw">function</span> <span class="tok-fn">mapResponse</span>() {`,
+        `  ${cmt} mapping logic`,
+        `}`,
+      ];
+    case "python":
+      return [
+        `<span class="tok-kw">def</span> <span class="tok-fn">map_response</span>():`,
+        `    <span class="tok-kw">pass</span>`,
+      ];
+    case "java":
+      return [
+        `<span class="tok-kw">class</span> LineageHandler {`,
+        `  <span class="tok-kw">void</span> <span class="tok-fn">mapResponse</span>() {}`,
+        `}`,
+      ];
+    case "go":
+    default:
+      return [
+        `<span class="tok-kw">func</span> <span class="tok-fn">mapResponse</span>() {`,
+        `  ${cmt} mapping logic`,
+        `}`,
+      ];
+  }
+}
+
 function buildSourcePane(field, step) {
   const changed = changedKeySet(step);
+  const { path, commentPrefix } = sourceLanguageSpec(state.sourceLanguage);
+  const sourceLines = field.sources.map((source) => sourceRefToRaw(source));
   if (state.changedOnly) {
     if (step.changes.length === 0) {
-      return "// No annotation deltas in this step.\n";
+      return `${commentPrefix} No annotation deltas in this step.\n`;
     }
-    return `// Annotation deltas\n${step.changes
-      .map((entry) => `// ${entry.label}: ${entry.from} -> ${entry.to}`)
+    return `${commentPrefix} Annotation deltas\n${step.changes
+      .map((entry) => `${commentPrefix} ${entry.label}: ${entry.from} -> ${entry.to}`)
       .join("\n")}`;
   }
 
-  const sourceLines = field.sources.map((source) => sourceRefToRaw(source));
-  const compactParts = [
-    `field=${formatValue("field", field.fieldPath, changed)}`,
-    `source_system=${escapeHtml(field.sourceSystem)}`,
-    `source_version=${formatValue("source_version", field.sourceVersion, changed)}`,
-    `sources=${escapeHtml(sourceLines.join(","))}`,
+  const compactPairs = [
+    { key: "field", value: field.fieldPath },
+    { key: "source_system", value: field.sourceSystem },
+    { key: "source_version", value: field.sourceVersion },
+    { key: "sources", value: sourceLines.join(",") },
   ];
+  const compactParts = compactPairs.map((entry) => renderAnnotationPair(entry, changed));
+  const prefix = `<span class="tok-comment">${escapeHtml(commentPrefix)}</span>`;
+  const compactLine = `${prefix} <span class="tok-comment">stricture-source</span> ${compactParts.join(" ")}`;
+
   if (!state.sourceExpanded) {
-    return `// stricture-source ${compactParts.join(" ")}`;
+    return [compactLine, ...sourceFunctionLines(state.sourceLanguage, commentPrefix)].join("\n");
   }
 
   const aliases = state.showAliases ? profileAliasMap(state.profile, field) : [];
-  const canonicalLines = [
-    `annotation_schema_version=1`,
-    `field_id=${field.fieldId}`,
-    `field=${formatValue("field", field.fieldPath, changed)}`,
-    `source_system=${field.sourceSystem}`,
-    `source_version=${formatValue("source_version", field.sourceVersion, changed)}`,
-    `min_supported_source_version=${field.minSupportedSourceVersion}`,
-    `transform_type=${field.transformType}`,
-    `merge_strategy=${field.mergeStrategy}`,
-    `break_policy=${field.breakPolicy}`,
-    `confidence=${field.confidence}`,
-    `data_classification=${field.dataClassification}`,
-    `owner=${field.owner}`,
-    `escalation=${field.escalation}`,
-    `contract_test_id=${formatValue("contract_test_id", field.contractTestId, changed)}`,
-    `introduced_at=${field.introducedAt}`,
-    `flow="${escapeHtml(field.flow)}"`,
-    `note="${escapeHtml(field.note)}"`,
+  const canonicalPairs = [
+    { key: "annotation_schema_version", value: "1" },
+    { key: "field_id", value: field.fieldId },
+    { key: "field", value: field.fieldPath },
+    { key: "source_system", value: field.sourceSystem },
+    { key: "source_version", value: field.sourceVersion },
+    { key: "min_supported_source_version", value: field.minSupportedSourceVersion },
+    { key: "transform_type", value: field.transformType },
+    { key: "merge_strategy", value: field.mergeStrategy },
+    { key: "break_policy", value: field.breakPolicy },
+    { key: "confidence", value: field.confidence },
+    { key: "data_classification", value: field.dataClassification },
+    { key: "owner", value: field.owner },
+    { key: "escalation", value: field.escalation },
+    { key: "contract_test_id", value: field.contractTestId },
+    { key: "introduced_at", value: field.introducedAt },
+    { key: "flow", value: field.flow, quoted: true },
+    { key: "note", value: field.note, quoted: true },
+    { key: "sources", value: sourceLines.join(",") },
   ];
   aliases.forEach((entry) => {
-    canonicalLines.push(`${entry[0]}=${entry[1]}`);
+    canonicalPairs.push({ key: entry[0], value: String(entry[1]) });
   });
+  const canonicalLines = canonicalPairs.map((entry) => `${prefix}   ${renderAnnotationPair(entry, changed)}`);
 
   return [
-    "// handlers/lineage_handler.go",
-    `// compact: ${compactParts.join(" ")}`,
-    "// stricture-source",
-    ...canonicalLines.map((line) => `//   ${line}`),
-    `//   sources=${escapeHtml(sourceLines.join(","))}`,
-    "func mapResponse() {}",
+    `${prefix} ${escapeHtml(path)}`,
+    `${prefix} compact: ${compactParts.join(" ")}`,
+    `${prefix} stricture-source`,
+    ...canonicalLines,
+    ...sourceFunctionLines(state.sourceLanguage, commentPrefix),
   ].join("\n");
 }
 
@@ -875,7 +944,8 @@ function renderGate(step) {
   selectors.paneD.textContent = `Gate: ${step.status}`;
   selectors.paneA.textContent = state.profile === "stricture" ? "OpenAPI" : `Profile: ${state.profile}`;
   const sourceMode = state.changedOnly ? "Changed Only" : state.sourceExpanded ? "Full" : "Compact";
-  selectors.paneB.textContent = state.showAliases ? `${sourceMode} + Aliases` : sourceMode;
+  const sourceLabel = state.showAliases ? `${sourceMode} + Aliases` : sourceMode;
+  selectors.paneB.textContent = `${sourceLabel} · ${state.sourceLanguage}`;
 }
 
 function updateUrl() {
@@ -883,6 +953,7 @@ function updateUrl() {
   url.searchParams.set("scenario", state.scenarioId);
   url.searchParams.set("step", String(state.stepIndex));
   url.searchParams.set("profile", state.profile);
+  url.searchParams.set("lang", state.sourceLanguage);
   url.searchParams.set("aliases", state.showAliases ? "1" : "0");
   url.searchParams.set("changed", state.changedOnly ? "1" : "0");
   url.searchParams.set("source", state.sourceExpanded ? "full" : "compact");
@@ -900,6 +971,7 @@ function syncControls(scenario) {
   });
   selectors.scenario.value = scenario.id;
   selectors.profile.value = state.profile;
+  selectors.language.value = state.sourceLanguage;
   selectors.aliases.checked = state.showAliases;
   selectors.changedOnly.checked = state.changedOnly;
   selectors.sourceView.textContent = state.sourceExpanded ? "Show Compact" : "Show Full";
@@ -919,6 +991,7 @@ function render() {
   renderGate(step);
   renderStepRail(scenario, step);
   selectors.contract.innerHTML = buildContractPane(scenario, field, step);
+  selectors.source.classList.add("code-view-source");
   selectors.source.innerHTML = buildSourcePane(field, step);
   buildGraphPane(scenario, step);
   buildEdgesPane(field, step);
@@ -996,6 +1069,10 @@ function bindEvents() {
     state.profile = selectors.profile.value;
     render();
   });
+  selectors.language.addEventListener("change", () => {
+    state.sourceLanguage = selectors.language.value;
+    render();
+  });
   selectors.aliases.addEventListener("change", () => {
     state.showAliases = selectors.aliases.checked;
     render();
@@ -1038,6 +1115,10 @@ function parseInitialStateFromUrl() {
   const profile = (url.searchParams.get("profile") || "").toLowerCase();
   if (["stricture", "openlineage", "otel", "openapi", "asyncapi"].includes(profile)) {
     state.profile = profile;
+  }
+  const lang = (url.searchParams.get("lang") || "").toLowerCase();
+  if (["go", "typescript", "javascript", "python", "java"].includes(lang)) {
+    state.sourceLanguage = lang;
   }
   state.showAliases = url.searchParams.get("aliases") === "1";
   state.changedOnly = url.searchParams.get("changed") === "1";

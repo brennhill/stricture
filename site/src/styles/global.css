@@ -1144,7 +1144,7 @@ select {
 .walkthrough-toolbar {
   padding: 0.9rem;
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 0.55rem 0.8rem;
   align-items: end;
 }
@@ -1179,7 +1179,7 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  grid-column: span 4;
+  grid-column: span 5;
 }
 
 .checkbox-label {
@@ -1257,6 +1257,33 @@ select {
 .pane-toggle {
   font-size: 0.68rem;
   padding: 0.28rem 0.5rem;
+}
+
+.code-view-source .tok-key {
+  color: #1f4ba8;
+  font-weight: 600;
+}
+
+.code-view-source .tok-value {
+  color: #0f5132;
+}
+
+.code-view-source .tok-string {
+  color: #7c2d12;
+}
+
+.code-view-source .tok-comment {
+  color: #4b5563;
+}
+
+.code-view-source .tok-kw {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.code-view-source .tok-fn {
+  color: #0f766e;
+  font-weight: 600;
 }
 
 .pane-header h2 {
