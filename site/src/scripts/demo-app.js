@@ -678,7 +678,6 @@ function renderGraph(snapshot) {
   });
 
   container.appendChild(svg);
-  svg.__positions = positions;
 
   if (selectors.flowPathSummary) {
     selectors.flowPathSummary.textContent = summarizeFlow(
@@ -859,79 +858,8 @@ function normalizePositions(positions, width, height, padding = {}) {
 }
 
 function addGraphInteractions(svg) {
-  const defaultViewBox = svg.getAttribute("viewBox");
-  const positions = svg.__positions || new Map();
-
-  function applyFocus(nodeIds, edgeIds) {
-    const nodeSet = new Set(nodeIds || []);
-    const edgeSet = new Set(edgeIds || []);
-
-    svg.querySelectorAll(".graph-node").forEach((node) => {
-      const id = node.dataset.nodeId;
-      if (nodeSet.size === 0 || nodeSet.has(id)) {
-        node.classList.remove("dimmed");
-      } else {
-        node.classList.add("dimmed");
-      }
-    });
-
-    svg.querySelectorAll(".graph-edge").forEach((edge) => {
-      const id = edge.dataset.edgeId;
-      if (edgeSet.size === 0 || edgeSet.has(id)) {
-        edge.classList.remove("dimmed");
-      } else {
-        edge.classList.add("dimmed");
-      }
-    });
-
-    if (nodeSet.size > 0) {
-      zoomToNodes(svg, positions, nodeSet);
-    } else if (defaultViewBox) {
-      svg.setAttribute("viewBox", defaultViewBox);
-    }
-  }
-
-  svg.querySelectorAll(".graph-node").forEach((node) => {
-    node.addEventListener("mouseenter", () => {
-      const id = node.dataset.nodeId;
-      const connectedEdges = Array.from(svg.querySelectorAll(".graph-edge")).filter((e) => {
-        return e.dataset.from === id || e.dataset.to === id;
-      }).map((e) => e.dataset.edgeId);
-      const connectedNodes = new Set([id]);
-      svg.querySelectorAll(".graph-edge").forEach((e) => {
-        if (connectedEdges.includes(e.dataset.edgeId)) {
-          connectedNodes.add(e.dataset.from);
-          connectedNodes.add(e.dataset.to);
-        }
-      });
-      applyFocus(connectedNodes, connectedEdges);
-    });
-  });
-
-  svg.addEventListener("mouseleave", () => {
-    applyFocus(new Set(), new Set());
-  });
-}
-
-function zoomToNodes(svg, positions, nodeSet) {
-  const padding = 40;
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  nodeSet.forEach((id) => {
-    const pos = positions.get(id);
-    if (!pos) return;
-    minX = Math.min(minX, pos.x);
-    maxX = Math.max(maxX, pos.x);
-    minY = Math.min(minY, pos.y);
-    maxY = Math.max(maxY, pos.y);
-  });
-  if (!isFinite(minX)) return;
-  const width = Math.max(maxX - minX, 1) + padding * 2;
-  const height = Math.max(maxY - minY, 1) + padding * 2;
-  const viewBox = `${minX - padding} ${minY - padding} ${width} ${height}`;
-  svg.setAttribute("viewBox", viewBox);
+  // Hover zoom/focus intentionally disabled to keep topology stable.
+  void svg;
 }
 
 function summarizeFlow(snapshot, nodes, edges, sourceServices, impactedServices, severity, activeFields) {
