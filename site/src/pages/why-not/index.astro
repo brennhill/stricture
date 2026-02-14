@@ -1,0 +1,67 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { comparisons, highOverlapComparisons } from "../../data/comparisons";
+
+export const prerender = true;
+---
+
+<MainLayout title="Why Not Use X? | Stricture Comparisons">
+  <section class="hero compare-hero">
+    <p class="kicker">Compare + Overlay</p>
+    <h1>Why not use OpenTelemetry, OpenAPI, OpenLineage, or similar tools instead?</h1>
+    <p class="lead">
+      Most teams should use multiple standards together. Stricture is intentionally built to overlay with adjacent tools,
+      so you avoid redundant annotation work while adding deploy-time drift and lineage enforcement.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/walkthrough">See Walkthrough</a>
+      <a class="button button-secondary" href="/what-is-stricture">Back to What Is Stricture</a>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>How to read this section</h2>
+    <ol>
+      <li>Overlap score estimates how much functional territory intersects with Stricture.</li>
+      <li>Every page includes a mandatory "When To Use Both" section with an overlay-first workflow.</li>
+      <li>If overlap is high, read the deep-dive page before making architecture decisions.</li>
+    </ol>
+  </section>
+
+  <section class="card compare-section">
+    <h2>High-overlap tools (read these first)</h2>
+    <div class="compare-grid">
+      {
+        highOverlapComparisons.map((entry) => (
+          <article class="compare-card">
+            <p class="compare-meta">{entry.category}</p>
+            <h3>{entry.tool}</h3>
+            <p class="compare-score">Overlap Score: <strong>{entry.overlapScore}</strong>/100</p>
+            <p>{entry.overlapSummary}</p>
+            <p class="compare-both-label">When To Use Both</p>
+            <p>{entry.whenUseBoth[0]}</p>
+            <a class="button button-secondary" href={`/why-not/${entry.slug}`}>Read Full Comparison</a>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>All major adjacent tools</h2>
+    <div class="compare-grid">
+      {
+        comparisons.map((entry) => (
+          <article class="compare-card">
+            <p class="compare-meta">{entry.category}</p>
+            <h3>{entry.shortName}</h3>
+            <p>{entry.oneLineDifference}</p>
+            <p class="compare-both-label">When To Use Both</p>
+            <p>{entry.whenUseBoth[1]}</p>
+            <a class="button button-secondary" href={`/why-not/${entry.slug}`}>Open {entry.shortName} Deep Dive</a>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</MainLayout>

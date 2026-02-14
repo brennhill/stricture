@@ -1,0 +1,287 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import { highOverlapComparisons } from "../data/comparisons";
+
+export const prerender = true;
+
+const stats = [
+  {
+    value: "93%",
+    title: "API teams report collaboration blockers",
+    detail:
+      "Postman's 2025 report says collaboration failures still cause delays, duplicate work, and quality issues.",
+    source: "https://www.postman.com/state-of-api/2025/",
+    sourceLabel: "Postman State of the API 2025"
+  },
+  {
+    value: "40% / 85%",
+    title: "Major outages linked to human/process breakdowns",
+    detail:
+      "Uptime reports nearly 40% of organizations had a major human-error outage in three years, and 85% of those incidents were tied to ignored or weak procedures.",
+    source: "https://uptimeinstitute.com/about-ui/press-releases/uptime-announces-annual-outage-analysis-report-2025",
+    sourceLabel: "Uptime Annual Outage Analysis 2025"
+  },
+  {
+    value: "$4.88M",
+    title: "Average global data breach cost",
+    detail:
+      "IBM's 2024 breach analysis shows breach costs continue rising, which makes cross-system data reliability and controls business-critical.",
+    source: "https://www.ibm.com/think/insights/cost-of-a-data-breach-2024-financial-industry",
+    sourceLabel: "IBM Cost of a Data Breach 2024"
+  },
+  {
+    value: "84%",
+    title: "Security teams saw an API incident last year",
+    detail:
+      "Akamai's 2024 study reports most organizations experienced API incidents, with notable remediation cost and operational stress.",
+    source: "https://www.akamai.com/newsroom/press-release/new-study-finds-84-of-security-professionals-experienced-an-api-security-incident-in-the-past-year",
+    sourceLabel: "Akamai API Security Impact Study 2024"
+  },
+  {
+    value: "8.5M",
+    title: "Devices hit in one software update incident",
+    detail:
+      "Microsoft estimated CrowdStrike's faulty update impacted 8.5 million Windows devices and highlighted broad economic and societal impact.",
+    source: "https://blogs.microsoft.com/blog/2024/07/20/helping-our-customers-through-the-crowdstrike-outage/",
+    sourceLabel: "Microsoft official blog, July 20, 2024"
+  },
+  {
+    value: "55% faster",
+    title: "AI coding acceleration is real",
+    detail:
+      "GitHub's controlled study found developers completed tasks much faster with Copilot. More velocity increases drift risk unless specs and lineage are continuously enforced.",
+    source: "https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/",
+    sourceLabel: "GitHub Copilot productivity research"
+  }
+];
+
+const references = [
+  {
+    label: "Postman, 2025 State of the API Report",
+    href: "https://www.postman.com/state-of-api/2025/",
+    note: "Used for collaboration blocker and API business impact data."
+  },
+  {
+    label: "Uptime Institute, Annual Outage Analysis 2025 press release",
+    href: "https://uptimeinstitute.com/about-ui/press-releases/uptime-announces-annual-outage-analysis-report-2025",
+    note: "Used for human-error outage frequency and process/procedure failure findings."
+  },
+  {
+    label: "IBM, Cost of a Data Breach 2024",
+    href: "https://www.ibm.com/think/insights/cost-of-a-data-breach-2024-financial-industry",
+    note: "Used for global average breach cost figures."
+  },
+  {
+    label: "Akamai, API Security Impact Study 2024 press release",
+    href: "https://www.akamai.com/newsroom/press-release/new-study-finds-84-of-security-professionals-experienced-an-api-security-incident-in-the-past-year",
+    note: "Used for API incident prevalence and remediation cost figures."
+  },
+  {
+    label: "Microsoft Official Blog, Helping our customers through the CrowdStrike outage (July 20, 2024)",
+    href: "https://blogs.microsoft.com/blog/2024/07/20/helping-our-customers-through-the-crowdstrike-outage/",
+    note: "Used for 8.5 million affected devices and ecosystem impact statement."
+  },
+  {
+    label: "GitHub Blog research on Copilot productivity",
+    href: "https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/",
+    note: "Used for controlled study speed and task completion data."
+  },
+  {
+    label: "Google Cloud DevOps page (DORA program and AI-assisted software development)",
+    href: "https://cloud.google.com/devops",
+    note: "Used for AI-at-work adoption and trust signal context."
+  }
+];
+---
+
+<MainLayout title="What Is Stricture | API Drift Control for AI-Speed Delivery">
+  <section class="hero what-hero">
+    <p class="kicker">What Is Stricture</p>
+    <h1>Stricture is a lineage-first drift control layer for API ecosystems.</h1>
+    <p class="lead">
+      It verifies that what teams promised in specs still matches what services emit in production,
+      field by field, across repositories and systems.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/walkthrough">Open Walkthrough</a>
+      <a class="button button-secondary" href="/demo">Run Live Demo</a>
+    </div>
+  </section>
+
+  <section class="card what-section">
+    <h2>The core problem: spec drift compounds across systems</h2>
+    <p>
+      In real delivery pipelines, drift rarely starts as one giant break. It starts as small local edits:
+      one field rename, one enum expansion, one untracked enrichment, one source version bump, one stale
+      dependency contract. In a multi-service topology, those local changes accumulate into cross-system
+      uncertainty.
+    </p>
+    <p>
+      Stricture's goal is to make lineage and contract intent executable. Instead of relying on tribal
+      knowledge, it ties each output field to declared sources, ownership, and policy so CI/CD can warn,
+      block, or require explicit override when risk thresholds are crossed.
+    </p>
+  </section>
+
+  <section class="card what-section">
+    <h2>Why this gets worse in AI-speed development</h2>
+    <div class="what-grid what-grid-two">
+      <article class="what-callout">
+        <h3>Development velocity increased</h3>
+        <p>
+          Teams are shipping faster with AI coding assistants.
+          <a href="https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/" target="_blank" rel="noopener noreferrer">GitHub reported a controlled study where</a>
+          developers completed a coding task 55% faster with Copilot. Faster iteration is valuable, but it
+          shortens the time window for human review and manual contract audits.
+        </p>
+      </article>
+      <article class="what-callout">
+        <h3>Trust and alignment lag behind speed</h3>
+        <p>
+          <a href="https://cloud.google.com/devops" target="_blank" rel="noopener noreferrer">Google Cloud's DORA program</a>
+          highlights broad AI usage while also reporting non-trivial trust gaps
+          in generated code. That gap is exactly where drift escapes into runtime unless toolchains keep
+          contracts, lineage, and ownership synchronized.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="card what-section">
+    <h2>What drift costs today</h2>
+    <p class="lead">
+      These are not theoretical risks. The numbers show recurring operational, security, and business impact.
+    </p>
+    <div class="impact-grid">
+      {
+        stats.map((item) => (
+          <article class="impact-card">
+            <p class="impact-value">{item.value}</p>
+            <h3>{item.title}</h3>
+            <p>{item.detail}</p>
+            <p class="impact-source">
+              <a href={item.source} target="_blank" rel="noopener noreferrer">
+                Source: {item.sourceLabel}
+              </a>
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="card what-section">
+    <h2>How Stricture addresses the failure mode</h2>
+    <ol>
+      <li>Annotate every emitted field with source systems, transforms, and ownership.</li>
+      <li>Normalize annotation synonyms from major profiles (Stricture, OpenLineage, OpenTelemetry conventions, OpenAPI extensions).</li>
+      <li>Resolve multi-hop lineage into a graph and compare against release baselines.</li>
+      <li>Classify drift by severity, confidence, and blast radius.</li>
+      <li>Enforce warn/block policy with expiring override metadata and escalation chains.</li>
+      <li>Publish machine-readable reports for CI, governance, and incident response workflows.</li>
+    </ol>
+
+    <pre class="code-view what-snippet"><code>{`# field-level annotation example
+x-stricture-lineage:
+  field: payment.status
+  from:
+    - system: PaymentsCore
+      version: 2026.02
+      operation: GET /payments/{id}
+    - system: BillingEnricher
+      role: enrichment
+      class: NormalizeStatusMapper
+  note: "from @PaymentsCore enriched @self; mapping docs at https://docs.example.com/status-map"
+  owner:
+    team: payments-platform
+    escalation: oncall-payments`}</code></pre>
+  </section>
+
+  <section class="card what-section">
+    <h2>Why not just use OpenTelemetry, OpenAPI, or OpenLineage?</h2>
+    <p>
+      You usually want all of them. Stricture does not replace core standards that teams already depend on.
+      It overlays them so you can reuse the same metadata and avoid redundant annotation work.
+    </p>
+    <div class="compare-grid">
+      {
+        highOverlapComparisons.map((entry) => (
+          <article class="compare-card">
+            <p class="compare-meta">{entry.category}</p>
+            <h3>{entry.tool}</h3>
+            <p class="compare-score">Overlap Score: <strong>{entry.overlapScore}</strong>/100</p>
+            <p>{entry.oneLineDifference}</p>
+            <p class="compare-both-label">When To Use Both</p>
+            <p>{entry.whenUseBoth[0]}</p>
+            <a class="button button-secondary" href={`/why-not/${entry.slug}`}>Read Full Comparison</a>
+          </article>
+        ))
+      }
+    </div>
+    <a class="button button-primary" href="/why-not">Open Full Comparison Hub</a>
+  </section>
+
+  <section class="card what-section">
+    <h2>Diagram Blueprint Pack For Marketing + Docs</h2>
+    <p class="lead">Use these diagram slots directly on the page. Each one can be replaced with SVG or animation later.</p>
+    <div class="diagram-grid">
+      <article class="diagram-card">
+        <h3>Diagram 1: Drift Cascade Across Services</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: 8-12 service boxes with one changed field propagating red edges downstream.</p>
+        </div>
+        <p class="muted">
+          Show one upstream field contract change causing validation failures in downstream services,
+          then show Stricture isolating the exact field and owner.
+        </p>
+      </article>
+
+      <article class="diagram-card">
+        <h3>Diagram 2: Human Audit vs Continuous Verification</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: side-by-side swimlanes. Left = manual review lag, Right = automated Stricture gate in CI.</p>
+        </div>
+        <p class="muted">
+          Highlight how drift detection shifts from post-incident discovery to pre-deploy gate decisions.
+        </p>
+      </article>
+
+      <article class="diagram-card">
+        <h3>Diagram 3: Field-Level Lineage Card</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: a single API response field expanded into source list, transform metadata, and escalation chain.</p>
+        </div>
+        <p class="muted">
+          Emphasize mixed provenance: raw source, enriched source, external provider, and as-of timestamp.
+        </p>
+      </article>
+
+      <article class="diagram-card">
+        <h3>Diagram 4: Incident Workflow</h3>
+        <div class="diagram-placeholder">
+          <p>Placeholder: alert -> drift classification -> override decision -> escalation call tree.</p>
+        </div>
+        <p class="muted">
+          Demonstrate operational value: if data is bad, responders know who to call in dependency order.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="card what-section ref-section">
+    <h2>References</h2>
+    <ol>
+      {
+        references.map((ref) => (
+          <li>
+            <a href={ref.href} target="_blank" rel="noopener noreferrer">
+              {ref.label}
+            </a>
+            <span class="ref-note"> - {ref.note}</span>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="muted">Reference set reviewed on February 14, 2026.</p>
+  </section>
+</MainLayout>

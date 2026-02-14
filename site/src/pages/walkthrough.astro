@@ -1,0 +1,99 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+export const prerender = true;
+---
+
+<MainLayout title="Stricture Walkthrough | Notation and Drift Lifecycle">
+  <section class="walkthrough-shell">
+    <header class="walkthrough-header">
+      <div>
+        <p class="kicker">Interactive Walkthrough</p>
+        <h1>See One Field Across Spec, Source, Lineage, and Drift Gates.</h1>
+        <p class="lead">
+          This guided lab shows how Stricture annotations map to OpenAPI-like contracts,
+          profile aliases, drift findings, and escalation chains.
+        </p>
+      </div>
+      <div id="walkthrough-gate" class="gate-banner gate-ok">Baseline ready</div>
+    </header>
+
+    <section class="walkthrough-toolbar card">
+      <label>
+        Scenario
+        <select id="wt-scenario"></select>
+      </label>
+      <label>
+        Profile
+        <select id="wt-profile">
+          <option value="stricture">stricture</option>
+          <option value="openlineage">openlineage</option>
+          <option value="otel">otel</option>
+          <option value="openapi">openapi</option>
+          <option value="asyncapi">asyncapi</option>
+        </select>
+      </label>
+      <label class="checkbox-label">
+        <input id="wt-aliases" type="checkbox" />
+        Show Aliases
+      </label>
+      <label class="checkbox-label">
+        <input id="wt-changed-only" type="checkbox" />
+        Changed Only
+      </label>
+      <div class="walkthrough-actions">
+        <button id="wt-prev" class="button button-secondary">Previous</button>
+        <button id="wt-next" class="button button-secondary">Next</button>
+        <button id="wt-autoplay" class="button button-primary">Auto Play</button>
+        <button id="wt-copy-link" class="button button-secondary">Copy Share Link</button>
+      </div>
+    </section>
+
+    <section class="walkthrough-rail card">
+      <h2>Lifecycle Steps</h2>
+      <div id="wt-steps" class="step-list"></div>
+      <p id="wt-step-description" class="muted"></p>
+    </section>
+
+    <section class="walkthrough-grid">
+      <article class="card walkthrough-pane">
+        <header class="pane-header">
+          <h2>Pane A: API Contract</h2>
+          <span id="wt-pane-a-status" class="pane-tag">OpenAPI</span>
+        </header>
+        <pre id="wt-contract" class="code-view"></pre>
+      </article>
+
+      <article class="card walkthrough-pane">
+        <header class="pane-header">
+          <h2>Pane B: Source Annotation</h2>
+          <span id="wt-pane-b-status" class="pane-tag">stricture-source</span>
+        </header>
+        <pre id="wt-source" class="code-view"></pre>
+      </article>
+
+      <article class="card walkthrough-pane">
+        <header class="pane-header">
+          <h2>Pane C: Lineage Graph</h2>
+          <span class="pane-tag">Runtime Shape</span>
+        </header>
+        <div id="wt-graph" class="walkthrough-graph"></div>
+        <div id="wt-edges" class="edge-list"></div>
+      </article>
+
+      <article class="card walkthrough-pane">
+        <header class="pane-header">
+          <h2>Pane D: Findings + Escalation</h2>
+          <span id="wt-pane-d-status" class="pane-tag">Gate</span>
+        </header>
+        <div id="wt-summary" class="summary-grid"></div>
+        <div id="wt-findings" class="list"></div>
+        <div id="wt-escalation" class="list"></div>
+      </article>
+    </section>
+  </section>
+
+  <script type="module">
+    import "../scripts/walkthrough-app.js";
+  </script>
+</MainLayout>
