@@ -236,6 +236,24 @@ x-stricture-lineage:
   </section>
 
   <section class="card what-section">
+    <h2>How Stricture fits with Kubernetes</h2>
+    <p>
+      Stricture does not deploy your services. Kubernetes remains the control plane. Stricture records
+      deployments so flow owners can see when every service in a flow last shipped and whether rollouts
+      are partial or complete.
+    </p>
+    <ul>
+      <li><strong>CI push (recommended):</strong> after Helm/`kubectl` deploy, CI posts a deployment record to Stricture.</li>
+      <li><strong>Optional controllers:</strong> rollout tools (Argo Rollouts, Flagger) can post incremental rollout updates.</li>
+      <li><strong>Flow view:</strong> Stricture aggregates per-service deploys into flow-level recency and rollout status.</li>
+    </ul>
+    <p class="muted">
+      Deployment records include environment, version/commit, flow IDs, and optional rollout percent + region.
+    </p>
+    <a class="button button-secondary" href="/docs/server/SPEC">Read the Server Spec</a>
+  </section>
+
+  <section class="card what-section">
     <h2>Why not just use OpenTelemetry, OpenAPI, or OpenLineage?</h2>
     <p>
       You usually want all of them. Stricture does not replace core standards that teams already depend on.
