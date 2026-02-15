@@ -357,6 +357,7 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		FieldID: "response_ecommerce_cart_pricing_waterfall",
 		Label:   "CommerceGateway.ForwardCheckoutPricing",
 	})
+	addLogisticsInternalOverlay(&pack)
 
 	overridePaymentsEnumScenario(&pack)
 
@@ -469,6 +470,81 @@ func overridePaymentsEnumScenario(pack *demoPack) {
 			},
 		},
 	}
+}
+
+func addLogisticsInternalOverlay(pack *demoPack) {
+	ensureDemoService(pack, demoService{
+		ID:         "logisticsgateway:tracking-api",
+		Name:       "Tracking API",
+		Domain:     "logistics",
+		Kind:       "internal",
+		Owner:      "team.logistics-tracking",
+		Escalation: "pagerduty:logistics-oncall",
+		FlowCount:  1,
+	})
+	ensureDemoService(pack, demoService{
+		ID:         "logisticsgateway:routing",
+		Name:       "Routing Service",
+		Domain:     "logistics",
+		Kind:       "internal",
+		Owner:      "team.logistics-routing",
+		Escalation: "pagerduty:logistics-oncall",
+		FlowCount:  1,
+	})
+	ensureDemoService(pack, demoService{
+		ID:         "logisticsgateway:ingestion",
+		Name:       "Location Ingest",
+		Domain:     "logistics",
+		Kind:       "internal",
+		Owner:      "team.logistics-ingest",
+		Escalation: "pagerduty:logistics-oncall",
+		FlowCount:  1,
+	})
+	ensureDemoService(pack, demoService{
+		ID:         "logisticsgateway:notification",
+		Name:       "Notification Service",
+		Domain:     "logistics",
+		Kind:       "internal",
+		Owner:      "team.logistics-notify",
+		Escalation: "pagerduty:logistics-oncall",
+		FlowCount:  1,
+	})
+
+	ensureDemoEdge(pack, demoEdge{
+		ID:      "e_demo_logistics_ingestion_to_routing",
+		From:    "logisticsgateway:ingestion",
+		To:      "logisticsgateway:routing",
+		FieldID: "response_logistics_location_event_stream",
+		Label:   "kafka:LocationIngest.LocationUpdates",
+	})
+	ensureDemoEdge(pack, demoEdge{
+		ID:      "e_demo_logistics_routing_to_tracking_api",
+		From:    "logisticsgateway:routing",
+		To:      "logisticsgateway:tracking-api",
+		FieldID: "response_logistics_eta_projection",
+		Label:   "api:Routing.ComputeEta",
+	})
+	ensureDemoEdge(pack, demoEdge{
+		ID:      "e_demo_logistics_tracking_api_to_notification",
+		From:    "logisticsgateway:tracking-api",
+		To:      "logisticsgateway:notification",
+		FieldID: "response_logistics_delivery_state",
+		Label:   "kafka:TrackingApi.DeliveryStateChanged",
+	})
+	ensureDemoEdge(pack, demoEdge{
+		ID:      "e_demo_logistics_tracking_api_to_core",
+		From:    "logisticsgateway:tracking-api",
+		To:      "logisticscore",
+		FieldID: "response_logistics_eta_projection",
+		Label:   "api:TrackingApi.GetEta",
+	})
+	ensureDemoEdge(pack, demoEdge{
+		ID:      "e_demo_logistics_core_to_tracking_api",
+		From:    "logisticscore",
+		To:      "logisticsgateway:tracking-api",
+		FieldID: "response_logistics_route_risk_assessment",
+		Label:   "api:LogisticsCore.GetRouteRiskAssessment",
+	})
 }
 
 func mutateArtifact(base lineage.Artifact, fieldIndex int, typ mutationType) (lineage.Artifact, bool) {

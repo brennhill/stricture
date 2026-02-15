@@ -71,7 +71,7 @@ const overrideKeys = [
 ];
 
 const serviceRegistryKeys = [
-  { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier used in lineage edges.", mode: "autogen" },
+  { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier. Use `parent` for topology and `parent:child` for internal subsystems.", mode: "autogen" },
   { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
   { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team slug.", mode: "manual-required" },
   { key: "escalation", required: "No (policy can require)", defaultValue: "None", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
@@ -109,6 +109,7 @@ const modeMeta = {
     </div>
     <p class="muted">Recommended fields can be promoted to required by policy packs.</p>
     <p class="muted">When part of a multi-service ecosystem, use <code>strict:server_url</code> so Autogen fields resolve from shared service/policy context.</p>
+    <p class="muted">Hierarchy convention: <code>system-id</code> for ecosystem nodes and <code>system-id:subsystem-id</code> for internals; no new annotation key required.</p>
   </section>
 
   <section class="card">

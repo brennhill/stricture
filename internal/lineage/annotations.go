@@ -15,13 +15,13 @@ var (
 	kvPairRe        = regexp.MustCompile(`([a-z_]+)=("([^"\\]|\\.)*"|'([^'\\]|\\.)*'|[^[:space:]]+)`)
 	fieldIDRe       = regexp.MustCompile(`^[a-z][a-z0-9_]{2,63}$`)
 	fieldPathRe     = regexp.MustCompile(`^[A-Za-z0-9_\-\[\]\.]+$`)
-	sourceSystemRe  = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]{0,63}$`)
+	systemIDRe      = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$`)
 	sourceVersionRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 	ownerIDRe       = regexp.MustCompile(`^[a-z][a-z0-9_.-]{2,63}$`)
 	escalationRefRe = regexp.MustCompile(`^[a-z]+:.+$`)
 	providerIDRe    = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,63}$`)
 	changeTypeRe    = regexp.MustCompile(`^(\*|[a-z][a-z0-9_-]{1,63})$`)
-	flowRe          = regexp.MustCompile(`(?i)^from @[A-Za-z][A-Za-z0-9_-]*( (enriched|normalized|derived|validated|mapped|merged) @[A-Za-z][A-Za-z0-9_-]*)*$`)
+	flowRe          = regexp.MustCompile(`(?i)^from @[A-Za-z][A-Za-z0-9_-]*(:[A-Za-z][A-Za-z0-9_-]*)?( (enriched|normalized|derived|validated|mapped|merged) @[A-Za-z][A-Za-z0-9_-]*(:[A-Za-z][A-Za-z0-9_-]*)?)*$`)
 )
 
 const (
@@ -245,8 +245,8 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 		return Annotation{}, parseErr(line, "field must match [A-Za-z0-9_-.[]]")
 	}
 
-	if !sourceSystemRe.MatchString(fields["source_system"]) {
-		return Annotation{}, parseErr(line, "source_system must match [A-Za-z][A-Za-z0-9_-]{0,63}")
+	if !systemIDRe.MatchString(fields["source_system"]) {
+		return Annotation{}, parseErr(line, "source_system must match [A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?")
 	}
 
 	if !sourceVersionRe.MatchString(fields["source_version"]) {
@@ -525,7 +525,7 @@ func parseSourceRef(ref string, line int) (SourceRef, *ParseError) {
 	} else if providerID != "" {
 		return SourceRef{}, parseErr(line, fmt.Sprintf("source %q includes provider_id but scope is %q", ref, scope))
 	}
-	if upstreamSystem != "" && !sourceSystemRe.MatchString(upstreamSystem) {
+	if upstreamSystem != "" && !systemIDRe.MatchString(upstreamSystem) {
 		return SourceRef{}, parseErr(line, fmt.Sprintf("source %q has invalid upstream_system", ref))
 	}
 

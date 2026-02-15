@@ -106,8 +106,12 @@ export const prerender = true;
         </article>
 
         <article class="card">
-          <h2>Service Topology</h2>
-          <p class="muted">Visualize how services (nodes) and field-level flows (edges) connect. The graph is arranged left-to-right from cause to impact. Red node = service that introduced the change. Orange node = service where Stricture flags impact. Pale yellow node = relay on the impacted path. Light yellow node = possible data contributor (not flagged). Orange edge = affected path between them.</p>
+          <h2>Ecosystem Topology</h2>
+          <p class="muted">Ecosystem view groups each top-level service as one node. Click a service with internals to drill into its subsystem topology. Red node = source change. Orange node = impacted service. Pale yellow node = relay on impacted path. Light yellow node = possible contributor. Orange edge = affected path.</p>
+          <div class="edge-list-header">
+            <p class="muted tight" id="topology-view-state">Ecosystem view. Click a service node to inspect internals.</p>
+            <button id="topology-back" class="button button-secondary button-ghost" disabled>Back to ecosystem</button>
+          </div>
           <div class="legend">
             <span class="legend-chip legend-node-source">Source changed</span>
             <span class="legend-chip legend-node-impacted">Service impacted</span>

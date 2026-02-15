@@ -16,6 +16,10 @@ Registry format is defined in:
 By default, registry escalation contacts are strongly recommended but not
 globally required; organizations can enforce stricter requirements via policy.
 
+System IDs may use one optional `:` suffix for internal subsystems (for
+example `location-tracking-service:ingestion`). Escalation can be resolved at
+either subsystem or top-level service granularity depending on registry data.
+
 ## Command
 
 ```bash

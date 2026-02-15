@@ -142,6 +142,10 @@ Service registry bootstrap model:
    service IDs from repo identity
 2. generated IDs remain overrideable manually in repo-local registry files
 3. policy packs can still require additional manual service metadata
+4. helper/server should support hierarchical IDs via one optional `:` suffix:
+   - topology service: `location-tracking-service`
+   - subsystem: `location-tracking-service:tracking-api`
+5. hierarchy is inferred from ID shape only (no additional annotation keys)
 
 ## CI Workflow (Reference)
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-15T00:02:09Z",
+  "generated_at": "2026-02-15T04:57:23Z",
   "truth": {
     "supportedFlows": 50,
     "annotatedFlows": 50,
@@ -115,6 +115,42 @@
       "owner": "team.logistics",
       "escalation": "pagerduty:logistics-oncall",
       "flowCount": 10
+    },
+    {
+      "id": "logisticsgateway:ingestion",
+      "name": "Location Ingest",
+      "domain": "logistics",
+      "kind": "internal",
+      "owner": "team.logistics-ingest",
+      "escalation": "pagerduty:logistics-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "logisticsgateway:notification",
+      "name": "Notification Service",
+      "domain": "logistics",
+      "kind": "internal",
+      "owner": "team.logistics-notify",
+      "escalation": "pagerduty:logistics-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "logisticsgateway:routing",
+      "name": "Routing Service",
+      "domain": "logistics",
+      "kind": "internal",
+      "owner": "team.logistics-routing",
+      "escalation": "pagerduty:logistics-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "logisticsgateway:tracking-api",
+      "name": "Tracking API",
+      "domain": "logistics",
+      "kind": "internal",
+      "owner": "team.logistics-tracking",
+      "escalation": "pagerduty:logistics-oncall",
+      "flowCount": 1
     },
     {
       "id": "mediacore",
@@ -671,6 +707,13 @@
       "label": "LogisticsCore.GetWarehouseSlotOptimization"
     },
     {
+      "id": "e_demo_logistics_core_to_tracking_api",
+      "from": "logisticscore",
+      "to": "logisticsgateway:tracking-api",
+      "fieldId": "response_logistics_route_risk_assessment",
+      "label": "api:LogisticsCore.GetRouteRiskAssessment"
+    },
+    {
       "id": "e_0a1c54d31c81",
       "from": "logisticsevents",
       "to": "logisticsgateway",
@@ -739,6 +782,34 @@
       "to": "logisticsgateway",
       "fieldId": "response_logistics_warehouse_slot_optimization",
       "label": "LogisticsEvents.WarehouseSlotOptimizationChanged"
+    },
+    {
+      "id": "e_demo_logistics_ingestion_to_routing",
+      "from": "logisticsgateway:ingestion",
+      "to": "logisticsgateway:routing",
+      "fieldId": "response_logistics_location_event_stream",
+      "label": "kafka:LocationIngest.LocationUpdates"
+    },
+    {
+      "id": "e_demo_logistics_routing_to_tracking_api",
+      "from": "logisticsgateway:routing",
+      "to": "logisticsgateway:tracking-api",
+      "fieldId": "response_logistics_eta_projection",
+      "label": "api:Routing.ComputeEta"
+    },
+    {
+      "id": "e_demo_logistics_tracking_api_to_core",
+      "from": "logisticsgateway:tracking-api",
+      "to": "logisticscore",
+      "fieldId": "response_logistics_eta_projection",
+      "label": "api:TrackingApi.GetEta"
+    },
+    {
+      "id": "e_demo_logistics_tracking_api_to_notification",
+      "from": "logisticsgateway:tracking-api",
+      "to": "logisticsgateway:notification",
+      "fieldId": "response_logistics_delivery_state",
+      "label": "kafka:TrackingApi.DeliveryStateChanged"
     },
     {
       "id": "e_22cf13d2c48c",

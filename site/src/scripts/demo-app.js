@@ -2,12 +2,15 @@ const state = {
   sessionId: "",
   snapshot: null,
   mutationPending: false,
+  topologyRoot: "",
 };
 
 const selectors = {
   gateBanner: document.querySelector("#gate-banner"),
   topology: document.querySelector("#topology"),
   topologyGraph: document.querySelector("#topology-graph"),
+  topologyViewState: document.querySelector("#topology-view-state"),
+  topologyBack: document.querySelector("#topology-back"),
   edgeList: document.querySelector("#edge-list"),
   flowPathSummary: document.querySelector("#flow-path-summary"),
   findings: document.querySelector("#findings"),
@@ -84,12 +87,45 @@ function resolveServiceId(snapshot, token) {
 
 function serviceName(snapshot, serviceId) {
   const service = serviceById(snapshot).get(serviceId);
-  return service?.name || serviceId || "unknown service";
+  if (service?.name) {
+    return service.name;
+  }
+  const root = topologyRootId(serviceId);
+  if (root) {
+    const fallback = (snapshot.services || []).find((row) => topologyRootId(row.id) === root && !isSubsystemID(row.id))
+      || (snapshot.services || []).find((row) => topologyRootId(row.id) === root);
+    if (fallback?.name) {
+      return fallback.name;
+    }
+  }
+  return serviceId || "unknown service";
 }
 
 function serviceOwner(snapshot, serviceId) {
   const service = serviceById(snapshot).get(serviceId);
   return service?.owner || "unknown owner";
+}
+
+function topologyRootId(serviceId) {
+  const raw = String(serviceId || "").trim();
+  const cut = raw.indexOf(":");
+  return cut >= 0 ? raw.slice(0, cut) : raw;
+}
+
+function isSubsystemID(serviceId) {
+  return String(serviceId || "").includes(":");
+}
+
+function titleCaseID(value) {
+  const parts = String(value || "")
+    .split(/[_-]+/)
+    .filter(Boolean);
+  if (!parts.length) return value || "unknown";
+  return parts.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function hasSubsystems(snapshot, rootId) {
+  return (snapshot.services || []).some((service) => topologyRootId(service.id) === rootId && isSubsystemID(service.id));
 }
 
 function latestMutation(snapshot) {
@@ -273,10 +309,10 @@ function syncMutationControls(snapshot, preferred = {}) {
   if (!selectors.mutationService || !selectors.mutationField || !selectors.mutationType) {
     return;
   }
-  const services = snapshot.services || [];
-  const serviceIDs = services.map((service) => service.id);
+  const serviceIDs = [...new Set((snapshot.services || []).map((service) => topologyRootId(service.id)).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right));
   const existingService = preferred.serviceId ?? selectors.mutationService.value;
-  setOptions(selectors.mutationService, serviceIDs, (id) => id);
+  setOptions(selectors.mutationService, serviceIDs, (id) => serviceName(snapshot, id));
   const selectedService = serviceIDs.includes(existingService) ? existingService : (serviceIDs[0] || "");
   selectors.mutationService.value = selectedService;
 
@@ -362,6 +398,207 @@ function updatePolicyControls(snapshot) {
   selectors.updatePolicy.title = enabled
     ? "Apply current policy settings to staged changes."
     : "Stage at least one change before applying policy.";
+}
+
+function worstStatus(current, next) {
+  const rank = { healthy: 0, warning: 1, blocked: 2 };
+  if ((rank[next] || 0) > (rank[current] || 0)) {
+    return next;
+  }
+  return current;
+}
+
+function mapFindingToTopologyRoot(snapshot, finding) {
+  const toRootContext = (ctx) => {
+    if (!ctx) return undefined;
+    const byID = ctx.serviceId ? topologyRootId(ctx.serviceId) : "";
+    const resolved = !byID && ctx.service ? topologyRootId(resolveServiceId(snapshot, ctx.service)) : "";
+    const serviceId = byID || resolved;
+    return {
+      ...ctx,
+      serviceId: serviceId || undefined,
+    };
+  };
+  return {
+    ...finding,
+    serviceId: topologyRootId(finding.serviceId),
+    source: toRootContext(finding.source),
+    impact: toRootContext(finding.impact),
+  };
+}
+
+function buildEcosystemView(snapshot) {
+  const groups = new Map();
+  const internalRoots = new Set();
+
+  (snapshot.services || []).forEach((service) => {
+    const root = topologyRootId(service.id);
+    if (!root) return;
+    if (!groups.has(root)) {
+      groups.set(root, {
+        root,
+        rootService: null,
+        members: [],
+        flowCount: 0,
+      });
+    }
+    const group = groups.get(root);
+    group.members.push(service);
+    group.flowCount += Number(service.flowCount || 0);
+    if (!isSubsystemID(service.id)) {
+      group.rootService = service;
+    } else {
+      internalRoots.add(root);
+    }
+  });
+
+  const services = [...groups.values()]
+    .map((group) => {
+      const rootService = group.rootService || group.members[0];
+      const internalCount = group.members.filter((service) => isSubsystemID(service.id)).length;
+      return {
+        id: group.root,
+        name: rootService?.name || titleCaseID(group.root),
+        domain: rootService?.domain || "shared",
+        kind: group.members.every((service) => service.kind === "external") ? "external" : "internal",
+        owner: rootService?.owner || group.members[0]?.owner || "team.unknown",
+        escalation: rootService?.escalation || group.members[0]?.escalation || "slack:#unknown-oncall",
+        flowCount: group.flowCount,
+        internalCount,
+      };
+    })
+    .sort((left, right) => left.id.localeCompare(right.id));
+
+  const edgeMap = new Map();
+  (snapshot.edges || []).forEach((edge) => {
+    const from = topologyRootId(edge.from);
+    const to = topologyRootId(edge.to);
+    if (!from || !to || from === to) {
+      return;
+    }
+    const key = `${from}|${to}|${edge.fieldId}`;
+    const existing = edgeMap.get(key);
+    if (!existing) {
+      edgeMap.set(key, {
+        ...edge,
+        id: `eco_${key.replace(/[^a-zA-Z0-9_-]/g, "_")}`,
+        from,
+        to,
+        status: edge.status || "healthy",
+        labels: new Set([edge.label]),
+      });
+      return;
+    }
+    existing.status = worstStatus(existing.status, edge.status || "healthy");
+    if (edge.label) {
+      existing.labels.add(edge.label);
+    }
+  });
+
+  const edges = [...edgeMap.values()]
+    .map((edge) => {
+      const labels = [...edge.labels].filter(Boolean);
+      const label = labels.length > 1 ? `${labels[0]} +${labels.length - 1} more` : (labels[0] || edge.label);
+      return {
+        id: edge.id,
+        from: edge.from,
+        to: edge.to,
+        fieldId: edge.fieldId,
+        status: edge.status,
+        label,
+      };
+    })
+    .sort((left, right) => {
+      if (left.from !== right.from) return left.from.localeCompare(right.from);
+      if (left.to !== right.to) return left.to.localeCompare(right.to);
+      return left.fieldId.localeCompare(right.fieldId);
+    });
+
+  const findings = (snapshot.findings || []).map((finding) => mapFindingToTopologyRoot(snapshot, finding));
+  const mutations = (snapshot.mutations || []).map((mutation) => ({
+    ...mutation,
+    serviceId: topologyRootId(mutation.serviceId),
+  }));
+
+  return {
+    mode: "ecosystem",
+    root: "",
+    snapshot: {
+      ...snapshot,
+      services,
+      edges,
+      findings,
+      mutations,
+    },
+    internalRoots,
+  };
+}
+
+function findingTouchesRoot(snapshot, finding, root) {
+  if (topologyRootId(finding.serviceId) === root) {
+    return true;
+  }
+  const sourceID = finding.source?.serviceId || resolveServiceId(snapshot, finding.source?.service);
+  if (sourceID && topologyRootId(sourceID) === root) {
+    return true;
+  }
+  const impactID = finding.impact?.serviceId || resolveServiceId(snapshot, finding.impact?.service);
+  if (impactID && topologyRootId(impactID) === root) {
+    return true;
+  }
+  return false;
+}
+
+function buildServiceView(snapshot, root) {
+  const services = (snapshot.services || []).filter((service) => topologyRootId(service.id) === root);
+  const serviceIDs = new Set(services.map((service) => service.id));
+  const edges = (snapshot.edges || []).filter((edge) => serviceIDs.has(edge.from) && serviceIDs.has(edge.to));
+  const findings = (snapshot.findings || []).filter((finding) => findingTouchesRoot(snapshot, finding, root));
+  const mutations = (snapshot.mutations || []).filter((mutation) => topologyRootId(mutation.serviceId) === root);
+  return {
+    mode: "service",
+    root,
+    snapshot: {
+      ...snapshot,
+      services,
+      edges,
+      findings,
+      mutations,
+    },
+    internalRoots: new Set(),
+  };
+}
+
+function activeTopologyView(snapshot) {
+  const ecosystem = buildEcosystemView(snapshot);
+  const root = state.topologyRoot;
+  if (!root || !ecosystem.internalRoots.has(root)) {
+    state.topologyRoot = "";
+    return ecosystem;
+  }
+  return buildServiceView(snapshot, root);
+}
+
+function updateTopologyViewState(view, originalSnapshot) {
+  if (!selectors.topologyViewState) {
+    return;
+  }
+  if (view.mode === "service" && view.root) {
+    const label = serviceName(originalSnapshot, view.root);
+    selectors.topologyViewState.textContent = `Service view: ${label}. Showing internal subsystem flows only.`;
+    if (selectors.topologyBack) {
+      selectors.topologyBack.disabled = false;
+      selectors.topologyBack.textContent = "Back to ecosystem";
+      selectors.topologyBack.title = "Return to top-level ecosystem topology.";
+    }
+    return;
+  }
+  selectors.topologyViewState.textContent = "Ecosystem view. Click a service node to inspect internals.";
+  if (selectors.topologyBack) {
+    selectors.topologyBack.disabled = true;
+    selectors.topologyBack.textContent = "Back to ecosystem";
+    selectors.topologyBack.title = "Already in ecosystem view.";
+  }
 }
 
 function relatedServiceIdsForFinding(snapshot, finding) {
@@ -588,14 +825,22 @@ function renderTopology(snapshot) {
   if (!selectors.topology) {
     return;
   }
+  const view = activeTopologyView(snapshot);
+  const graphSnapshot = view.snapshot;
+  updateTopologyViewState(view, snapshot);
+
   selectors.topology.innerHTML = "";
-  snapshot.services.forEach((service) => {
+  graphSnapshot.services.forEach((service) => {
     const card = document.createElement("article");
-    card.className = `node ${nodeStatusForService(service.id, snapshot.findings)}`;
+    card.className = `node ${nodeStatusForService(service.id, graphSnapshot.findings)}`;
+    const internalMeta = view.mode === "ecosystem" && Number(service.internalCount || 0) > 0
+      ? `<p>internal services=${service.internalCount}</p>`
+      : "";
     card.innerHTML = `
       <h3>${service.name}</h3>
       <p>domain=${service.domain} owner=${service.owner}</p>
       <p>flows=${service.flowCount} kind=${service.kind}</p>
+      ${internalMeta}
       <span class="node-badge">${service.escalation}</span>
     `;
     selectors.topology.appendChild(card);
@@ -603,7 +848,7 @@ function renderTopology(snapshot) {
 
   if (selectors.edgeList) {
     selectors.edgeList.innerHTML = "";
-    snapshot.edges.forEach((edge) => {
+    graphSnapshot.edges.forEach((edge) => {
       const item = document.createElement("article");
       item.className = `edge edge-${edge.status}`;
       const label = document.createElement("div");
@@ -618,7 +863,7 @@ function renderTopology(snapshot) {
     });
   }
 
-  renderGraph(snapshot);
+  renderGraph(graphSnapshot, view, snapshot);
 }
 
 function renderList(element, rows, emptyText, mapper) {
@@ -700,7 +945,8 @@ function render(snapshot) {
     selectors.policyFailOn.value = snapshot.policy.failOn;
   }
   if (selectors.policyCriticalService) {
-    const serviceIDs = snapshot.services.map((service) => service.id);
+    const serviceIDs = [...new Set((snapshot.services || []).map((service) => topologyRootId(service.id)).filter(Boolean))]
+      .sort((left, right) => left.localeCompare(right));
     setOptions(selectors.policyCriticalService, serviceIDs, (id) => serviceName(snapshot, id));
     if (serviceIDs.includes(snapshot.policy.criticalServiceId)) {
       selectors.policyCriticalService.value = snapshot.policy.criticalServiceId;
@@ -715,6 +961,7 @@ function render(snapshot) {
 }
 
 async function bootstrap() {
+  state.topologyRoot = "";
   const created = await request("/api/session", "POST", {});
   state.sessionId = created.sessionId;
   render(created.snapshot);
@@ -814,6 +1061,12 @@ function bindEvents() {
   selectors.addOverride?.addEventListener("click", () => addOverride().catch(showError));
   selectors.runStricture?.addEventListener("click", () => run().catch(showError));
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
+  selectors.topologyBack?.addEventListener("click", () => {
+    state.topologyRoot = "";
+    if (state.snapshot) {
+      render(state.snapshot);
+    }
+  });
   selectors.presetScenario?.addEventListener("change", (event) => {
     const target = event.target;
     updateNarrative(target?.value);
@@ -900,7 +1153,7 @@ bindEvents();
 bootstrap().catch(showError);
 scheduleResizeRender();
 
-function renderGraph(snapshot) {
+function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Set() }, originalSnapshot = snapshot) {
   if (!selectors.topologyGraph) {
     return;
   }
@@ -1033,6 +1286,8 @@ function renderGraph(snapshot) {
     if (isTransit) classes.push("transit");
     if (isContributor) classes.push("contributor");
     if (isFailing) classes.push("failing");
+    const canDrill = view.mode === "ecosystem" && view.internalRoots?.has(node.id);
+    if (canDrill) classes.push("drillable");
     g.setAttribute("class", classes.join(" "));
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", pos.x);
@@ -1051,6 +1306,9 @@ function renderGraph(snapshot) {
     g.appendChild(title);
     g.appendChild(label);
     g.dataset.nodeId = node.id;
+    if (canDrill) {
+      g.dataset.drillRoot = node.id;
+    }
     svg.appendChild(g);
   });
 
@@ -1068,7 +1326,7 @@ function renderGraph(snapshot) {
     );
   }
 
-  addGraphInteractions(svg);
+  addGraphInteractions(svg, view, originalSnapshot);
 }
 
 function scheduleResizeRender() {
@@ -1076,7 +1334,7 @@ function scheduleResizeRender() {
   const handler = () => {
     if (!state.snapshot) return;
     window.clearTimeout(timer);
-    timer = window.setTimeout(() => renderGraph(state.snapshot), 120);
+    timer = window.setTimeout(() => renderTopology(state.snapshot), 120);
   };
   window.addEventListener("resize", handler);
 }
@@ -1312,9 +1570,32 @@ function normalizePositions(positions, width, height, padding = {}) {
   return normalized;
 }
 
-function addGraphInteractions(svg) {
-  // Hover zoom/focus intentionally disabled to keep topology stable.
-  void svg;
+function addGraphInteractions(svg, view, originalSnapshot) {
+  if (!svg || !view || view.mode !== "ecosystem") {
+    return;
+  }
+  const drillNodes = svg.querySelectorAll(".graph-node.drillable");
+  drillNodes.forEach((node) => {
+    node.setAttribute("role", "button");
+    node.setAttribute("tabindex", "0");
+    const open = () => {
+      const root = node.dataset.drillRoot || "";
+      if (!root || !hasSubsystems(originalSnapshot, root)) {
+        return;
+      }
+      state.topologyRoot = root;
+      if (state.snapshot) {
+        render(state.snapshot);
+      }
+    };
+    node.addEventListener("click", open);
+    node.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        open();
+      }
+    });
+  });
 }
 
 function summarizeFlow(snapshot, nodes, edges, sourceServices, impactedServices, severity, activeFields) {

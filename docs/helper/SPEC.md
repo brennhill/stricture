@@ -39,7 +39,8 @@ High-priority automation targets:
 3. external `provider_id` + `as_of`: derive from provider map + run context.
 4. `contract_ref`: reuse existing OpenAPI/AsyncAPI/proto pointers.
 5. service registry `id`: bootstrap from repo/service identity and optionally
-   register to `strict:server_url`.
+   register to `strict:server_url` (including optional hierarchical IDs like
+   `location-tracking-service:tracking-api`).
 
 ## Non-Goals (v0)
 

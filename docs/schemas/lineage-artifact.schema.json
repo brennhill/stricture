@@ -47,7 +47,7 @@
         "field_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
         "renamed_from": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,63}$" },
         "field": { "type": "string", "pattern": "^[A-Za-z0-9_\\-\\[\\]\\.]+$" },
-        "source_system": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
+        "source_system": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$" },
         "source_version": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
         "min_supported_source_version": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
         "transform_type": {
@@ -80,7 +80,7 @@
           "minItems": 1,
           "items": { "$ref": "#/$defs/source_ref" }
         },
-        "flow": { "type": "string", "pattern": "^from @[A-Za-z][A-Za-z0-9_-]*( (enriched|normalized|derived|validated|mapped|merged) @[A-Za-z][A-Za-z0-9_-]*)*$" },
+        "flow": { "type": "string", "pattern": "^from @[A-Za-z][A-Za-z0-9_-]*(:[A-Za-z][A-Za-z0-9_-]*)?( (enriched|normalized|derived|validated|mapped|merged) @[A-Za-z][A-Za-z0-9_-]*(:[A-Za-z][A-Za-z0-9_-]*)?)*$" },
         "note": { "type": "string", "minLength": 1 },
         "file_path": { "type": "string" },
         "line": { "type": "integer", "minimum": 1 }
@@ -96,7 +96,7 @@
         "scope": { "type": "string", "enum": ["internal", "cross_repo", "external"] },
         "as_of": { "type": "string", "format": "date" },
         "provider_id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$" },
-        "upstream_system": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
+        "upstream_system": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$" },
         "contract_ref": { "type": "string", "minLength": 1 },
         "raw": { "type": "string", "minLength": 1 }
       }

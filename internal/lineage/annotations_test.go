@@ -96,6 +96,24 @@ func TestParse_ValidExternalSource_RequiresProviderAndAsOf(t *testing.T) {
 	}
 }
 
+func TestParse_AcceptsHierarchicalSystemIDs(t *testing.T) {
+	source := []byte(`// stricture-source field=response.logistics.eta source_system=LogisticsGateway:tracking_api source_version=v1 sources=api:logistics-core.GetEta#response.eta@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@a1b2&upstream_system=LogisticsGateway:routing flow="from @LogisticsGateway:tracking_api mapped @self"`)
+
+	annotations, errs := Parse(source)
+	if len(errs) > 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+	if annotations[0].SourceSystem != "LogisticsGateway:tracking_api" {
+		t.Fatalf("source_system = %q, want LogisticsGateway:tracking_api", annotations[0].SourceSystem)
+	}
+	if got := annotations[0].Sources[0].UpstreamSystem; got != "LogisticsGateway:routing" {
+		t.Fatalf("upstream_system = %q, want LogisticsGateway:routing", got)
+	}
+}
+
 func TestParse_ValidRenameTracking(t *testing.T) {
 	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_user_primary_id renamed_from=response_user_id field=response.user_primary_id source_system=Identity source_version=v2026.03 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-02-01 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@c3d4 flow="from @Identity normalized @self" note="renamed field to align with product terminology"`)
 

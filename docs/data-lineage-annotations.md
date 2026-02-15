@@ -49,6 +49,23 @@ To keep annotations compact, only these keys are required in source comments:
 
 All other canonical keys are defaulted during parsing/normalization.
 
+## System ID Hierarchy (No New Keys)
+
+Stricture supports service-internal topology without introducing additional
+annotation keys. Use a single system ID with an optional `:` suffix:
+
+- top-level ecosystem service: `location-tracking-service`
+- internal subsystem: `location-tracking-service:tracking-api`
+
+This convention is valid for:
+
+- `source_system`
+- source edge `upstream_system`
+- `systems[].id` in service registries
+
+The prefix before `:` is the ecosystem/topology ID; the suffix identifies the
+internal subsystem.
+
 ## Normalization Defaults
 
 If omitted, Stricture fills:
@@ -148,6 +165,12 @@ Compact single-source internal (recommended):
 
 ```go
 // stricture-source field=response.user_id source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2
+```
+
+Compact internal subsystem example:
+
+```go
+// stricture-source field=response.logistics.eta source_system=location-tracking-service:tracking-api source_version=v2026.07 sources=api:location-tracking-service:routing.GetEta#response.eta@internal?contract_ref=internal://location-tracking/routing/eta&upstream_system=location-tracking-service:routing
 ```
 
 Expanded (all canonical fields explicit):

@@ -1039,6 +1039,15 @@ select {
   fill: var(--ink);
 }
 
+.graph-node.drillable {
+  cursor: pointer;
+}
+
+.graph-node.drillable text {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+}
+
 .graph-node circle {
   fill: #f8fafc;
   stroke: var(--line);

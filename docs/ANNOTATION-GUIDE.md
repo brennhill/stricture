@@ -13,6 +13,12 @@ For CI/build automation and `.stricture-history` design, see
 
 Everything else can be defaulted by Stricture and expanded in normalized artifacts.
 
+## Hierarchical service IDs (for ecosystem + internals)
+- Use one optional `:` in system IDs to model internals without new keys.
+- Topology service: `location-tracking-service`
+- Internal subsystem: `location-tracking-service:tracking-api`
+- Use the same format in `source_system` and `upstream_system`.
+
 ## Good vs bad examples
 - **Type/size**
   - Bad: `type: number`

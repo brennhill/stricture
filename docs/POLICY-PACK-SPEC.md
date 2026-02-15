@@ -25,6 +25,9 @@ This spec covers lineage-facing policy behavior for:
 3. service registry keys (`systems[]`)
 4. lineage override keys (`stricture-lineage-override`)
 
+System IDs in policy scope can use hierarchical form `parent:child` to model
+internal subsystems without introducing new annotation keys.
+
 ## Core Model
 
 Policy packs are standalone YAML files.
