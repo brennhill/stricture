@@ -30,26 +30,27 @@ export const prerender = true;
 
         <h2>Mutations</h2>
         <label>
-          Type
-          <select id="mutation-type">
-            <option value="type_changed">Type Changed</option>
-            <option value="enum_changed">Enum Changed</option>
-            <option value="field_removed">Field Removed</option>
-            <option value="source_version_changed">Source Version Changed</option>
-            <option value="external_as_of_stale">External As-Of Stale</option>
-            <option value="annotation_missing">Annotation Missing</option>
-          </select>
-        </label>
-        <label>
           Service
           <select id="mutation-service"></select>
         </label>
         <label>
-          Field ID
+          Field
           <select id="mutation-field"></select>
         </label>
+        <label>
+          Change
+          <select id="mutation-type">
+            <option value="type_changed">Field type changed</option>
+            <option value="enum_changed">Enum values updated</option>
+            <option value="field_removed">Field removed</option>
+            <option value="source_version_changed">Source version changed</option>
+            <option value="external_as_of_stale">External snapshot stale</option>
+            <option value="annotation_missing">Annotation missing</option>
+          </select>
+        </label>
+        <p class="hint">Pick service first. Field choices filter by service, then available changes filter by field.</p>
         <p class="hint" id="control-stats"></p>
-        <button id="apply-mutation" class="button button-primary">Apply Mutation</button>
+        <button id="apply-mutation" class="button button-primary">Apply change</button>
 
         <h2>Policy</h2>
         <label>
@@ -82,29 +83,14 @@ export const prerender = true;
         <p class="hint">Block: stop deploy when severity ≥ threshold. Warn: allow deploy but surface findings.</p>
         <button id="update-policy" class="button button-secondary">Update Policy</button>
 
-        <h2>Override</h2>
-        <label>
-          Field ID
-          <input id="override-field" type="text" placeholder="response_payment_status" />
-        </label>
-        <label>
-          Change Type
-          <input id="override-change" type="text" placeholder="field_removed or *" />
-        </label>
-        <label>
-          Expires
-          <input id="override-expires" type="date" />
-        </label>
+        <h2>Temporary Exception</h2>
+        <p class="hint" id="override-target">No active finding to suppress yet. Run Stricture after a change.</p>
         <label>
           Reason
-          <input id="override-reason" type="text" placeholder="migration window" />
+          <input id="override-reason" type="text" placeholder="short mitigation note" />
         </label>
-        <label>
-          Ticket
-          <input id="override-ticket" type="text" placeholder="INC-123" />
-        </label>
-        <p class="hint">Use * to cover any change type; set an expiry so temporary overrides auto-expire.</p>
-        <button id="add-override" class="button button-secondary">Add Override</button>
+        <p class="hint">Suppresses the top finding for 7 days, then auto-expires.</p>
+        <button id="add-override" class="button button-secondary">Suppress top finding for 7 days</button>
 
         <div class="control-actions">
           <button id="run-stricture" class="button button-primary">Rerun Stricture</button>

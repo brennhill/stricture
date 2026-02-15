@@ -21,11 +21,8 @@ const selectors = {
   mutationField: document.querySelector("#mutation-field"),
   policyMode: document.querySelector("#policy-mode"),
   policyFailOn: document.querySelector("#policy-fail-on"),
-  overrideField: document.querySelector("#override-field"),
-  overrideChange: document.querySelector("#override-change"),
-  overrideExpires: document.querySelector("#override-expires"),
+  overrideTarget: document.querySelector("#override-target"),
   overrideReason: document.querySelector("#override-reason"),
-  overrideTicket: document.querySelector("#override-ticket"),
   escalationService: document.querySelector("#escalation-service"),
   applyMutation: document.querySelector("#apply-mutation"),
   updatePolicy: document.querySelector("#update-policy"),
@@ -35,6 +32,8 @@ const selectors = {
   loadEscalation: document.querySelector("#load-escalation"),
   toggleEdges: document.querySelector("#toggle-edges"),
 };
+
+const OVERRIDE_DAYS = 7;
 
 const humanChange = {
   annotation_missing: "annotation missing",
@@ -51,11 +50,11 @@ const humanChange = {
 
 const mutationTypeLabels = {
   annotation_missing: "Annotation Missing",
-  enum_changed: "Enum Changed",
+  enum_changed: "Enum values updated",
   external_as_of_stale: "External As-Of Stale",
   field_removed: "Field Removed",
   source_version_changed: "Source Version Changed",
-  type_changed: "Type Changed",
+  type_changed: "Field type changed",
 };
 
 function fieldLabel(fieldId) {
@@ -246,23 +245,110 @@ function setOptions(element, values, formatter) {
   });
 }
 
-function refreshMutationFieldOptions(snapshot) {
-  if (!selectors.mutationType || !selectors.mutationField) {
+function buildFieldMutationMap(snapshot) {
+  const map = new Map();
+  Object.entries(snapshot.fieldsByMutation || {}).forEach(([mutationType, fields]) => {
+    (fields || []).forEach((fieldId) => {
+      if (!map.has(fieldId)) {
+        map.set(fieldId, []);
+      }
+      map.get(fieldId).push(mutationType);
+    });
+  });
+  return map;
+}
+
+function fieldsForService(snapshot, serviceId, fieldMutationMap) {
+  const edges = snapshot.edges || [];
+  const fields = new Set();
+  edges.forEach((edge) => {
+    if (edge.from === serviceId && fieldMutationMap.has(edge.fieldId)) {
+      fields.add(edge.fieldId);
+    }
+  });
+  return [...fields];
+}
+
+function syncMutationControls(snapshot, preferred = {}) {
+  if (!selectors.mutationService || !selectors.mutationField || !selectors.mutationType) {
     return;
   }
-  const mutationType = selectors.mutationType.value;
-  const fieldIDs = snapshot.fieldsByMutation?.[mutationType] || [];
+  const services = snapshot.services || [];
+  const serviceIDs = services.map((service) => service.id);
+  const existingService = preferred.serviceId ?? selectors.mutationService.value;
+  setOptions(selectors.mutationService, serviceIDs, (id) => id);
+  const selectedService = serviceIDs.includes(existingService) ? existingService : (serviceIDs[0] || "");
+  selectors.mutationService.value = selectedService;
+
+  const fieldMutationMap = buildFieldMutationMap(snapshot);
+  const fieldIDs = fieldsForService(snapshot, selectedService, fieldMutationMap);
+  const existingField = preferred.fieldId ?? selectors.mutationField.value;
   setOptions(selectors.mutationField, fieldIDs, (id) => id);
+  const selectedField = fieldIDs.includes(existingField) ? existingField : (fieldIDs[0] || "");
+  if (selectedField) {
+    selectors.mutationField.value = selectedField;
+  }
+
+  const allowedTypes = selectedField ? (fieldMutationMap.get(selectedField) || []) : [];
+  const existingType = preferred.mutationType ?? selectors.mutationType.value;
+  setOptions(selectors.mutationType, allowedTypes, (id) => mutationTypeLabels[id] || id);
+  const selectedType = allowedTypes.includes(existingType) ? existingType : (allowedTypes[0] || "");
+  if (selectedType) {
+    selectors.mutationType.value = selectedType;
+  }
+
+  if (selectors.applyMutation) {
+    selectors.applyMutation.disabled = !(selectedService && selectedField && selectedType);
+  }
+
+  return {
+    selectedService,
+    selectedField,
+    selectedType,
+    serviceFieldCount: fieldIDs.length,
+    fieldTypeCount: allowedTypes.length,
+  };
 }
 
 function updateControlStats(snapshot) {
-  if (!selectors.controlStats || !selectors.mutationType) {
+  if (!selectors.controlStats || !selectors.mutationService || !selectors.mutationField) {
     return;
   }
-  const mutationType = selectors.mutationType.value;
-  const fieldCount = snapshot.fieldsByMutation?.[mutationType]?.length || 0;
-  const serviceCount = snapshot.services?.length || 0;
-  selectors.controlStats.textContent = `${serviceCount} services • ${fieldCount} fields for this mutation`;
+  const fieldMutationMap = buildFieldMutationMap(snapshot);
+  const serviceId = selectors.mutationService.value;
+  const fieldId = selectors.mutationField.value;
+  const serviceFieldCount = fieldsForService(snapshot, serviceId, fieldMutationMap).length;
+  const fieldTypeCount = (fieldMutationMap.get(fieldId) || []).length;
+  const serviceLabel = serviceName(snapshot, serviceId);
+  selectors.controlStats.textContent = `${serviceLabel} • ${serviceFieldCount} fields • ${fieldTypeCount} available changes for selected field`;
+}
+
+function currentTopFinding(snapshot) {
+  if (!snapshot?.findings?.length) {
+    return null;
+  }
+  return snapshot.findings[0];
+}
+
+function datePlusDays(days) {
+  const next = new Date();
+  next.setDate(next.getDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
+function updateOverrideControls(snapshot) {
+  const top = currentTopFinding(snapshot);
+  if (selectors.overrideTarget) {
+    if (!top) {
+      selectors.overrideTarget.textContent = "No active finding to suppress yet. Run Stricture after a change.";
+    } else {
+      const change = humanChange[top.changeType] || top.changeType;
+      selectors.overrideTarget.textContent = `Will suppress: ${change} on ${fieldLabel(top.fieldId)} for ${OVERRIDE_DAYS} days.`;
+    }
+  }
+  if (selectors.addOverride) {
+    selectors.addOverride.disabled = !top;
+  }
 }
 
 function buildPresets(snapshot) {
@@ -445,7 +531,6 @@ function render(snapshot) {
   renderGate(snapshot.runSummary);
   renderRunSummary(snapshot);
   renderTopology(snapshot);
-  updateControlStats(snapshot);
 
   renderList(
     selectors.findings,
@@ -494,19 +579,12 @@ function render(snapshot) {
     },
   );
 
-  if (selectors.mutationType && Array.isArray(snapshot.mutationTypes)) {
-    const selected = selectors.mutationType.value;
-    setOptions(selectors.mutationType, snapshot.mutationTypes, (id) => mutationTypeLabels[id] || id);
-    if (snapshot.mutationTypes.includes(selected)) {
-      selectors.mutationType.value = selected;
-    }
-  }
-
+  syncMutationControls(snapshot);
   const serviceIDs = snapshot.services.map((service) => service.id);
-  setOptions(selectors.mutationService, serviceIDs, (id) => id);
   setOptions(selectors.escalationService, serviceIDs, (id) => id);
 
-  refreshMutationFieldOptions(snapshot);
+  updateControlStats(snapshot);
+  updateOverrideControls(snapshot);
   buildPresets(snapshot);
   updateNarrativeFromSnapshot(snapshot);
 
@@ -563,14 +641,21 @@ async function addOverride() {
   if (!state.sessionId) {
     return;
   }
+  const top = currentTopFinding(state.snapshot);
+  if (!top) {
+    throw new Error("No active finding available to suppress.");
+  }
+  const reasonInput = selectors.overrideReason?.value.trim() || "temporary mitigation window";
   const payload = {
-    fieldId: selectors.overrideField?.value.trim(),
-    changeType: selectors.overrideChange?.value.trim() || "*",
-    expires: selectors.overrideExpires?.value,
-    reason: selectors.overrideReason?.value.trim(),
-    ticket: selectors.overrideTicket?.value.trim(),
+    fieldId: top.fieldId,
+    changeType: top.changeType,
+    expires: datePlusDays(OVERRIDE_DAYS),
+    reason: reasonInput,
   };
   const response = await request(`/api/session/${state.sessionId}/override`, "POST", payload);
+  if (selectors.overrideReason) {
+    selectors.overrideReason.value = "";
+  }
   render(response.snapshot);
 }
 
@@ -618,9 +703,23 @@ function bindEvents() {
     applyPreset().catch(showError);
   });
   selectors.toggleEdges?.addEventListener("click", () => toggleEdgeList());
+  selectors.mutationService?.addEventListener("change", () => {
+    if (state.snapshot) {
+      syncMutationControls(state.snapshot, { serviceId: selectors.mutationService?.value });
+      updateControlStats(state.snapshot);
+    }
+  });
+  selectors.mutationField?.addEventListener("change", () => {
+    if (state.snapshot) {
+      syncMutationControls(state.snapshot, {
+        serviceId: selectors.mutationService?.value,
+        fieldId: selectors.mutationField?.value,
+      });
+      updateControlStats(state.snapshot);
+    }
+  });
   selectors.mutationType?.addEventListener("change", () => {
     if (state.snapshot) {
-      refreshMutationFieldOptions(state.snapshot);
       updateControlStats(state.snapshot);
     }
   });
@@ -665,20 +764,12 @@ async function applyPreset() {
   const candidateSource = (state.snapshot.edges || []).find((edge) => edge.fieldId === fieldId)?.from;
   updateNarrative(id);
   await bootstrap(); // reset session so findings don’t pile up
-  if (selectors.mutationType) {
-    selectors.mutationType.value = id;
-  }
-  refreshMutationFieldOptions(state.snapshot);
-  if (selectors.mutationField) {
-    selectors.mutationField.value = fieldId;
-  }
-  if (selectors.mutationService && selectors.mutationService.options.length) {
-    if (candidateSource && [...selectors.mutationService.options].some((option) => option.value === candidateSource)) {
-      selectors.mutationService.value = candidateSource;
-    } else {
-      selectors.mutationService.value = selectors.mutationService.options[0].value;
-    }
-  }
+  syncMutationControls(state.snapshot, {
+    serviceId: candidateSource,
+    fieldId,
+    mutationType: id,
+  });
+  updateControlStats(state.snapshot);
   await mutate();
   await run();
 }
