@@ -80,7 +80,7 @@ export const prerender = true;
           Hard-block reason shown in findings
           <input id="policy-hard-block-reason" type="text" value="Risk of order loss" />
         </label>
-        <p class="hint">Warn = never blocks. Block = blocks at threshold. Applying policy reruns findings immediately.</p>
+        <p class="hint">Policy evaluates currently staged changes in this session. If you want a clean baseline, clear staged changes first.</p>
         <button id="update-policy" class="button button-secondary">Apply policy</button>
 
         <h2>Temporary Exception</h2>
@@ -94,7 +94,7 @@ export const prerender = true;
 
         <div class="control-actions">
           <button id="run-stricture" class="button button-primary">Rerun Stricture</button>
-          <button id="reset-session" class="button button-secondary">Reset Session</button>
+          <button id="reset-session" class="button button-secondary">Clear staged changes</button>
         </div>
       </aside>
 

@@ -320,7 +320,8 @@ function updateControlStats(snapshot) {
   const serviceFieldCount = fieldsForService(snapshot, serviceId, fieldMutationMap).length;
   const fieldTypeCount = (fieldMutationMap.get(fieldId) || []).length;
   const serviceLabel = serviceName(snapshot, serviceId);
-  selectors.controlStats.textContent = `${serviceLabel} • ${serviceFieldCount} fields • ${fieldTypeCount} available changes for selected field`;
+  const stagedCount = snapshot.mutations?.length || 0;
+  selectors.controlStats.textContent = `${serviceLabel} • ${serviceFieldCount} fields • ${fieldTypeCount} available changes for selected field • ${stagedCount} staged change${stagedCount === 1 ? "" : "s"}`;
 }
 
 function currentTopFinding(snapshot) {
@@ -544,8 +545,9 @@ function renderRunSummary(snapshot) {
   const policyConfig = snapshot.policy?.hardBlockPromotionsDrift
     ? `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+ with promotions hard-block on ${serviceName(snapshot, snapshot.policy.criticalServiceId)}.`
     : `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+.`;
+  const stagedText = ` Staged changes: ${snapshot.mutations?.length || 0}.`;
   const policyText = summary.policyRationale ? ` ${summary.policyRationale}` : "";
-  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} blocking, ${summary.warningCount} warning). ${gateText} ${policyConfig}${policyText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
+  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} blocking, ${summary.warningCount} warning). ${gateText} ${policyConfig}${stagedText}${policyText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
 }
 
 function nodeStatusForService(serviceId, findings) {
