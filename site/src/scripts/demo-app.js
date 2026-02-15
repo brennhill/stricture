@@ -13,7 +13,9 @@ const selectors = {
   topologyViewState: document.querySelector("#topology-view-state"),
   topologyViewGuidance: document.querySelector("#topology-view-guidance"),
   topologyTabEcosystem: document.querySelector("#topology-tab-ecosystem"),
+  topologyTabServiceWrap: document.querySelector("#topology-tab-service-wrap"),
   topologyTabService: document.querySelector("#topology-tab-service"),
+  topologyTabFieldWrap: document.querySelector("#topology-tab-field-wrap"),
   topologyTabField: document.querySelector("#topology-tab-field"),
   edgeList: document.querySelector("#edge-list"),
   flowPathSummary: document.querySelector("#flow-path-summary"),
@@ -617,28 +619,50 @@ function updateTopologyViewState(view, originalSnapshot) {
     selectors.topologyViewState.textContent = "Ecosystem view. Click a service node to inspect internals.";
   }
 
-  const setTabState = (button, active, disabled, title) => {
+  const inspectableRoots = [...(view.internalRoots || [])];
+  const inspectableNames = inspectableRoots
+    .map((root) => serviceName(originalSnapshot, root))
+    .filter(Boolean);
+  const inspectableHint = inspectableNames.length === 0
+    ? "No services in this scenario expose mapped internals."
+    : `Select a highlighted service node with a layers icon to inspect internals (for example: ${inspectableNames.slice(0, 2).join(", ")}${inspectableNames.length > 2 ? ", ..." : ""}).`;
+
+  const setTabState = (button, wrapper, active, disabled, title) => {
     if (!button) return;
     button.disabled = !!disabled;
     button.title = title || "";
     button.classList.toggle("is-active", !!active);
     button.setAttribute("aria-selected", active ? "true" : "false");
+    if (wrapper) {
+      wrapper.dataset.tooltip = title || "";
+      wrapper.classList.toggle("is-disabled", !!disabled);
+      if (disabled) {
+        wrapper.setAttribute("tabindex", "0");
+      } else {
+        wrapper.removeAttribute("tabindex");
+      }
+    }
   };
 
   setTabState(
     selectors.topologyTabEcosystem,
+    null,
     view.mode === "ecosystem",
     false,
     "Top-level service topology.",
   );
   setTabState(
     selectors.topologyTabService,
+    selectors.topologyTabServiceWrap,
     view.mode === "service",
     !view.serviceEnabled,
-    view.serviceEnabled ? "Inspect internals of selected service." : "Select a service node in Ecosystem first.",
+    view.serviceEnabled
+      ? `Inspect internals of ${serviceName(originalSnapshot, state.topologyRoot)}.`
+      : inspectableHint,
   );
   setTabState(
     selectors.topologyTabField,
+    selectors.topologyTabFieldWrap,
     view.mode === "field",
     !view.fieldEnabled,
     view.fieldEnabled ? "Inspect the selected field flow path." : "Stage a change or load a preset to select a field.",
@@ -646,7 +670,7 @@ function updateTopologyViewState(view, originalSnapshot) {
 
   if (selectors.topologyViewGuidance) {
     if (!view.serviceEnabled) {
-      selectors.topologyViewGuidance.textContent = "Service Internals is disabled until you click a service node with mapped internals in Ecosystem.";
+      selectors.topologyViewGuidance.textContent = inspectableHint;
     } else if (!view.fieldEnabled) {
       selectors.topologyViewGuidance.textContent = "Field Path is disabled until you stage a change or load a preset.";
     } else {
@@ -1338,11 +1362,39 @@ function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Se
     const canDrill = view.mode === "ecosystem" && view.internalRoots?.has(node.id);
     if (canDrill) classes.push("drillable");
     g.setAttribute("class", classes.join(" "));
+    const radius = isSource || isImpacted ? 28 : isTransit ? 24 : isContributor ? 20 : inFlow ? 22 : 16;
+    if (canDrill) {
+      const drillRing = document.createElementNS(svgNS, "circle");
+      drillRing.setAttribute("class", "graph-drill-ring");
+      drillRing.setAttribute("cx", pos.x);
+      drillRing.setAttribute("cy", pos.y);
+      drillRing.setAttribute("r", String(radius + 6));
+      g.appendChild(drillRing);
+    }
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", pos.x);
     circle.setAttribute("cy", pos.y);
-    circle.setAttribute("r", isSource || isImpacted ? "28" : isTransit ? "24" : isContributor ? "20" : inFlow ? "22" : "16");
+    circle.setAttribute("r", String(radius));
     g.appendChild(circle);
+    if (canDrill) {
+      const iconX = pos.x + radius * 0.58;
+      const iconY = pos.y - radius * 0.56;
+      const iconBg = document.createElementNS(svgNS, "circle");
+      iconBg.setAttribute("class", "graph-drill-icon-bg");
+      iconBg.setAttribute("cx", iconX);
+      iconBg.setAttribute("cy", iconY);
+      iconBg.setAttribute("r", "7");
+      g.appendChild(iconBg);
+      [-2, 0, 2].forEach((offset) => {
+        const layer = document.createElementNS(svgNS, "line");
+        layer.setAttribute("class", "graph-drill-icon-line");
+        layer.setAttribute("x1", String(iconX - 3));
+        layer.setAttribute("x2", String(iconX + 3));
+        layer.setAttribute("y1", String(iconY + offset));
+        layer.setAttribute("y2", String(iconY + offset));
+        g.appendChild(layer);
+      });
+    }
     const label = document.createElementNS(svgNS, "text");
     label.setAttribute("x", pos.x);
     label.setAttribute("y", pos.y + 37);
@@ -1351,7 +1403,9 @@ function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Se
     }
     label.textContent = node.name;
     const title = document.createElementNS(svgNS, "title");
-    title.textContent = `${node.name} (${node.domain}) • owner=${node.owner}`;
+    title.textContent = canDrill
+      ? `${node.name} (${node.domain}) • owner=${node.owner} • click to inspect ${Number(node.internalCount || 0)} internal services`
+      : `${node.name} (${node.domain}) • owner=${node.owner}`;
     g.appendChild(title);
     g.appendChild(label);
     g.dataset.nodeId = node.id;
@@ -1627,6 +1681,8 @@ function addGraphInteractions(svg, view, originalSnapshot) {
   drillNodes.forEach((node) => {
     node.setAttribute("role", "button");
     node.setAttribute("tabindex", "0");
+    const label = node.querySelector("text")?.textContent || "service";
+    node.setAttribute("aria-label", `Inspect internals for ${label}`);
     const open = () => {
       const root = node.dataset.drillRoot || "";
       if (!root || !hasSubsystems(originalSnapshot, root)) {

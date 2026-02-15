@@ -101,8 +101,12 @@ export const prerender = true;
           <p class="muted">Ecosystem view groups each top-level service as one node. Click a service with internals to drill into its subsystem topology. Red node = source change. Orange node = impacted service. Pale yellow node = relay on impacted path. Light yellow node = possible contributor. Orange edge = affected path.</p>
           <div class="topology-view-tabs" role="tablist" aria-label="Topology level">
             <button id="topology-tab-ecosystem" class="button button-secondary topology-tab" role="tab" aria-selected="true">Ecosystem</button>
-            <button id="topology-tab-service" class="button button-secondary topology-tab" role="tab" aria-selected="false" disabled>Service Internals</button>
-            <button id="topology-tab-field" class="button button-secondary topology-tab" role="tab" aria-selected="false" disabled>Field Path</button>
+            <span id="topology-tab-service-wrap" class="topology-tab-wrap" data-tooltip="Select a highlighted service node with a layers icon to unlock Service Internals.">
+              <button id="topology-tab-service" class="button button-secondary topology-tab" role="tab" aria-selected="false" disabled>Service Internals</button>
+            </span>
+            <span id="topology-tab-field-wrap" class="topology-tab-wrap" data-tooltip="Stage a change or load a preset to unlock Field Path.">
+              <button id="topology-tab-field" class="button button-secondary topology-tab" role="tab" aria-selected="false" disabled>Field Path</button>
+            </span>
           </div>
           <p class="muted tight" id="topology-view-state">Ecosystem view. Click a service node to inspect internals.</p>
           <p class="hint" id="topology-view-guidance">Service Internals unlocks after selecting a service node. Field Path unlocks after staging a change or loading a preset.</p>
@@ -111,6 +115,7 @@ export const prerender = true;
             <span class="legend-chip legend-node-impacted">Service impacted</span>
             <span class="legend-chip legend-node-transit">Path relay</span>
             <span class="legend-chip legend-node-contributor">Possible data contributor</span>
+            <span class="legend-chip legend-node-drillable">Inspectable internals</span>
             <span class="legend-chip legend-edge-affected">Affected path</span>
             <span class="legend-chip legend-edge-healthy">Other healthy flow</span>
           </div>
