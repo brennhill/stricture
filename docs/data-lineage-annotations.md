@@ -129,6 +129,8 @@ Rules:
 6. `runbook_url` and `doc_root` are optional service-level metadata links.
 7. `business_risk` is an organization-defined risk code token (no global
    built-in enum list in core Stricture).
+8. `owner_team` and flow `owner` are free-form strings by default (no required
+   central team-inventory enum).
 
 ## Normalization Defaults
 

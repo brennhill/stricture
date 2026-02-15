@@ -18,14 +18,14 @@ const objectRows = [
   },
   {
     object: "Service registry record",
-    where: "`lineage-systems.yml` (or equivalent registry file)",
+    where: "`.stricture/strict-lineage-systems.yaml` (or equivalent registry file)",
     reference: "strict:systems[]",
     syntax: "systems[] objects",
     why: "Defines service-level ownership, runbooks/docs, escalation defaults, and flow memberships."
   },
   {
     object: "Flow registry catalog",
-    where: "Top-level in `lineage-systems.yml`",
+    where: "Top-level in `.stricture/strict-lineage-systems.yaml`",
     reference: "strict:flows[]",
     syntax: "'strict:flows' objects",
     why: "Defines named business flows and numeric tier levels for policy gating."
@@ -80,7 +80,7 @@ const overrideKeys = [
 const serviceRegistryKeys = [
   { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier. Use `parent` for topology and `parent:child` for internal subsystems.", mode: "autogen" },
   { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
-  { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team slug.", mode: "manual-required" },
+  { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team/owner label (free-form string).", mode: "manual-required" },
   { key: "runbook_url", required: "No", defaultValue: "None", purpose: "Optional runbook URL used by responders.", mode: "manual-optional" },
   { key: "doc_root", required: "No", defaultValue: "None", purpose: "Optional root URL for external/internal service docs.", mode: "manual-optional" },
   { key: "flows", required: "No (recommended for multi-service policy)", defaultValue: "None", purpose: "Flow IDs this service participates in.", mode: "recommended" },
@@ -94,7 +94,7 @@ const flowRegistryKeys = [
   { key: "strict:flows[].id", required: "Yes", defaultValue: "None", purpose: "Stable flow ID used by service memberships.", mode: "manual-required" },
   { key: "strict:flows[].name", required: "Yes", defaultValue: "None", purpose: "Human-readable flow name.", mode: "manual-required" },
   { key: "strict:flows[].level", required: "Yes", defaultValue: "None", purpose: "Numeric tier level (org-defined scale).", mode: "manual-required" },
-  { key: "strict:flows[].owner", required: "No", defaultValue: "None", purpose: "Owning team for business flow governance.", mode: "recommended" },
+  { key: "strict:flows[].owner", required: "No", defaultValue: "None", purpose: "Flow owner label (free-form string).", mode: "recommended" },
   { key: "strict:flows[].business_risk", required: "No", defaultValue: "None", purpose: "Organization-managed risk code token used by policy (for example order_loss).", mode: "recommended" }
 ];
 
@@ -252,7 +252,7 @@ const modeMeta = {
   <section class="card">
     <h2>Service registry keys (A-Z)</h2>
     <p class="muted">
-      Service-level ownership, runbooks/docs, escalation, and flow memberships are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
+      Service-level ownership, runbooks/docs, escalation, and flow memberships are defined in a registry file (for example `.stricture/strict-lineage-systems.yaml`), not inline in each handler.
     </p>
     <p class="muted">
       If a `strict:server_url` is configured, helper/server workflows can bootstrap service IDs automatically and register them centrally.

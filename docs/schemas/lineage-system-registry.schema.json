@@ -15,7 +15,11 @@
           "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$" },
           "name": { "type": "string", "minLength": 1 },
           "level": { "type": "integer", "minimum": 0 },
-          "owner": { "type": "string", "minLength": 1 },
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Optional free-form flow owner label (for example Payments platform team or team.payments-platform)."
+          },
           "business_risk": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]{1,63}$",
@@ -33,7 +37,11 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$" },
           "name": { "type": "string", "minLength": 1 },
-          "owner_team": { "type": "string", "minLength": 1 },
+          "owner_team": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Required free-form service owner label (for example Payments platform team or team.payments-platform)."
+          },
           "runbook_url": { "type": "string", "format": "uri" },
           "doc_root": { "type": "string", "format": "uri" },
           "flows": {
