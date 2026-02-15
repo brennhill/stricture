@@ -42,6 +42,8 @@ including:
 
 - `system_id`
 - `owner`
+- `runbook_url` (optional)
+- `doc_root` (optional)
 - `contacts`
 - `depth`
 - `reason`

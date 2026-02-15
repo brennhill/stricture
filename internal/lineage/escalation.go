@@ -22,6 +22,8 @@ type SystemMetadata struct {
 	ID         string    `yaml:"id" json:"id"`
 	Name       string    `yaml:"name" json:"name"`
 	OwnerTeam  string    `yaml:"owner_team" json:"owner_team"`
+	RunbookURL string    `yaml:"runbook_url" json:"runbook_url,omitempty"`
+	DocRoot    string    `yaml:"doc_root" json:"doc_root,omitempty"`
 	Escalation []Contact `yaml:"escalation" json:"escalation"`
 }
 
@@ -32,12 +34,14 @@ type SystemRegistry struct {
 
 // EscalationStep is one hop in the upstream escalation chain.
 type EscalationStep struct {
-	Depth    int       `json:"depth"`
-	SystemID string    `json:"system_id"`
-	Name     string    `json:"name,omitempty"`
-	Owner    string    `json:"owner,omitempty"`
-	Contacts []Contact `json:"contacts"`
-	Reason   string    `json:"reason"`
+	Depth      int       `json:"depth"`
+	SystemID   string    `json:"system_id"`
+	Name       string    `json:"name,omitempty"`
+	Owner      string    `json:"owner,omitempty"`
+	RunbookURL string    `json:"runbook_url,omitempty"`
+	DocRoot    string    `json:"doc_root,omitempty"`
+	Contacts   []Contact `json:"contacts"`
+	Reason     string    `json:"reason"`
 }
 
 // LoadSystemRegistry loads a YAML system registry file.
@@ -103,6 +107,8 @@ func BuildEscalationChain(serviceID string, artifact Artifact, registry SystemRe
 		if system, ok := registryByID[item.System]; ok {
 			step.Name = system.Name
 			step.Owner = system.OwnerTeam
+			step.RunbookURL = system.RunbookURL
+			step.DocRoot = system.DocRoot
 			step.Contacts = append(step.Contacts, system.Escalation...)
 		}
 		if len(step.Contacts) == 0 {

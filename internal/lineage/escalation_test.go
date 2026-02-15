@@ -38,9 +38,11 @@ func TestBuildEscalationChain_WorksBackwards(t *testing.T) {
 
 	registry := SystemRegistry{Systems: []SystemMetadata{
 		{
-			ID:        "servicey",
-			Name:      "Service Y",
-			OwnerTeam: "team.servicey",
+			ID:         "servicey",
+			Name:       "Service Y",
+			OwnerTeam:  "team.servicey",
+			RunbookURL: "https://runbooks.example.com/servicey",
+			DocRoot:    "https://docs.example.com/servicey",
 			Escalation: []Contact{
 				{Role: "primary", Name: "Y Oncall", Channel: "pagerduty:servicey"},
 			},
@@ -75,6 +77,12 @@ func TestBuildEscalationChain_WorksBackwards(t *testing.T) {
 	}
 	if len(steps[0].Contacts) == 0 || len(steps[1].Contacts) == 0 || len(steps[2].Contacts) == 0 {
 		t.Fatalf("expected contacts at every step")
+	}
+	if steps[0].RunbookURL != "https://runbooks.example.com/servicey" {
+		t.Fatalf("step[0].runbook_url = %q, want https://runbooks.example.com/servicey", steps[0].RunbookURL)
+	}
+	if steps[0].DocRoot != "https://docs.example.com/servicey" {
+		t.Fatalf("step[0].doc_root = %q, want https://docs.example.com/servicey", steps[0].DocRoot)
 	}
 }
 

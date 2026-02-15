@@ -201,6 +201,8 @@ func TestLoadSystemRegistryValidation(t *testing.T) {
   - id: ServiceA
     name: Service A
     owner_team: team.a
+    runbook_url: https://runbooks.example.com/service-a
+    doc_root: https://docs.example.com/service-a
     escalation:
       - role: primary
         name: A Oncall
@@ -209,8 +211,18 @@ func TestLoadSystemRegistryValidation(t *testing.T) {
 	if err := os.WriteFile(path, []byte(valid), 0o644); err != nil {
 		t.Fatalf("write registry: %v", err)
 	}
-	if _, err := LoadSystemRegistry(path); err != nil {
+	registry, err := LoadSystemRegistry(path)
+	if err != nil {
 		t.Fatalf("load valid registry: %v", err)
+	}
+	if len(registry.Systems) != 1 {
+		t.Fatalf("systems len = %d, want 1", len(registry.Systems))
+	}
+	if registry.Systems[0].RunbookURL != "https://runbooks.example.com/service-a" {
+		t.Fatalf("runbook_url = %q, want https://runbooks.example.com/service-a", registry.Systems[0].RunbookURL)
+	}
+	if registry.Systems[0].DocRoot != "https://docs.example.com/service-a" {
+		t.Fatalf("doc_root = %q, want https://docs.example.com/service-a", registry.Systems[0].DocRoot)
 	}
 
 	dup := `systems:

@@ -21,7 +21,7 @@ const objectRows = [
     where: "`lineage-systems.yml` (or equivalent registry file)",
     reference: "strict:systems[]",
     syntax: "systems[] objects",
-    why: "Defines service-level ownership, escalation defaults, and flow memberships."
+    why: "Defines service-level ownership, runbooks/docs, escalation defaults, and flow memberships."
   },
   {
     object: "Flow registry catalog",
@@ -81,6 +81,8 @@ const serviceRegistryKeys = [
   { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier. Use `parent` for topology and `parent:child` for internal subsystems.", mode: "autogen" },
   { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
   { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team slug.", mode: "manual-required" },
+  { key: "runbook_url", required: "No", defaultValue: "None", purpose: "Optional runbook URL used by responders.", mode: "manual-optional" },
+  { key: "doc_root", required: "No", defaultValue: "None", purpose: "Optional root URL for external/internal service docs.", mode: "manual-optional" },
   { key: "flows", required: "No (recommended for multi-service policy)", defaultValue: "None", purpose: "Flow IDs this service participates in.", mode: "recommended" },
   { key: "escalation", required: "No (policy can require)", defaultValue: "None", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
   { key: "escalation[].channel", required: "No (policy can require)", defaultValue: "None", purpose: "How responders are reached.", mode: "recommended" },

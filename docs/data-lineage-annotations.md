@@ -108,10 +108,13 @@ systems:
   - id: commerce-gateway
     name: CommerceGateway Service
     owner_team: team.ecommerce
+    runbook_url: https://runbooks.example.com/commerce-gateway
+    doc_root: https://docs.example.com/commerce-gateway
     flows: [checkout]
   - id: support-console
     name: Support Console
     owner_team: team.support
+    doc_root: https://docs.example.com/support-console
     flows: [support]
 ```
 
@@ -123,6 +126,7 @@ Rules:
    each service membership row.
 4. findings derive impacted flows from affected services + lineage paths.
 5. per-API flow tier tags are intentionally not part of the baseline model.
+6. `runbook_url` and `doc_root` are optional service-level metadata links.
 
 ## Normalization Defaults
 

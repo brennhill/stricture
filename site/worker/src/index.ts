@@ -24,6 +24,8 @@ interface ServiceNode {
   kind: "internal" | "external";
   owner: string;
   escalation: string;
+  runbookURL?: string;
+  docRoot?: string;
   flowCount: number;
 }
 
@@ -128,6 +130,8 @@ interface EscalationStep {
   depth: number;
   system_id: string;
   owner?: string;
+  runbook_url?: string;
+  doc_root?: string;
   reason: string;
   contacts?: Array<{ role: string; name?: string; channel?: string }>;
 }

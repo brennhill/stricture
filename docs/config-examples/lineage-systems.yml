@@ -19,6 +19,8 @@ systems:
   - id: Identity
     name: Identity Service
     owner_team: team.identity
+    runbook_url: https://runbooks.example.com/identity
+    doc_root: https://docs.example.com/identity
     flows: [identity, checkout]
     escalation:
       - role: primary
@@ -31,6 +33,8 @@ systems:
   - id: ServiceX
     name: Service X
     owner_team: team.servicex
+    runbook_url: https://runbooks.example.com/service-x
+    doc_root: https://docs.example.com/service-x
     flows: [checkout]
     escalation:
       - role: primary
@@ -40,6 +44,7 @@ systems:
   - id: spotify
     name: Spotify API
     owner_team: vendor.spotify
+    doc_root: https://developer.spotify.com/documentation/web-api
     flows: [media]
     escalation:
       - role: vendor

@@ -44,6 +44,8 @@ type demoService struct {
 	Kind       string `json:"kind"`
 	Owner      string `json:"owner"`
 	Escalation string `json:"escalation"`
+	RunbookURL string `json:"runbookURL,omitempty"`
+	DocRoot    string `json:"docRoot,omitempty"`
 	FlowCount  int    `json:"flowCount"`
 }
 
@@ -72,6 +74,8 @@ type nodeMeta struct {
 	Kind       string
 	Owner      string
 	Escalation string
+	RunbookURL string
+	DocRoot    string
 	FlowCount  int
 }
 
@@ -154,6 +158,8 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		if meta, ok := registryByID[svcID]; ok {
 			node.Name = fallbackString(meta.Name, node.Name)
 			node.Owner = fallbackString(meta.OwnerTeam, node.Owner)
+			node.RunbookURL = fallbackString(meta.RunbookURL, node.RunbookURL)
+			node.DocRoot = fallbackString(meta.DocRoot, node.DocRoot)
 			if node.Escalation == "" {
 				node.Escalation = firstChannel(meta.Escalation)
 			}
@@ -181,6 +187,8 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 			if meta, ok := registryByID[upstream]; ok {
 				upNode.Name = fallbackString(meta.Name, upNode.Name)
 				upNode.Owner = fallbackString(meta.OwnerTeam, upNode.Owner)
+				upNode.RunbookURL = fallbackString(meta.RunbookURL, upNode.RunbookURL)
+				upNode.DocRoot = fallbackString(meta.DocRoot, upNode.DocRoot)
 				if upNode.Escalation == "" {
 					upNode.Escalation = firstChannel(meta.Escalation)
 				}
@@ -206,6 +214,8 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		if meta, ok := registryByID[id]; ok {
 			node.Name = fallbackString(meta.Name, node.Name)
 			node.Owner = fallbackString(meta.OwnerTeam, node.Owner)
+			node.RunbookURL = fallbackString(meta.RunbookURL, node.RunbookURL)
+			node.DocRoot = fallbackString(meta.DocRoot, node.DocRoot)
 			if node.Escalation == "" {
 				node.Escalation = firstChannel(meta.Escalation)
 			}
@@ -226,6 +236,8 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 			Kind:       node.Kind,
 			Owner:      node.Owner,
 			Escalation: node.Escalation,
+			RunbookURL: node.RunbookURL,
+			DocRoot:    node.DocRoot,
 			FlowCount:  node.FlowCount,
 		})
 	}

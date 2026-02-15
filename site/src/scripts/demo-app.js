@@ -129,6 +129,31 @@ function serviceOwner(snapshot, serviceId) {
   return service?.owner || "unknown owner";
 }
 
+function isHTTPURL(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return false;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function serviceResourceLinks(service) {
+  const links = [];
+  if (isHTTPURL(service?.runbookURL)) {
+    links.push(`<a href="${service.runbookURL}" target="_blank" rel="noreferrer noopener">Runbook</a>`);
+  }
+  if (isHTTPURL(service?.docRoot)) {
+    links.push(`<a href="${service.docRoot}" target="_blank" rel="noreferrer noopener">Docs</a>`);
+  }
+  if (!links.length) {
+    return "";
+  }
+  return `<p class="node-links">${links.join(" • ")}</p>`;
+}
+
 function topologyRootId(serviceId) {
   const raw = String(serviceId || "").trim();
   const cut = raw.indexOf(":");
@@ -458,6 +483,8 @@ function buildEcosystemView(snapshot) {
         kind: group.members.every((service) => service.kind === "external") ? "external" : "internal",
         owner: rootService?.owner || group.members[0]?.owner || "team.unknown",
         escalation: rootService?.escalation || group.members[0]?.escalation || "slack:#unknown-oncall",
+        runbookURL: rootService?.runbookURL || group.members[0]?.runbookURL || "",
+        docRoot: rootService?.docRoot || group.members[0]?.docRoot || "",
         flowCount: group.flowCount,
         internalCount,
       };
@@ -817,6 +844,14 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
     const serviceNameLabel = service?.name || row.serviceId;
     const owner = service?.owner || "unknown owner";
     const primary = service?.escalation || "n/a";
+    const links = [];
+    if (isHTTPURL(service?.runbookURL)) {
+      links.push(`<a href="${service.runbookURL}" target="_blank" rel="noreferrer noopener">Runbook</a>`);
+    }
+    if (isHTTPURL(service?.docRoot)) {
+      links.push(`<a href="${service.docRoot}" target="_blank" rel="noreferrer noopener">Docs</a>`);
+    }
+    const linksMeta = links.length ? `<p class="item-meta">${links.join(" • ")}</p>` : "";
     const chainText = row.failed
       ? "Chain lookup failed."
       : row.chain.length
@@ -828,6 +863,7 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
         <h4>${serviceNameLabel}</h4>
         <p class="item-meta">Primary on-call: ${primary}</p>
         <p class="item-meta">Owner: ${owner}</p>
+        ${linksMeta}
         <p class="item-meta">Chain: ${chainText}</p>
       </article>
     `;
@@ -1031,6 +1067,7 @@ function renderTopology(snapshot) {
       <p>domain=${service.domain} owner=${service.owner}</p>
       <p>flows=${service.flowCount} kind=${service.kind}</p>
       ${internalMeta}
+      ${serviceResourceLinks(service)}
       <span class="node-badge">${service.escalation}</span>
     `;
     selectors.topology.appendChild(card);

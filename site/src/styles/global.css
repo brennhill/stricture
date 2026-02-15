@@ -946,6 +946,20 @@ select {
   color: var(--ink-soft);
 }
 
+.node-links {
+  margin: 0.24rem 0 0;
+  font-size: 0.7rem;
+}
+
+.node-links a {
+  color: var(--brand-ink);
+  text-decoration: none;
+}
+
+.node-links a:hover {
+  text-decoration: underline;
+}
+
 .node-ok {
   border-color: rgba(15, 140, 79, 0.42);
 }
