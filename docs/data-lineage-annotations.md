@@ -127,6 +127,8 @@ Rules:
 4. findings derive impacted flows from affected services + lineage paths.
 5. per-API flow tier tags are intentionally not part of the baseline model.
 6. `runbook_url` and `doc_root` are optional service-level metadata links.
+7. `business_risk` is an organization-defined risk code token (no global
+   built-in enum list in core Stricture).
 
 ## Normalization Defaults
 

@@ -16,7 +16,11 @@
           "name": { "type": "string", "minLength": 1 },
           "level": { "type": "integer", "minimum": 0 },
           "owner": { "type": "string", "minLength": 1 },
-          "business_risk": { "type": "string", "minLength": 1 }
+          "business_risk": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,63}$",
+            "description": "Organization-defined risk code token (for example order_loss)."
+          }
         },
         "additionalProperties": false
       }

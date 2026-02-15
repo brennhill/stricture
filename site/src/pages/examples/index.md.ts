@@ -11,6 +11,7 @@ Practical examples across Java, protobuf/buf, Go, Python, and Node.js.
 - API/field-level lineage with \`stricture-source\` comments
 - Reuse of existing metadata from OpenAPI and OpenTelemetry
 - Inline comments showing where Stricture is "batteries included"
+- Clarified split for Protobuf/Buf and Go: service metadata in registry, field lineage in code
 
 Read the full page at /examples/.
 `;
@@ -21,4 +22,3 @@ export const GET: APIRoute = () =>
       "content-type": "text/markdown; charset=utf-8",
     },
   });
-

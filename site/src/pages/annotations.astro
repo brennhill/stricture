@@ -95,7 +95,7 @@ const flowRegistryKeys = [
   { key: "strict:flows[].name", required: "Yes", defaultValue: "None", purpose: "Human-readable flow name.", mode: "manual-required" },
   { key: "strict:flows[].level", required: "Yes", defaultValue: "None", purpose: "Numeric tier level (org-defined scale).", mode: "manual-required" },
   { key: "strict:flows[].owner", required: "No", defaultValue: "None", purpose: "Owning team for business flow governance.", mode: "recommended" },
-  { key: "strict:flows[].business_risk", required: "No", defaultValue: "None", purpose: "Short reason for policy criticality (for example order_loss).", mode: "recommended" }
+  { key: "strict:flows[].business_risk", required: "No", defaultValue: "None", purpose: "Organization-managed risk code token used by policy (for example order_loss).", mode: "recommended" }
 ];
 
 const modeMeta = {
@@ -287,6 +287,9 @@ const modeMeta = {
     <h2>Flow registry keys (A-Z)</h2>
     <p class="muted">
       Flow catalogs are top-level registry metadata (`'strict:flows'`) used by policy to map drift findings to business-critical tiers.
+    </p>
+    <p class="muted">
+      <code>business_risk</code> is an organization-managed token (for example <code>order_loss</code>), not a built-in global enum.
     </p>
     <div class="compare-table-wrap">
       <table class="compare-table">

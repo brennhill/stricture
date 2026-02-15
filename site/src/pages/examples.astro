@@ -22,6 +22,70 @@ systems:
       - role: primary
         name: Payments Oncall
         channel: pagerduty:payments-oncall
+  - id: CheckoutGatewayProto
+    name: Checkout Gateway (Protobuf/Buf)
+    owner_team: team.payments-platform
+    runbook_url: https://runbooks.example.com/checkout-gateway-proto
+    doc_root: https://docs.example.com/checkout-gateway-proto
+    flows: [checkout]
+  - id: CheckoutGatewayGo
+    name: Checkout Gateway (Go)
+    owner_team: team.payments-platform
+    runbook_url: https://runbooks.example.com/checkout-gateway-go
+    doc_root: https://docs.example.com/checkout-gateway-go
+    flows: [checkout]
+  - id: CheckoutGatewayPython
+    name: Checkout Gateway (Python)
+    owner_team: team.payments-platform
+    runbook_url: https://runbooks.example.com/checkout-gateway-python
+    doc_root: https://docs.example.com/checkout-gateway-python
+    flows: [checkout]
+  - id: CheckoutGatewayNode
+    name: Checkout Gateway (Node.js)
+    owner_team: team.payments-platform
+    runbook_url: https://runbooks.example.com/checkout-gateway-node
+    doc_root: https://docs.example.com/checkout-gateway-node
+    flows: [checkout]
+`;
+
+const javaServiceSnippet = String.raw`- id: CheckoutGatewayJava
+  name: Checkout Gateway (Java)
+  owner_team: team.payments-platform
+  runbook_url: https://runbooks.example.com/checkout-gateway
+  doc_root: https://docs.example.com/checkout-gateway
+  flows: [checkout]
+`;
+
+const protoServiceSnippet = String.raw`- id: CheckoutGatewayProto
+  name: Checkout Gateway (Protobuf/Buf)
+  owner_team: team.payments-platform
+  runbook_url: https://runbooks.example.com/checkout-gateway-proto
+  doc_root: https://docs.example.com/checkout-gateway-proto
+  flows: [checkout]
+`;
+
+const goServiceSnippet = String.raw`- id: CheckoutGatewayGo
+  name: Checkout Gateway (Go)
+  owner_team: team.payments-platform
+  runbook_url: https://runbooks.example.com/checkout-gateway-go
+  doc_root: https://docs.example.com/checkout-gateway-go
+  flows: [checkout]
+`;
+
+const pythonServiceSnippet = String.raw`- id: CheckoutGatewayPython
+  name: Checkout Gateway (Python)
+  owner_team: team.payments-platform
+  runbook_url: https://runbooks.example.com/checkout-gateway-python
+  doc_root: https://docs.example.com/checkout-gateway-python
+  flows: [checkout]
+`;
+
+const nodeServiceSnippet = String.raw`- id: CheckoutGatewayNode
+  name: Checkout Gateway (Node.js)
+  owner_team: team.payments-platform
+  runbook_url: https://runbooks.example.com/checkout-gateway-node
+  doc_root: https://docs.example.com/checkout-gateway-node
+  flows: [checkout]
 `;
 
 const javaSnippet = String.raw`@RestController
@@ -55,6 +119,7 @@ service CheckoutService {
 }
 
 message AuthorizeResponse {
+  // Stricture annotations attach to concrete output fields.
   // re-used by Stricture: Buf/proto schema docs and field identity
   // stricture-source field=response.checkout.payment_status source_system=CheckoutProtoGateway
   // source_version=v2026.08
@@ -64,6 +129,7 @@ message AuthorizeResponse {
 `;
 
 const goSnippet = String.raw`type CheckoutResponse struct {
+  // Keep Stricture field annotations near response emit/transform logic.
   PaymentStatus string ` + "`json:\"payment_status\"`" + `
 }
 
@@ -133,20 +199,26 @@ const examples = [
     id: "java-otel-openapi",
     title: "Java + OpenTelemetry + OpenAPI",
     description: "Spring endpoint with OpenAPI annotations and OTel spans. Stricture adds strict field-level lineage near emit logic.",
+    serviceNote: "Service-level metadata lives in lineage-systems.yml (strict:systems[]), not in Java source files.",
+    serviceSnippet: javaServiceSnippet,
     lang: "java",
     code: javaSnippet,
   },
   {
     id: "protobuf-buf",
     title: "Protobuf + Buf",
-    description: "Buf/proto contracts remain the source of truth. Stricture comments bind output fields to upstream sources/contracts.",
+    description: "Buf/proto contracts remain the source of truth. Stricture comments still attach at output field level, while service metadata stays in strict:systems[].",
+    serviceNote: "Yes, Protobuf/Buf has service-level metadata too; it lives in lineage-systems.yml rather than inside .proto service/message blocks.",
+    serviceSnippet: protoServiceSnippet,
     lang: "proto",
     code: protobufSnippet,
   },
   {
     id: "go",
     title: "Golang + net/http + OTel",
-    description: "Go handler example with span context and strict annotations for API output fields.",
+    description: "Go handler example with span context and strict field-level annotations at emit points.",
+    serviceNote: "For Go, keep owner/escalation/runbook/docs at service level in lineage-systems.yml and keep stricture-source near response fields.",
+    serviceSnippet: goServiceSnippet,
     lang: "go",
     code: goSnippet,
   },
@@ -154,6 +226,8 @@ const examples = [
     id: "python",
     title: "Python + FastAPI + OTel",
     description: "FastAPI OpenAPI generation plus OTel tracing, with Stricture lineage comments on response fields.",
+    serviceNote: "Service-level metadata for Python services also lives in strict:systems[] in lineage-systems.yml.",
+    serviceSnippet: pythonServiceSnippet,
     lang: "python",
     code: pythonSnippet,
   },
@@ -161,6 +235,8 @@ const examples = [
     id: "node",
     title: "Node.js + Express + OpenAPI JSDoc + OTel",
     description: "Express route using OpenAPI JSDoc and OpenTelemetry spans with strict annotations for provenance.",
+    serviceNote: "Service-level metadata for Node services also lives in strict:systems[] in lineage-systems.yml.",
+    serviceSnippet: nodeServiceSnippet,
     lang: "ts",
     code: nodeSnippet,
   },
@@ -185,7 +261,10 @@ const examples = [
   <section class="card">
     <h2>Service-level annotations (registry)</h2>
     <p class="muted">
-      This is where ownership, escalation, docs, runbooks, and flow tiers live.
+      This is where ownership, escalation, runbooks/docs, and flow tiers live. It is a shared registry file (typically <code>lineage-systems.yml</code>), not inline code comments.
+    </p>
+    <p class="muted">
+      <code>business_risk</code> is an org-managed risk code token (for example <code>order_loss</code>), not a global built-in enum in Stricture core.
     </p>
     <div class="code-shell">
       <Code code={serviceRegistrySnippet} lang="yaml" />
@@ -196,6 +275,12 @@ const examples = [
     <section id={example.id} class="card">
       <h2>{example.title}</h2>
       <p class="muted">{example.description}</p>
+      <p class="muted">{example.serviceNote}</p>
+      <h3 class="example-subhead">Service-level (strict:systems[])</h3>
+      <div class="code-shell">
+        <Code code={example.serviceSnippet} lang="yaml" />
+      </div>
+      <h3 class="example-subhead">API/field-level (stricture-source)</h3>
       <div class="code-shell">
         <Code code={example.code} lang={example.lang} />
       </div>
@@ -218,5 +303,9 @@ const examples = [
     line-height: 1.45;
     overflow-x: auto;
   }
-</style>
 
+  .example-subhead {
+    margin: 0.8rem 0 0.3rem;
+    font-size: 0.95rem;
+  }
+</style>
