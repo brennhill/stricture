@@ -105,6 +105,12 @@ interface Policy {
     lineage: {
       findings: {
         require_downstream_impact: boolean;
+        unknown_impact_severity: Severity;
+        self_only: {
+          emit_finding: boolean;
+          severity?: Severity;
+          publish_change_event?: boolean;
+        };
         flow_criticality: {
           enabled: boolean;
           critical_flow_ids: string[];
@@ -288,6 +294,12 @@ function defaultSnapshot(): DemoSnapshot {
         lineage: {
           findings: {
             require_downstream_impact: true,
+            unknown_impact_severity: "low",
+            self_only: {
+              emit_finding: false,
+              severity: "low",
+              publish_change_event: true,
+            },
             flow_criticality: {
               enabled: true,
               critical_flow_ids: ["checkout"],
@@ -299,6 +311,9 @@ function defaultSnapshot(): DemoSnapshot {
       coverage: {
         implementedFields: [
           "lineage.findings.require_downstream_impact",
+          "lineage.findings.unknown_impact_severity",
+          "lineage.findings.self_only.emit_finding",
+          "lineage.findings.self_only.severity",
           "lineage.findings.flow_criticality.enabled",
           "lineage.findings.flow_criticality.critical_flow_ids",
           "lineage.findings.flow_criticality.critical_flow_block_reason",
@@ -473,23 +488,61 @@ function findingHasDownstreamImpact(snapshot: DemoSnapshot, finding: Finding): b
   });
 }
 
+function impactStatus(snapshot: DemoSnapshot, finding: Finding): {
+  downstream: boolean;
+  selfOnly: boolean;
+  unknown: boolean;
+} {
+  const mutationID = mutationIDFromFindingID(finding.id);
+  const mutation = mutationID ? snapshot.mutations.find((row) => row.id === mutationID) : undefined;
+  const sourceServiceID = finding.source?.serviceId || mutation?.serviceId || "";
+  const impactServiceID = finding.impact?.serviceId || finding.serviceId || "";
+  const downstream = findingHasDownstreamImpact(snapshot, finding);
+  const selfOnly = sourceServiceID && impactServiceID && sourceServiceID === impactServiceID && !downstream;
+  const unknown = !downstream && !selfOnly && !sourceServiceID && !impactServiceID;
+  return { downstream, selfOnly, unknown };
+}
+
 function runEngine(snapshot: DemoSnapshot): DemoSnapshot {
   const now = new Date();
   const allFindings = computeFindings(snapshot);
-  const requireImpact = snapshot.policy.pack.lineage.findings.require_downstream_impact;
+  const findingsPolicy = snapshot.policy.pack.lineage.findings;
+  const requireImpact = findingsPolicy.require_downstream_impact;
   const activeFindings = allFindings.filter((finding) => {
     if (snapshot.overrides.some((override) => isOverrideActive(override, finding, now))) {
       return false;
     }
-    return requireImpact ? findingHasDownstreamImpact(snapshot, finding) : true;
+    const status = impactStatus(snapshot, finding);
+    if (!requireImpact) {
+      return true;
+    }
+    if (status.downstream) {
+      return true;
+    }
+    if (status.unknown) {
+      return true;
+    }
+    return findingsPolicy.self_only.emit_finding && status.selfOnly;
   });
   const findingsWithPolicy = activeFindings.map((finding) => {
+    const status = impactStatus(snapshot, finding);
+    let severity = finding.severity;
+    if (status.unknown) {
+      severity = findingsPolicy.unknown_impact_severity || severity;
+    }
+    if (status.selfOnly && findingsPolicy.self_only.emit_finding && findingsPolicy.self_only.severity) {
+      severity = findingsPolicy.self_only.severity;
+    }
     const rationale = policyRationaleForFinding(snapshot, finding);
     if (!rationale) {
-      return finding;
+      return {
+        ...finding,
+        severity,
+      };
     }
     return {
       ...finding,
+      severity,
       policyRationale: rationale,
     };
   });
@@ -643,6 +696,9 @@ export class DemoSession {
       const failOn = String(body.failOn || "") as Severity;
       const requireImpact = Boolean(body.requireDownstreamImpact);
       const flowHardBlock = Boolean(body.flowHardBlock);
+      const unknownImpactSeverity = String(body.unknownImpactSeverity || "low") as Severity;
+      const selfOnlyEmit = Boolean(body.selfOnlyEmit);
+      const selfOnlySeverity = String(body.selfOnlySeverity || "low") as Severity;
       const criticalFlowId = normalizeID(String(body.criticalFlowId || ""));
       const hardBlockReason = String(body.hardBlockReason || "").trim();
 
@@ -651,6 +707,9 @@ export class DemoSession {
       }
       if (!snapshot.flows.some((flow) => normalizeID(flow.id) === criticalFlowId)) {
         return textResponse("policy requires valid criticalFlowId", 400);
+      }
+      if (!(unknownImpactSeverity in severityRank) || !(selfOnlySeverity in severityRank)) {
+        return textResponse("policy requires valid severity values", 400);
       }
 
       const updated = {
@@ -666,6 +725,12 @@ export class DemoSession {
               findings: {
                 ...snapshot.policy.pack.lineage.findings,
                 require_downstream_impact: requireImpact,
+                unknown_impact_severity: unknownImpactSeverity,
+                self_only: {
+                  ...snapshot.policy.pack.lineage.findings.self_only,
+                  emit_finding: selfOnlyEmit,
+                  severity: selfOnlySeverity,
+                },
                 flow_criticality: {
                   ...snapshot.policy.pack.lineage.findings.flow_criticality,
                   enabled: flowHardBlock,

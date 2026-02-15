@@ -35,6 +35,9 @@ const selectors = {
   policyCriticalFlow: query("#policy-critical-flow"),
   policyRequireImpact: query("#policy-require-impact"),
   policyFlowHardBlock: query("#policy-flow-hard-block"),
+  policyUnknownImpact: query("#policy-unknown-impact"),
+  policySelfOnly: query("#policy-self-only"),
+  policySelfOnlySeverity: query("#policy-self-only-severity"),
   policyHardBlockReason: query("#policy-hard-block-reason"),
   policyCoverage: query("#policy-coverage"),
   policyPackPreview: query("#policy-pack-preview"),
@@ -429,6 +432,7 @@ function policyPackYaml(pack) {
   }
   const findings = pack.lineage?.findings || {};
   const flow = findings.flow_criticality || {};
+  const selfOnly = findings.self_only || {};
   const criticalFlows = Array.isArray(flow.critical_flow_ids) ? flow.critical_flow_ids : [];
   return [
     "schema_version: 1",
@@ -437,6 +441,10 @@ function policyPackYaml(pack) {
     "lineage:",
     "  findings:",
     `    require_downstream_impact: ${Boolean(findings.require_downstream_impact)}`,
+    `    unknown_impact_severity: ${findings.unknown_impact_severity || "low"}`,
+    "    self_only:",
+    `      emit_finding: ${Boolean(selfOnly.emit_finding)}`,
+    selfOnly.severity ? `      severity: ${selfOnly.severity}` : "      severity: low",
     "    flow_criticality:",
     `      enabled: ${Boolean(flow.enabled)}`,
     `      critical_flow_ids: [${criticalFlows.join(", ")}]`,
@@ -451,7 +459,7 @@ function updatePolicyPreview(snapshot) {
   if (selectors.policyCoverage) {
     const implemented = snapshot.policy?.coverage?.implementedFields?.length || 0;
     const supported = snapshot.policy?.coverage?.supportedFields?.length || 0;
-    selectors.policyCoverage.textContent = `Policy pack support: ${implemented}/${supported} fields (demo mode).`;
+    selectors.policyCoverage.textContent = `Policy pack support: ${implemented}/${supported} fields (demo subset).`;
   }
 }
 
@@ -1228,6 +1236,16 @@ function render(snapshot) {
   if (selectors.policyFlowHardBlock) {
     selectors.policyFlowHardBlock.checked = !!snapshot.policy?.pack?.lineage?.findings?.flow_criticality?.enabled;
   }
+  if (selectors.policyUnknownImpact) {
+    selectors.policyUnknownImpact.value = snapshot.policy?.pack?.lineage?.findings?.unknown_impact_severity || "low";
+  }
+  if (selectors.policySelfOnly) {
+    selectors.policySelfOnly.checked = !!snapshot.policy?.pack?.lineage?.findings?.self_only?.emit_finding;
+  }
+  if (selectors.policySelfOnlySeverity) {
+    selectors.policySelfOnlySeverity.value = snapshot.policy?.pack?.lineage?.findings?.self_only?.severity || "low";
+    selectors.policySelfOnlySeverity.disabled = !selectors.policySelfOnly?.checked;
+  }
   if (selectors.policyHardBlockReason) {
     selectors.policyHardBlockReason.value = snapshot.policy?.pack?.lineage?.findings?.flow_criticality?.critical_flow_block_reason || "";
   }
@@ -1333,6 +1351,9 @@ async function updatePolicy() {
     criticalFlowId: selectors.policyCriticalFlow?.value,
     requireDownstreamImpact: selectors.policyRequireImpact?.checked,
     flowHardBlock: selectors.policyFlowHardBlock?.checked,
+    unknownImpactSeverity: selectors.policyUnknownImpact?.value,
+    selfOnlyEmit: selectors.policySelfOnly?.checked,
+    selfOnlySeverity: selectors.policySelfOnlySeverity?.value,
     hardBlockReason: selectors.policyHardBlockReason?.value.trim(),
   };
   const response = await request(`/api/session/${state.sessionId}/policy`, "POST", payload);
@@ -1354,6 +1375,11 @@ function bindEvents() {
   selectors.updatePolicy?.addEventListener("click", () => updatePolicy().catch(showError));
   selectors.runStricture?.addEventListener("click", () => run().catch(showError));
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
+  selectors.policySelfOnly?.addEventListener("change", () => {
+    if (selectors.policySelfOnlySeverity) {
+      selectors.policySelfOnlySeverity.disabled = !selectors.policySelfOnly.checked;
+    }
+  });
   selectors.topologyTabEcosystem?.addEventListener("click", () => {
     state.topologyMode = "ecosystem";
     if (state.snapshot) {
