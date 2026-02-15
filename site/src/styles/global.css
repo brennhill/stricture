@@ -1018,6 +1018,25 @@ select {
   gap: 0.35rem;
 }
 
+.finding-escalation-layout {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.finding-escalation-section {
+  min-width: 0;
+}
+
+.finding-escalation-primary .finding-escalation-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.finding-escalation-secondary .finding-escalation-grid {
+  grid-template-columns: 1fr;
+}
+
 .finding-escalation-item {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1025,9 +1044,24 @@ select {
   background: #ffffff;
 }
 
+.finding-escalation-lane {
+  margin: 0 0 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
 .finding-escalation-item h4 {
   margin: 0;
   font-size: 0.77rem;
+}
+
+@media (max-width: 900px) {
+  .finding-escalation-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .chips {
@@ -1158,6 +1192,17 @@ select {
 
 .graph-node.impacted text {
   fill: #9a3412;
+}
+
+.graph-node.source.impacted circle {
+  fill: rgba(239, 68, 68, 0.15);
+  stroke: #dc2626;
+  stroke-width: 2.8;
+  animation: sourceGlowPulse 2.4s ease-in-out infinite;
+}
+
+.graph-node.source.impacted text {
+  fill: #7f1d1d;
 }
 
 .graph-node.transit circle {

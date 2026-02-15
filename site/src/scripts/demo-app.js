@@ -136,8 +136,8 @@ function latestMutation(snapshot) {
   return snapshot.mutations[snapshot.mutations.length - 1];
 }
 
-function listServiceNames(snapshot, ids, limit = 3) {
-  const names = [...new Set((ids || []).map((id) => serviceName(snapshot, id)).filter(Boolean))];
+function listServiceNames(snapshot, ids, limit = 3, nameSnapshot = snapshot) {
+  const names = [...new Set((ids || []).map((id) => serviceName(nameSnapshot, id)).filter(Boolean))];
   if (!names.length) return "none";
   if (names.length <= limit) return names.join(", ");
   return `${names.slice(0, limit).join(", ")} +${names.length - limit} more`;
@@ -698,6 +698,62 @@ function relatedServiceIdsForFinding(snapshot, finding) {
   return [...related].filter(Boolean);
 }
 
+function classifyEscalationServiceIds(snapshot, finding) {
+  const related = new Set(relatedServiceIdsForFinding(snapshot, finding));
+  const sourceID = finding?.source?.serviceId || resolveServiceId(snapshot, finding?.source?.service);
+  const impactID = finding?.impact?.serviceId || resolveServiceId(snapshot, finding?.impact?.service) || finding?.serviceId || "";
+  const fieldEdges = (snapshot.edges || []).filter((edge) => edge.fieldId === finding?.fieldId);
+  const outgoing = new Map();
+  fieldEdges.forEach((edge) => {
+    if (!outgoing.has(edge.from)) {
+      outgoing.set(edge.from, []);
+    }
+    outgoing.get(edge.from).push(edge.to);
+  });
+
+  const shortestPathNodes = () => {
+    if (!sourceID || !impactID) return [];
+    if (sourceID === impactID) return [sourceID];
+    const queue = [sourceID];
+    const seen = new Set([sourceID]);
+    const prev = new Map();
+    while (queue.length) {
+      const current = queue.shift();
+      const nexts = outgoing.get(current) || [];
+      for (const next of nexts) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        prev.set(next, current);
+        if (next === impactID) {
+          const path = [impactID];
+          let node = impactID;
+          while (prev.has(node)) {
+            node = prev.get(node);
+            path.push(node);
+          }
+          return path.reverse();
+        }
+        queue.push(next);
+      }
+    }
+    return [];
+  };
+
+  const primary = new Set(shortestPathNodes());
+  if (sourceID) primary.add(sourceID);
+  if (impactID) primary.add(impactID);
+  if (finding?.serviceId) primary.add(finding.serviceId);
+  if (!primary.size && related.size) {
+    primary.add([...related][0]);
+  }
+
+  const secondary = [...related].filter((id) => !primary.has(id));
+  return {
+    primary: [...primary].filter(Boolean),
+    secondary: secondary.filter(Boolean),
+  };
+}
+
 async function renderFindingEscalation(snapshot, findingId, button, container) {
   const finding = (snapshot.findings || []).find((row) => row.id === findingId);
   if (!finding) {
@@ -720,8 +776,9 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
   button.disabled = true;
   button.textContent = "Loading escalation...";
 
-  const serviceIDs = relatedServiceIdsForFinding(snapshot, finding);
-  const rows = await Promise.all(serviceIDs.map(async (serviceId) => {
+  const groups = classifyEscalationServiceIds(snapshot, finding);
+  const allServiceIDs = [...new Set([...groups.primary, ...groups.secondary])];
+  const rows = await Promise.all(allServiceIDs.map(async (serviceId) => {
     try {
       const payload = await request(`/api/session/${state.sessionId}/escalation?serviceId=${encodeURIComponent(serviceId)}`);
       return { serviceId, chain: payload.chain || [] };
@@ -729,9 +786,11 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
       return { serviceId, chain: [], failed: true };
     }
   }));
+  const rowByID = new Map(rows.map((row) => [row.serviceId, row]));
 
   const services = serviceById(snapshot);
-  const cards = rows.map((row) => {
+  const toCard = (serviceId, laneLabel) => {
+    const row = rowByID.get(serviceId) || { serviceId, chain: [], failed: true };
     const service = services.get(row.serviceId);
     const serviceNameLabel = service?.name || row.serviceId;
     const owner = service?.owner || "unknown owner";
@@ -743,17 +802,31 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
         : "No additional chain configured.";
     return `
       <article class="finding-escalation-item">
+        <p class="finding-escalation-lane">${laneLabel}</p>
         <h4>${serviceNameLabel}</h4>
         <p class="item-meta">Primary on-call: ${primary}</p>
         <p class="item-meta">Owner: ${owner}</p>
         <p class="item-meta">Chain: ${chainText}</p>
       </article>
     `;
-  }).join("");
+  };
+  const primaryCards = groups.primary.map((serviceId) => toCard(serviceId, "Primary escalation")).join("");
+  const secondaryCards = groups.secondary.map((serviceId) => toCard(serviceId, "Secondary escalation")).join("");
+  const secondarySection = secondaryCards
+    ? `<aside class="finding-escalation-section finding-escalation-secondary">
+         <p class="item-meta finding-escalation-title">Secondary escalations (services potentially involved):</p>
+         <div class="finding-escalation-grid">${secondaryCards}</div>
+       </aside>`
+    : "";
 
   container.innerHTML = `
-    <p class="item-meta finding-escalation-title">Escalation contacts for services on this affected flow:</p>
-    <div class="finding-escalation-grid">${cards}</div>
+    <div class="finding-escalation-layout">
+      <section class="finding-escalation-section finding-escalation-primary">
+        <p class="item-meta finding-escalation-title">Primary escalations (services on direct cause -> impact path):</p>
+        <div class="finding-escalation-grid">${primaryCards}</div>
+      </section>
+      ${secondarySection}
+    </div>
   `;
   container.dataset.loaded = "true";
   container.classList.remove("is-collapsed");
@@ -1458,8 +1531,9 @@ function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Se
   container.appendChild(svg);
 
   if (selectors.flowPathSummary) {
-    selectors.flowPathSummary.textContent = summarizeFlow(
+    selectors.flowPathSummary.innerHTML = summarizeFlow(
       snapshot,
+      originalSnapshot,
       nodes,
       edges,
       sourceServices,
@@ -1744,8 +1818,18 @@ function addGraphInteractions(svg, view, originalSnapshot) {
   });
 }
 
-function summarizeFlow(snapshot, nodes, edges, sourceServices, impactedServices, severity, activeFields) {
+function escapeHTML(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function summarizeFlow(snapshot, referenceSnapshot, nodes, edges, sourceServices, impactedServices, severity, activeFields) {
   if (!nodes.length) return "No services loaded.";
+  const namingSnapshot = referenceSnapshot || snapshot;
   const incoming = new Map();
   edges.forEach((e) => incoming.set(e.to, (incoming.get(e.to) || 0) + 1));
   const sourceID = sourceServices && sourceServices.size ? [...sourceServices][0] : null;
@@ -1763,12 +1847,18 @@ function summarizeFlow(snapshot, nodes, edges, sourceServices, impactedServices,
     current = nextNode.id;
     if (seen.has(current)) break;
   }
+  const topFinding = (snapshot.findings || [])[0];
+  const primaryField = topFinding?.fieldId || [...(activeFields || [])][0] || "";
+  const primaryMutation = topFinding
+    ? `${humanChange[topFinding.changeType] || topFinding.changeType}${parseFindingDelta(topFinding).shortDelta ? ` (${parseFindingDelta(topFinding).shortDelta})` : ""}`
+    : "none";
   const sevText = severity ? ` (${severity} severity)` : "";
-  const sourceText = sourceID ? `Source changed: ${serviceName(snapshot, sourceID)}.` : "";
-  const impactText = impactedServices?.size
-    ? `Impacted services: ${listServiceNames(snapshot, [...impactedServices], 4)}.`
-    : "No impacted services.";
-  return `${sourceText} ${impactText} Flow: ${path.join(" -> ")}${sevText}`;
+  const sourceText = sourceID ? serviceName(namingSnapshot, sourceID) : "unknown source";
+  const impactedText = impactedServices?.size
+    ? listServiceNames(snapshot, [...impactedServices], 4, namingSnapshot)
+    : "none";
+  const flowText = `${path.join(" -> ")}${sevText}`;
+  return `Source changed: <strong>${escapeHTML(sourceText)}</strong>. Field: <strong>${escapeHTML(fieldLabel(primaryField))}</strong>. Mutation: <strong>${escapeHTML(primaryMutation)}</strong>. Impacted services: <strong>${escapeHTML(impactedText)}</strong>. Flow: ${escapeHTML(flowText)}`;
 }
 
 function computeImpacts(snapshot) {
