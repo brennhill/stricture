@@ -19,6 +19,14 @@
   --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   --accent-shadow: rgba(29, 78, 216, 0.24);
   --section-gap: 1.6rem;
+  --text-base: 0.95rem;
+  --text-sm: 0.84rem;
+  --text-xs: 0.72rem;
+  --text-lead: 1.05rem;
+  --text-h1: clamp(1.9rem, 4vw, 3.1rem);
+  --text-h2: clamp(1.15rem, 2.4vw, 1.7rem);
+  --text-h3: 1rem;
+  --text-kicker: 0.72rem;
   --panel-glow: rgba(29, 78, 216, 0);
   --panel-border: rgba(29, 78, 216, 0.36);
   --icon-lineage: #1d4ed8;
@@ -195,7 +203,8 @@ body {
   margin: 0;
   color: var(--ink);
   font-family: "IBM Plex Mono", monospace;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-size: var(--text-base);
   background:
     radial-gradient(circle at 8% 12%, var(--bg-glow-1) 0, transparent 28%),
     radial-gradient(circle at 90% 8%, var(--bg-glow-2) 0, transparent 32%),
@@ -315,13 +324,13 @@ main > * + * {
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 0.72rem;
+  font-size: var(--text-kicker);
   color: var(--accent);
 }
 
 .hero h1 {
   margin-top: 0.8rem;
-  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  font-size: var(--text-h1);
 }
 
 .hero-rotator {
@@ -342,10 +351,10 @@ main > * + * {
 .lead {
   color: var(--ink-soft);
   max-width: 75ch;
+  font-size: var(--text-lead);
 }
 
 .hero-lead {
-  font-size: 1.05rem;
   line-height: 1.6;
 }
 
@@ -407,7 +416,7 @@ main > * + * {
   position: relative;
   z-index: 1;
   color: var(--ink);
-  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  font-size: var(--text-h2);
   line-height: 1.35;
 }
 
@@ -449,13 +458,13 @@ main > * + * {
 
 .hero-hint {
   margin: 0.6rem 0 0;
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   color: var(--ink-soft);
 }
 
 .hero-link {
   margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-soft);
 }
 
@@ -499,7 +508,7 @@ main > * + * {
   border-radius: 9px;
   border: 1px solid transparent;
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   text-decoration: none;
   padding: 0.62rem 0.95rem;
   cursor: pointer;
@@ -540,7 +549,7 @@ main > * + * {
 
 .feature-intro h2 {
   margin-top: 0.48rem;
-  font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+  font-size: var(--text-h2);
 }
 
 .feature-intro .lead {
@@ -813,7 +822,7 @@ select {
 }
 
 .card h2 {
-  font-size: 1rem;
+  font-size: var(--text-h3);
 }
 
 .card .lead,
@@ -840,7 +849,7 @@ select {
 .muted {
   margin: 0.3rem 0 0.6rem;
   color: var(--ink-soft);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 
 .topology {
