@@ -81,11 +81,14 @@ Scope:
 8. Add org compliance check to ensure repos reference approved `stricture_policy_url` values.
 9. Serve flow-tier catalogs (`stricture_flows`) and policy snapshots to local/CI clients.
 10. Record deployment events and show flow-level deployment recency.
+11. Deliver admin Web UI (inventory + policy + tokens).
+12. Add OAuth/OIDC (Okta) for admin access.
 
 Planned phases:
 
 1. **v0 (ingest):** receive artifacts, store history, org-level diff API.
 2. **v1 (monitor):** rules engine scheduling + alerting + escalation routing + deployment ledger.
+3. **v1.5 (admin):** admin Web UI + OAuth/OIDC login (Okta).
 3. **v2 (platform):** multi-tenant RBAC, SSO, audit trails, policy governance.
 4. **v3 (assist):** auto-remediation suggestions and AI copilot workflows.
 

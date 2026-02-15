@@ -30,12 +30,15 @@ It is intentionally append-only for v0 and does not require a relational DB.
 7. Preserve optional service metadata links (`runbook_url`, `doc_root`) for
    responder workflows.
 8. Record deployment events and expose flow-level deployment recency views.
+9. Provide a minimal admin Web UI for inventories, policy binding, and tokens.
+10. Support OAuth/OIDC login (Okta/GitHub/Google) with org-scoped access.
 
 ## Non-Goals (v0)
 
 1. Full dashboard UI.
 2. Global query/index API beyond basic ingest location response.
 3. Full multi-tenant RBAC/SSO.
+4. Complex approval workflows or custom role graphs.
 
 ## API (v0)
 
@@ -76,6 +79,39 @@ Rollout object (optional):
 - `percent` (0–100)
 - `status` (in_progress, completed, rolled_back)
 - `started_at`, `updated_at`, `completed_at`
+
+### Admin APIs (v0)
+
+Admin is delivered via a minimal Web UI backed by these endpoints:
+
+- `POST /v1/admin/orgs`  
+  Create org (name, slug).
+- `POST /v1/admin/projects`  
+  Create project within org.
+- `POST /v1/admin/tokens`  
+  Mint/revoke ingest tokens.
+- `POST /v1/admin/flows`  
+  Upload/replace flow catalog (`strict:flows`).
+- `POST /v1/admin/policies`  
+  Upload/replace policy pack versions.
+
+### Auth (v0)
+
+OAuth/OIDC is required for admin UI access. Token auth remains for CI ingest.
+
+Supported providers (v0):
+- Okta (OIDC)
+- GitHub (OIDC)
+- Google (OIDC)
+
+Auth modes:
+- `token` for CI ingestion
+- `oidc` for admin UI
+
+OIDC config:
+- issuer URL
+- client ID/secret
+- allowed org/domain mapping
 
 ## Kubernetes Integration (Guidance)
 
