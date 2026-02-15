@@ -1755,6 +1755,20 @@ select {
   line-height: 1.08;
 }
 
+.what-hero-visual {
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  box-shadow: var(--shadow);
+  padding: 0.6rem;
+}
+
+.what-hero-visual img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .headline-line {
   display: block;
 }
