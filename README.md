@@ -33,7 +33,7 @@ architecture invariants, and release policies **semantic + deterministic**.
 - Architecture invariant enforcement
 - Warn/block mode and time-bounded overrides
 - Source system version and as-of freshness controls
-- Owner and escalation chain resolution
+- Owner, runbook/docs, and escalation chain resolution
 - Policy URL/server distribution (`strict:policy_url`, `strict:server_url`)
 - Export/report pipelines for CI and governance workflows
 

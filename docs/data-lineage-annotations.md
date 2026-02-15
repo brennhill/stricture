@@ -188,6 +188,8 @@ explicit human review for high-risk domains.
 
 Escalation metadata in service registries is strongly recommended by default and
 can be promoted to required by org policy packs.
+Service registry `runbook_url` and `doc_root` are optional by default and can
+also be promoted to required by policy packs.
 
 ## Source Ref Grammar
 

@@ -8,7 +8,7 @@ Define a production-grade interactive demo suite that shows:
 - endpoint and field-level lineage annotations
 - live drift injection and re-evaluation
 - severity transitions (green to red) on API graph edges
-- ownership and escalation routing for bad data incidents
+- ownership/runbook/docs context and escalation routing for bad data incidents
 
 This storyboard is implementation-focused and maps directly to current Stricture capabilities plus minimal demo-specific glue.
 
@@ -220,6 +220,7 @@ Answer "data is bad at service X, who do I call first, then next?"
 - escalation chain timeline (depth 0..N)
 - contact cards:
   - owner
+  - runbook/docs links (when available)
   - contact channels
   - reason and dependency edge
 
@@ -230,7 +231,7 @@ Answer "data is bad at service X, who do I call first, then next?"
 ## Expected proof
 
 - escalation path is generated from lineage, not tribal knowledge
-- missing registry entries degrade gracefully to annotation owner/escalation
+- missing registry entries degrade gracefully to annotation owner/escalation (with runbook/docs omitted)
 
 ## Page 7: Release Gate (Baseline vs Head)
 

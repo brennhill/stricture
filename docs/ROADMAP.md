@@ -34,7 +34,7 @@ Scope:
 
 1. Scan source and infer candidate `stricture-source` blocks.
 2. Reuse OpenAPI/AsyncAPI/protobuf metadata where available.
-3. Fill defaults and suggest owner/escalation from registry.
+3. Fill defaults and suggest owner/escalation plus optional runbook/docs links from registry.
 4. Emit patch-ready comments (dry-run + apply modes).
 5. Produce confidence labels and "needs human review" markers.
 
@@ -71,7 +71,7 @@ continuous monitoring + flagging.
 Scope:
 
 1. Collect artifacts from many repositories/services (push + scheduled pull).
-2. Build org-wide dependency graph and service ownership map.
+2. Build org-wide dependency graph and service ownership/runbook/docs map.
 3. Run continuous drift/invariant evaluation and alert routing.
 4. Provide tenant/project/service dashboards and incident timelines.
 5. Expose APIs/webhooks for CI, chatops, ticketing, and SIEM pipelines.

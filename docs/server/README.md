@@ -9,3 +9,5 @@
   drift is still tracked for publication/audit.
 - Flow-tier policy context is supported via `'strict:flows'` and
   `systems[].flows` metadata carried with artifacts/registries.
+- Service registry metadata may include optional `runbook_url` and `doc_root`
+  fields alongside owner/escalation data.

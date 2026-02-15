@@ -16,6 +16,7 @@ import MainLayout from "../layouts/MainLayout.astro";
       <li><strong>Contract ref</strong>: always include <code>contract_ref</code> in each source edge.</li>
       <li><strong>External source keys</strong>: include <code>provider_id</code> + <code>as_of</code> for <code>@external</code>.</li>
       <li><strong>Computed/defaulted keys</strong>: owner/escalation/merge/flow/note can be normalized automatically.</li>
+      <li><strong>Service registry metadata</strong>: in <code>strict:systems[]</code>, keep <code>owner_team</code> and optionally <code>runbook_url</code>/<code>doc_root</code> plus escalation contacts.</li>
       <li><strong>Hierarchy</strong>: use <code>service</code> and <code>service:subsystem</code> IDs (no extra key).</li>
       <li><strong>Flow tiers</strong>: define flow levels in <code>'strict:flows'</code>; map services via <code>systems[].flows</code>.</li>
     </ul>

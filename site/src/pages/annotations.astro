@@ -252,7 +252,7 @@ const modeMeta = {
   <section class="card">
     <h2>Service registry keys (A-Z)</h2>
     <p class="muted">
-      Service-level ownership, escalation, and flow memberships are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
+      Service-level ownership, runbooks/docs, escalation, and flow memberships are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
     </p>
     <p class="muted">
       If a `strict:server_url` is configured, helper/server workflows can bootstrap service IDs automatically and register them centrally.
@@ -339,6 +339,8 @@ lineage:
       - escalation[].role
       - escalation[].name
       - escalation[].channel
+      - runbook_url
+      - doc_root
   defaults:
     escalation: pagerduty:platform-oncall
     break_policy: strict

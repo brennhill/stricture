@@ -26,6 +26,7 @@ remains `stricture-source`.
 ## Flow tiers (service-level, not API-level)
 - Define business flows in registry metadata (`'strict:flows'`) with numeric levels.
 - Tag services with flow membership (`systems[].flows`).
+- Keep service-level ops metadata in the same registry row (`owner_team`, optional `runbook_url`, optional `doc_root`, escalation).
 - Do not assign criticality tiers directly on individual APIs by default.
 - Let lineage path analysis determine which APIs/edges are affected at runtime.
 - Keep flow tier decisions in policy packs (`lineage.findings.flow_criticality`).

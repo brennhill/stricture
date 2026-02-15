@@ -52,7 +52,7 @@ Semantics:
 1. `init` creates scaffolding and optional defaults file.
 2. `record` runs lineage export and writes `current.json`.
 3. `diff` compares `baseline.json` and `current.json`, writes `diff.json`.
-4. `summarize` emits `summary.md` from diff + ownership/escalation context.
+4. `summarize` emits `summary.md` from diff + ownership/runbook/docs/escalation context.
 5. `promote` advances baseline after successful policy checks.
 
 ## Annotation Automation Matrix
@@ -81,6 +81,8 @@ Automation tiers:
 | `data_classification` | Auto+Policy / Manual | path/classification registry | default `internal`; regulated paths policy-driven |
 | `owner` | Auto+Policy | system registry | from service ownership map |
 | `escalation` | Auto+Policy | system registry | from on-call routing map |
+| `runbook_url` (`systems[]`) | Auto+Policy / Manual | service registry + org policy | optional responder runbook link |
+| `doc_root` (`systems[]`) | Auto+Policy / Manual | service registry + org policy | optional service documentation root link |
 | `contract_test_id` | Auto+Policy | naming template | `ci://contracts/<service>/<field_id>` |
 | `introduced_at` | Auto | first seen in history | initial fallback date when unknown |
 | `sources` | Suggest / Auto+Policy | static analysis + OpenAPI/AsyncAPI/proto | confidence-scored candidates; helper should emit normalized edge refs |
@@ -119,6 +121,8 @@ lineage:
       - escalation[].role
       - escalation[].name
       - escalation[].channel
+      - runbook_url
+      - doc_root
   defaults:
     break_policy: strict
   findings:

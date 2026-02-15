@@ -27,6 +27,8 @@ It is intentionally append-only for v0 and does not require a relational DB.
    - non-impacting change events for publication/audit workflows
 6. Preserve flow-tier context (`'strict:flows'`, `systems[].flows`) for policy
    evaluation and reporting.
+7. Preserve optional service metadata links (`runbook_url`, `doc_root`) for
+   responder workflows.
 
 ## Non-Goals (v0)
 

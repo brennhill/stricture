@@ -18,7 +18,7 @@ agents and frequent API changes.
 3. Findings are harder to act on when metadata does not clearly map to:
    - cause
    - blast radius
-   - owner/escalation
+   - owner/runbook/docs/escalation
 4. Teams want to reuse existing metadata from OpenAPI/OpenTelemetry/OpenLineage
    instead of retyping context.
 5. Local-first workflows matter: developers may run many agents locally and
@@ -56,7 +56,8 @@ High-priority automation targets:
 
 1. **Local dev with AI agents:** needs quick, safe annotation scaffolding.
 2. **CI maintainer:** needs deterministic, non-flaky outputs.
-3. **Service owner:** needs readable ownership/escalation context.
+3. **Service owner:** needs readable ownership/escalation context with runbook/docs links when available.
+4. **Responder:** needs direct runbook/docs links in addition to owner/on-call.
 
 ## Authoring Model
 
@@ -101,7 +102,7 @@ stricture helper quality [paths...]
 1. Source code AST (Go/TS/JS first; others as adapters mature).
 2. Existing `stricture-source` blocks.
 3. Optional contract sources (OpenAPI, AsyncAPI, protobuf, etc.).
-4. Optional service registry (owner/escalation defaults).
+4. Optional service registry (owner/escalation/runbook/docs defaults).
 5. `.stricture-history/` baseline/current/diff for version automation.
 
 ## Outputs
@@ -116,6 +117,7 @@ stricture helper quality [paths...]
    - cause
    - blast radius
    - owner
+   - runbook/docs links
    - recommended remediation
 
 ## Quality Heuristics (v0)
@@ -124,9 +126,10 @@ Score each annotation 0-100 with weighted checks:
 
 1. field/source traceability confidence
 2. ownership/escalation presence
-3. contract reference quality
-4. flow/source clarity
-5. stale-version risk markers
+3. service runbook/docs link presence (when policy requires)
+4. contract reference quality
+5. flow/source clarity
+6. stale-version risk markers
 
 Low score gates can run in warn mode first, then promote to block mode.
 
@@ -143,10 +146,11 @@ Low score gates can run in warn mode first, then promote to block mode.
 
 1. default field values and policy packs
 2. ownership/escalation mappings
-3. contract import sources
-4. confidence thresholds + block/warn behavior
-5. patch application rules (safe paths only, review-required zones)
-6. optional flow-tier defaults and membership hints from policy/server catalogs
+3. service runbook/doc-root templates
+4. contract import sources
+5. confidence thresholds + block/warn behavior
+6. patch application rules (safe paths only, review-required zones)
+7. optional flow-tier defaults and membership hints from policy/server catalogs
 
 ## Risks + Mitigations
 

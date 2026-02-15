@@ -7,6 +7,7 @@ upstream dependencies from lineage artifacts.
 
 - Lineage artifact JSON: produced by `stricture lineage-export`.
 - Optional system registry YAML: maps system IDs to emergency contacts.
+  Registry rows can also carry optional `runbook_url` and `doc_root` links.
 
 Registry format is defined in:
 

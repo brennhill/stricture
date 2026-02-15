@@ -33,6 +33,8 @@ Each ingest request becomes one immutable record envelope:
 - optional policy/flow context:
   - effective flow levels derived from `'strict:flows'` + `systems[].flows`
   - policy hard-block rationale when flow-criticality rules trigger
+- optional service metadata context:
+  - `owner_team`, `escalation`, `runbook_url`, `doc_root`
 - metadata: commit SHA, timestamps, arbitrary metadata map
 - server fields: `received_at`
 

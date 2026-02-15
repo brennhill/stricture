@@ -76,6 +76,7 @@ Promotes keys to required in the selected scope.
 Example:
 
 - `system_registry_keys: [escalation, escalation[].role]`
+- `system_registry_keys: [runbook_url, doc_root]`
 
 ### `lineage.defaults`
 
@@ -288,6 +289,8 @@ lineage:
       - escalation[].role
       - escalation[].name
       - escalation[].channel
+      - runbook_url
+      - doc_root
     override_keys:
       - ticket
   defaults:

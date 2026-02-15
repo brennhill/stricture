@@ -23,6 +23,7 @@ import MainLayout from "../layouts/MainLayout.astro";
       <li><strong>Type/size</strong>: Bad “number”; Good “uint8, range 0–255, unit=count”.</li>
       <li><strong>Enum</strong>: Bad missing cadence; Good lists values and warns PSP adds quarterly.</li>
       <li><strong>Ownership</strong>: Always include owner + escalation.</li>
+      <li><strong>Service metadata</strong>: In `strict:systems[]`, include `owner_team` and keep `runbook_url`/`doc_root` current when available.</li>
       <li><strong>Freshness</strong>: External providers need as-of + max_staleness.</li>
     </ul>
   </section>
@@ -34,7 +35,7 @@ source_system: PaymentsGateway
 source_version: v2026.04
 sources: api:payments-core.GetStatus#response.status@cross_repo?contract_ref=git+https://github.com/acme/payments-core//openapi.yaml@v1.4.2
 </code></pre>
-    <p class="muted">Defaults fill owner/escalation, merge/transform policy, classification, contract test ID, flow, and note.</p>
+    <p class="muted">Defaults fill owner/escalation, merge/transform policy, classification, contract test ID, flow, and note. Service-level runbooks/docs are declared in `strict:systems[]`.</p>
   </section>
 
   <section class="card">
