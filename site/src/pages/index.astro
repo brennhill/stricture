@@ -56,10 +56,26 @@ const specLinks = {
         <a class="button button-secondary" href="/open-standard">Read Open Standard</a>
         <a class="button button-secondary" href="https://github.com/brennhill/stricture">View GitHub</a>
       </div>
-      <div class="hero-indicators" aria-hidden="true">
-        {heroSlides.map((_, idx) => (
-          <span class={`hero-indicator ${idx === 0 ? "is-active" : ""}`} data-hero-indicator></span>
-        ))}
+      <div class="hero-indicators">
+        <button class="hero-nav hero-prev" type="button" aria-label="Previous slide" data-hero-prev>
+          ←
+        </button>
+        <div class="hero-dots" role="tablist" aria-label="Hero slides">
+          {heroSlides.map((_, idx) => (
+            <button
+              type="button"
+              class={`hero-indicator ${idx === 0 ? "is-active" : ""}`}
+              data-hero-indicator
+              data-hero-index={idx}
+              aria-label={`Go to slide ${idx + 1}`}
+              aria-selected={idx === 0 ? "true" : "false"}
+              role="tab"
+            ></button>
+          ))}
+        </div>
+        <button class="hero-nav hero-next" type="button" aria-label="Next slide" data-hero-next>
+          →
+        </button>
       </div>
     </div>
     <aside class="hero-visual">
@@ -266,6 +282,8 @@ const specLinks = {
       const visualTitle = hero.querySelector("[data-hero-visual-title]");
       const visualBody = hero.querySelector("[data-hero-visual-body]");
       const indicators = Array.from(hero.querySelectorAll("[data-hero-indicator]"));
+      const prevButton = hero.querySelector("[data-hero-prev]");
+      const nextButton = hero.querySelector("[data-hero-next]");
       const rawSlides = hero.getAttribute("data-hero-slides");
 
       let slides = [];
@@ -277,7 +295,7 @@ const specLinks = {
 
       if (rotator && titleText && leadText && visualTitle && visualBody && slides.length > 1) {
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const intervalMs = reduceMotion ? 13000 : 9000;
+        const intervalMs = reduceMotion ? 26000 : 18000;
         let idx = 0;
 
         const applySlide = (nextIdx) => {
@@ -289,22 +307,37 @@ const specLinks = {
           visualBody.textContent = next.visualBody || "";
           indicators.forEach((indicator, indicatorIdx) => {
             indicator.classList.toggle("is-active", indicatorIdx === nextIdx);
+            indicator.setAttribute("aria-selected", indicatorIdx === nextIdx ? "true" : "false");
           });
         };
 
-        window.setInterval(() => {
-          idx = (idx + 1) % slides.length;
+        const goTo = (nextIdx) => {
+          idx = (nextIdx + slides.length) % slides.length;
           if (reduceMotion) {
             applySlide(idx);
             return;
           }
-
           rotator.classList.add("hero-rotating-out");
           window.setTimeout(() => {
             applySlide(idx);
             rotator.classList.remove("hero-rotating-out");
           }, 180);
+        };
+
+        window.setInterval(() => {
+          goTo(idx + 1);
         }, intervalMs);
+
+        indicators.forEach((indicator) => {
+          indicator.addEventListener("click", () => {
+            const targetIdx = Number(indicator.getAttribute("data-hero-index"));
+            if (Number.isNaN(targetIdx)) return;
+            goTo(targetIdx);
+          });
+        });
+
+        prevButton?.addEventListener("click", () => goTo(idx - 1));
+        nextButton?.addEventListener("click", () => goTo(idx + 1));
       }
     }
   </script>

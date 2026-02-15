@@ -421,6 +421,13 @@ main > * + * {
 .hero-indicators {
   margin-top: 1rem;
   display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.hero-dots {
+  display: inline-flex;
+  align-items: center;
   gap: 0.38rem;
 }
 
@@ -431,12 +438,33 @@ main > * + * {
   background: color-mix(in srgb, var(--line) 65%, white);
   border: 1px solid color-mix(in srgb, var(--line) 75%, var(--ink-soft));
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
 }
 
 .hero-indicator.is-active {
   transform: scale(1.14);
   background: color-mix(in srgb, var(--accent) 68%, white);
   border-color: color-mix(in srgb, var(--accent) 75%, var(--line));
+}
+
+.hero-nav {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--ink);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.hero-nav:hover,
+.hero-nav:focus-visible {
+  border-color: var(--accent-2);
+  outline: none;
 }
 
 .getting-started-blurb {
