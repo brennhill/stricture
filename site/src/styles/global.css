@@ -937,6 +937,44 @@ select {
   font-size: 0.68rem;
 }
 
+.finding-escalation-toggle {
+  margin-top: 0.35rem;
+}
+
+.finding-escalation {
+  margin-top: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.5rem;
+  background: #f8fafc;
+}
+
+.finding-escalation.is-collapsed {
+  display: none;
+}
+
+.finding-escalation-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.72rem;
+}
+
+.finding-escalation-grid {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.finding-escalation-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem;
+  background: #ffffff;
+}
+
+.finding-escalation-item h4 {
+  margin: 0;
+  font-size: 0.77rem;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

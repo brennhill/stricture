@@ -10,8 +10,6 @@ const selectors = {
   edgeList: document.querySelector("#edge-list"),
   flowPathSummary: document.querySelector("#flow-path-summary"),
   findings: document.querySelector("#findings"),
-  overrides: document.querySelector("#overrides"),
-  escalation: document.querySelector("#escalation"),
   runSummaryText: document.querySelector("#run-summary-text"),
   controlStats: document.querySelector("#control-stats"),
   scenarioNarrative: document.querySelector("#scenario-narrative"),
@@ -23,13 +21,11 @@ const selectors = {
   policyFailOn: document.querySelector("#policy-fail-on"),
   overrideTarget: document.querySelector("#override-target"),
   overrideReason: document.querySelector("#override-reason"),
-  escalationService: document.querySelector("#escalation-service"),
   applyMutation: document.querySelector("#apply-mutation"),
   updatePolicy: document.querySelector("#update-policy"),
   addOverride: document.querySelector("#add-override"),
   runStricture: document.querySelector("#run-stricture"),
   resetSession: document.querySelector("#reset-session"),
-  loadEscalation: document.querySelector("#load-escalation"),
   toggleEdges: document.querySelector("#toggle-edges"),
 };
 
@@ -351,6 +347,105 @@ function updateOverrideControls(snapshot) {
   }
 }
 
+function relatedServiceIdsForFinding(snapshot, finding) {
+  const related = new Set();
+  if (finding?.serviceId) {
+    related.add(finding.serviceId);
+  }
+  if (finding?.source?.serviceId) {
+    related.add(finding.source.serviceId);
+  }
+  if (finding?.impact?.serviceId) {
+    related.add(finding.impact.serviceId);
+  }
+  (snapshot.edges || []).forEach((edge) => {
+    if (edge.fieldId !== finding.fieldId) return;
+    related.add(edge.from);
+    related.add(edge.to);
+  });
+  return [...related].filter(Boolean);
+}
+
+async function renderFindingEscalation(snapshot, findingId, button, container) {
+  const finding = (snapshot.findings || []).find((row) => row.id === findingId);
+  if (!finding) {
+    container.textContent = "Escalation details unavailable for this finding.";
+    return;
+  }
+
+  const currentlyHidden = container.classList.contains("is-collapsed");
+  if (!currentlyHidden && container.dataset.loaded === "true") {
+    container.classList.add("is-collapsed");
+    button.textContent = "Show escalation chain";
+    return;
+  }
+  if (container.dataset.loaded === "true") {
+    container.classList.remove("is-collapsed");
+    button.textContent = "Hide escalation chain";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Loading escalation...";
+
+  const serviceIDs = relatedServiceIdsForFinding(snapshot, finding);
+  const rows = await Promise.all(serviceIDs.map(async (serviceId) => {
+    try {
+      const payload = await request(`/api/session/${state.sessionId}/escalation?serviceId=${encodeURIComponent(serviceId)}`);
+      return { serviceId, chain: payload.chain || [] };
+    } catch {
+      return { serviceId, chain: [], failed: true };
+    }
+  }));
+
+  const services = serviceById(snapshot);
+  const cards = rows.map((row) => {
+    const service = services.get(row.serviceId);
+    const serviceNameLabel = service?.name || row.serviceId;
+    const owner = service?.owner || "unknown owner";
+    const primary = service?.escalation || "n/a";
+    const chainText = row.failed
+      ? "Chain lookup failed."
+      : row.chain.length
+        ? row.chain.map((step) => `L${step.depth}: ${step.system_id} (${contactsToText(step.contacts)})`).join(" -> ")
+        : "No additional chain configured.";
+    return `
+      <article class="finding-escalation-item">
+        <h4>${serviceNameLabel}</h4>
+        <p class="item-meta">Primary on-call: ${primary}</p>
+        <p class="item-meta">Owner: ${owner}</p>
+        <p class="item-meta">Chain: ${chainText}</p>
+      </article>
+    `;
+  }).join("");
+
+  container.innerHTML = `
+    <p class="item-meta finding-escalation-title">Escalation contacts for services on this affected flow:</p>
+    <div class="finding-escalation-grid">${cards}</div>
+  `;
+  container.dataset.loaded = "true";
+  container.classList.remove("is-collapsed");
+  button.disabled = false;
+  button.textContent = "Hide escalation chain";
+}
+
+function bindFindingEscalationButtons(snapshot) {
+  if (!selectors.findings) {
+    return;
+  }
+  selectors.findings.querySelectorAll(".finding-escalation-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const encoded = button.getAttribute("data-finding-id") || "";
+      const findingID = decodeURIComponent(encoded);
+      const container = selectors.findings.querySelector(`[data-escalation-for="${encoded}"]`);
+      if (!container) {
+        return;
+      }
+      renderFindingEscalation(snapshot, findingID, button, container).catch(showError);
+    });
+  });
+}
+
 function buildPresets(snapshot) {
   const nonePreset = { id: "__none", label: "No scenario (baseline)" };
   const candidates = [
@@ -547,6 +642,7 @@ function render(snapshot) {
           .filter((edge) => edge.fieldId === finding.fieldId)
           .flatMap((edge) => [edge.from, edge.to]);
         const blastRadius = listServiceNames(snapshot, [...flowServices, finding.serviceId], 4);
+        const encodedFindingID = encodeURIComponent(finding.id);
         return `
         <h3>${humanChange[finding.changeType] || finding.changeType} — ${fieldLabel(finding.fieldId)} (${finding.severity.toUpperCase()}) in ${impacted}</h3>
         <p><strong>What changed:</strong> ${delta.whatChanged}</p>
@@ -561,30 +657,17 @@ function render(snapshot) {
         ${finding.suggestion ? `<p class="item-meta">Suggestion: ${finding.suggestion}</p>` : ""}
         ${finding.policyRationale ? `<p class="item-meta"><strong>Policy:</strong> Hard block (${finding.policyRationale})</p>` : ""}
         <p class="item-meta">Remediation: ${finding.remediation}</p>
+        <button type="button" class="button button-secondary button-ghost finding-escalation-toggle" data-finding-id="${encodedFindingID}">Show escalation chain</button>
+        <div class="finding-escalation is-collapsed" data-escalation-for="${encodedFindingID}"></div>
       `;
       },
     },
   );
 
-  renderList(
-    selectors.overrides,
-    snapshot.overrides,
-    "No overrides active.",
-    {
-      html: (entry) => `
-        <h3>${entry.fieldId} (${entry.changeType})</h3>
-        <p>${entry.reason}</p>
-        <p class="item-meta">expires=${entry.expires} ticket=${entry.ticket || "n/a"}</p>
-      `,
-    },
-  );
-
   syncMutationControls(snapshot);
-  const serviceIDs = snapshot.services.map((service) => service.id);
-  setOptions(selectors.escalationService, serviceIDs, (id) => id);
-
   updateControlStats(snapshot);
   updateOverrideControls(snapshot);
+  bindFindingEscalationButtons(snapshot);
   buildPresets(snapshot);
   updateNarrativeFromSnapshot(snapshot);
 
@@ -669,34 +752,12 @@ function contactsToText(contacts) {
     .join(", ");
 }
 
-async function loadEscalation() {
-  if (!state.sessionId) {
-    return;
-  }
-  const serviceId = selectors.escalationService?.value;
-  const response = await request(`/api/session/${state.sessionId}/escalation?serviceId=${encodeURIComponent(serviceId)}`);
-
-  renderList(
-    selectors.escalation,
-    response.chain || [],
-    "No chain available.",
-    {
-      html: (entry) => `
-        <h3>depth=${entry.depth} ${entry.system_id}</h3>
-        <p>${entry.reason}</p>
-        <p class="item-meta">owner=${entry.owner || "n/a"} contacts=${contactsToText(entry.contacts)}</p>
-      `,
-    },
-  );
-}
-
 function bindEvents() {
   selectors.applyMutation?.addEventListener("click", () => mutate().catch(showError));
   selectors.updatePolicy?.addEventListener("click", () => updatePolicy().catch(showError));
   selectors.addOverride?.addEventListener("click", () => addOverride().catch(showError));
   selectors.runStricture?.addEventListener("click", () => run().catch(showError));
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
-  selectors.loadEscalation?.addEventListener("click", () => loadEscalation().catch(showError));
   selectors.presetScenario?.addEventListener("change", (event) => {
     const target = event.target;
     updateNarrative(target?.value);
