@@ -151,15 +151,12 @@ const references = [
       <img src="/images/spec-drift-ecosystem.svg" alt="Spec drift across services: a change in one system cascades through downstream services and customer apps." />
     </div>
     <p>
-      In real delivery pipelines, drift rarely starts as one giant break. It starts as small local edits:
-      one field rename, one enum expansion, one untracked enrichment, one source version bump, one stale
-      dependency contract. In a multi-service topology, those local changes accumulate into cross-system
-      uncertainty.
+      Drift usually starts with small local edits: a renamed field, a widened enum, a stale external contract.
+      Across multiple services, those edits compound into uncertainty and outages.
     </p>
     <p>
-      Stricture's goal is to make lineage and contract intent executable. Instead of relying on tribal
-      knowledge, it ties each output field to declared sources, ownership, and policy so CI/CD can warn,
-      block, apply flow-tier hard blocks, or require explicit override when risk thresholds are crossed.
+      Stricture makes lineage and contract intent executable so CI can warn, block, or require explicit
+      override before customers are impacted.
     </p>
   </section>
 
@@ -169,19 +166,17 @@ const references = [
       <article class="what-callout">
         <h3>Development velocity increased</h3>
         <p>
-          Teams are shipping faster with AI coding assistants.
-          <a href="https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/" target="_blank" rel="noopener noreferrer">GitHub reported a controlled study where</a>
-          developers completed a coding task 55% faster with Copilot. Faster iteration is valuable, but it
-          shortens the time window for human review and manual contract audits.
+          Teams ship faster with AI coding assistants.
+          <a href="https://github.blog/news-insights/research/research-quantifying-github-copilots-impact-on-developer-productivity-and-happiness/" target="_blank" rel="noopener noreferrer">GitHub reported</a>
+          55% faster task completion, shrinking the window for manual contract review.
         </p>
       </article>
       <article class="what-callout">
         <h3>Trust and alignment lag behind speed</h3>
         <p>
-          <a href="https://cloud.google.com/devops" target="_blank" rel="noopener noreferrer">Google Cloud's DORA program</a>
-          highlights broad AI usage while also reporting non-trivial trust gaps
-          in generated code. That gap is exactly where drift escapes into runtime unless toolchains keep
-          contracts, lineage, and ownership synchronized.
+          <a href="https://cloud.google.com/devops" target="_blank" rel="noopener noreferrer">DORA research</a>
+          highlights trust gaps in generated code. That gap is where drift escapes unless contracts,
+          lineage, and ownership stay synchronized.
         </p>
       </article>
     </div>
@@ -240,8 +235,8 @@ x-stricture-lineage:
   <section class="card what-section">
     <h2>Why use Stricture: architectural invariants</h2>
     <p>
-      Architectural invariants define what must always remain true across your system boundaries.
-      Stricture turns those invariants into enforceable release checks instead of documentation that goes stale.
+      Architectural invariants define what must always remain true across system boundaries.
+      Stricture turns them into enforceable release checks.
     </p>
     <div class="invariant-grid">
       <article class="invariant-card">
@@ -289,8 +284,8 @@ x-stricture-lineage:
   <section class="card what-section">
     <h2>Why not just use OpenTelemetry, OpenAPI, or OpenLineage?</h2>
     <p>
-      You usually want all of them. Stricture does not replace core standards that teams already depend on.
-      It overlays them so you can reuse the same metadata and avoid redundant annotation work.
+      You usually want all of them. Stricture does not replace those standards; it overlays them so you can
+      reuse the same metadata without duplicating effort.
     </p>
     <div class="compare-grid">
       {
