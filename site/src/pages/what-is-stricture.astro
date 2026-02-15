@@ -120,6 +120,31 @@ const references = [
     </aside>
   </section>
 
+  <section class="card what-section decision-card">
+    <h2>Is Stricture the right tool?</h2>
+    <div class="decision-grid">
+      <div>
+        <h3>Use Stricture if…</h3>
+        <ul>
+          <li>Your services change faster than contracts are updated.</li>
+          <li>You need to know blast radius before deploy.</li>
+          <li>AI or cross-repo edits make drift hard to catch manually.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Not a fit if…</h3>
+        <ul>
+          <li>You only ship a single service with no downstream consumers.</li>
+          <li>You already enforce strict contract tests at every boundary.</li>
+          <li>You only need telemetry without contract enforcement.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted">
+      <strong>Deploys with:</strong> CI/CD, Kubernetes, OpenAPI/OTel/Protobuf. <strong>Setup effort:</strong> start with service registry, let helper defaults fill in the rest.
+    </p>
+  </section>
+
   <section class="card what-section">
     <h2>The core problem: spec drift compounds across systems</h2>
     <div class="what-visual">

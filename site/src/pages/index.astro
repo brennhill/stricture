@@ -88,6 +88,33 @@ const specLinks = {
     </aside>
   </section>
 
+  <section class="card decision-card">
+    <p class="kicker">Is Stricture for you?</p>
+    <div class="decision-grid">
+      <div>
+        <h2>Use Stricture if…</h2>
+        <ul>
+          <li>You ship across multiple services and contracts drift without warning.</li>
+          <li>AI or high-velocity changes make manual review unreliable.</li>
+          <li>You need downstream impact and owner escalation in CI.</li>
+          <li>Flow-level business risk should block unsafe deploys.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Not a fit if…</h2>
+        <ul>
+          <li>You have a single service with no external consumers.</li>
+          <li>All contracts are centralized and strictly enforced already.</li>
+          <li>You only need logging/tracing without contract enforcement.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="decision-meta">
+      <span><strong>Deploys with:</strong> CI/CD, Kubernetes, OpenAPI/OTel/Protobuf.</span>
+      <span><strong>Setup effort:</strong> Start with service registry; helper fills defaults; add a few key annotations per API.</span>
+    </div>
+  </section>
+
   <section class="card getting-started-blurb">
     <div>
       <p class="kicker">Getting Started</p>
