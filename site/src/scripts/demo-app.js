@@ -1007,9 +1007,20 @@ function renderTopology(snapshot) {
   const view = activeTopologyView(snapshot);
   const graphSnapshot = view.snapshot;
   updateTopologyViewState(view, snapshot);
+  const impacts = computeImpacts(graphSnapshot);
 
   selectors.topology.innerHTML = "";
-  graphSnapshot.services.forEach((service) => {
+  const focusedNodeIDs = new Set([
+    ...impacts.flowNodes,
+    ...impacts.pathNodes,
+    ...impacts.sourceServices,
+    ...impacts.impactedServices,
+  ]);
+  const shouldFilterCards = (graphSnapshot.findings?.length || 0) > 0 && focusedNodeIDs.size > 0;
+  const cardServices = shouldFilterCards
+    ? graphSnapshot.services.filter((service) => focusedNodeIDs.has(service.id))
+    : graphSnapshot.services;
+  cardServices.forEach((service) => {
     const card = document.createElement("article");
     card.className = `node ${nodeStatusForService(service.id, graphSnapshot.findings)}`;
     const internalMeta = view.mode === "ecosystem" && Number(service.internalCount || 0) > 0
