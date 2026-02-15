@@ -174,6 +174,10 @@ const examples = [
     tabLabel: "Java",
     title: "Java + OpenTelemetry + OpenAPI",
     description: "API subsystem is Java (`CheckoutGateway:API`) with field-level lineage near response emit logic.",
+    links: [
+      { label: "Annotation Guide", href: "/annotations" },
+      { label: "Annotation Quality", href: "/annotation-quality" },
+    ],
     lang: "java",
     code: javaSnippet,
   },
@@ -182,6 +186,10 @@ const examples = [
     tabLabel: "Protobuf/Buf",
     title: "Protobuf + Buf",
     description: "Contracts stay in proto/buf, but Stricture annotations still attach at output field level and use the Java API subsystem as source.",
+    links: [
+      { label: "Annotation Guide", href: "/annotations" },
+      { label: "Open Standard", href: "/open-standard" },
+    ],
     lang: "proto",
     code: protobufSnippet,
   },
@@ -190,6 +198,10 @@ const examples = [
     tabLabel: "Go",
     title: "Golang + net/http + OTel",
     description: "Go example keeps Stricture annotations at field emit points; service-level owner/runbook/docs remain in strict:systems[].",
+    links: [
+      { label: "Annotation Guide", href: "/annotations" },
+      { label: "Annotation Quality", href: "/annotation-quality" },
+    ],
     lang: "go",
     code: goSnippet,
   },
@@ -198,6 +210,10 @@ const examples = [
     tabLabel: "Python",
     title: "Python + FastAPI + OTel",
     description: "FastAPI OpenAPI generation plus OTel tracing, with Stricture lineage comments on response fields.",
+    links: [
+      { label: "Annotation Guide", href: "/annotations" },
+      { label: "Getting Started", href: "/getting-started" },
+    ],
     lang: "python",
     code: pythonSnippet,
   },
@@ -206,6 +222,10 @@ const examples = [
     tabLabel: "Node/JavaScript",
     title: "Node.js + Express + OpenAPI JSDoc + OTel",
     description: "Web UI subsystem is Node.js (`CheckoutGateway:web-ui`) with field-level lineage on emitted response fields.",
+    links: [
+      { label: "Annotation Guide", href: "/annotations" },
+      { label: "Getting Started", href: "/getting-started" },
+    ],
     lang: "ts",
     code: nodeSnippet,
   },
@@ -276,6 +296,14 @@ const examples = [
       >
         <h3 class="example-subhead">{example.title}</h3>
         <p class="muted">{example.description}</p>
+        <p class="example-links">
+          {example.links.map((link, linkIdx) => (
+            <>
+              <a href={link.href}>{link.label}</a>
+              {linkIdx < example.links.length - 1 ? <span class="link-dot">·</span> : null}
+            </>
+          ))}
+        </p>
         <div class="code-shell">
           <Code code={example.code} lang={example.lang} />
         </div>
@@ -345,6 +373,28 @@ const examples = [
   .example-subhead {
     margin: 0.8rem 0 0.3rem;
     font-size: 0.95rem;
+  }
+
+  .example-links {
+    margin: 0 0 0.5rem;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  .example-links a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .example-links a:hover,
+  .example-links a:focus-visible {
+    text-decoration: underline;
+  }
+
+  .link-dot {
+    margin: 0 0.35rem;
+    color: var(--ink-soft);
   }
 
   .example-tabs {
