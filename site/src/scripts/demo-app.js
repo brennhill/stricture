@@ -522,12 +522,116 @@ function findingTouchesRoot(snapshot, finding, root) {
   return false;
 }
 
+function chooseInternalNodeForRole(root, fieldId, role, serviceIDs, edges) {
+  const subsystemIDs = [...serviceIDs].filter((id) => topologyRootId(id) === root && isSubsystemID(id));
+  if (!subsystemIDs.length) {
+    return root;
+  }
+  const subsystemSet = new Set(subsystemIDs);
+  const relevantEdges = (edges || []).filter((edge) => !fieldId || edge.fieldId === fieldId);
+  const fieldEdges = relevantEdges.length ? relevantEdges : (edges || []);
+  const preferred = [];
+  if (role === "source") {
+    fieldEdges.forEach((edge) => {
+      if (edge.to === root && subsystemSet.has(edge.from)) preferred.push(edge.from);
+    });
+    fieldEdges.forEach((edge) => {
+      if (edge.from === root && subsystemSet.has(edge.to)) preferred.push(edge.to);
+    });
+  } else {
+    fieldEdges.forEach((edge) => {
+      if (edge.from === root && subsystemSet.has(edge.to)) preferred.push(edge.to);
+    });
+    fieldEdges.forEach((edge) => {
+      if (edge.to === root && subsystemSet.has(edge.from)) preferred.push(edge.from);
+    });
+  }
+  if (preferred.length) {
+    const apiPreferred = preferred.find((id) => id.endsWith(":api-service") || id.endsWith(":tracking-api"));
+    return apiPreferred || preferred[0];
+  }
+
+  const score = new Map(subsystemIDs.map((id) => [id, 0]));
+  fieldEdges.forEach((edge) => {
+    if (subsystemSet.has(edge.from)) {
+      score.set(edge.from, (score.get(edge.from) || 0) + (role === "source" ? 2 : 1));
+    }
+    if (subsystemSet.has(edge.to)) {
+      score.set(edge.to, (score.get(edge.to) || 0) + (role === "impact" ? 2 : 1));
+    }
+  });
+  let bestID = subsystemIDs[0];
+  let bestScore = -1;
+  score.forEach((value, id) => {
+    if (value > bestScore) {
+      bestScore = value;
+      bestID = id;
+    }
+  });
+  return bestID;
+}
+
+function remapContextToInternal(context, snapshot, root, role, serviceIDs, edges, fieldId) {
+  if (!context) return context;
+  const rawID = context.serviceId || resolveServiceId(snapshot, context.service);
+  if (!rawID || topologyRootId(rawID) !== root || (isSubsystemID(rawID) && serviceIDs.has(rawID))) {
+    return context;
+  }
+  const mappedID = chooseInternalNodeForRole(root, fieldId, role, serviceIDs, edges);
+  if (!mappedID || !serviceIDs.has(mappedID)) {
+    return context;
+  }
+  return {
+    ...context,
+    serviceId: mappedID,
+    service: serviceName(snapshot, mappedID),
+  };
+}
+
+function remapFindingToInternal(finding, snapshot, root, serviceIDs, edges) {
+  const source = remapContextToInternal(finding.source, snapshot, root, "source", serviceIDs, edges, finding.fieldId);
+  const impact = remapContextToInternal(finding.impact, snapshot, root, "impact", serviceIDs, edges, finding.fieldId);
+
+  let serviceId = finding.serviceId;
+  if (serviceId && topologyRootId(serviceId) === root && !isSubsystemID(serviceId)) {
+    const preferred = impact?.serviceId || source?.serviceId || chooseInternalNodeForRole(root, finding.fieldId, "impact", serviceIDs, edges);
+    if (preferred && serviceIDs.has(preferred)) {
+      serviceId = preferred;
+    }
+  } else if (!serviceId || !serviceIDs.has(serviceId)) {
+    const localPreferred = source?.serviceId || impact?.serviceId;
+    if (localPreferred && serviceIDs.has(localPreferred)) {
+      serviceId = localPreferred;
+    }
+  }
+
+  return {
+    ...finding,
+    serviceId,
+    source,
+    impact,
+  };
+}
+
 function buildServiceView(snapshot, root) {
   const services = (snapshot.services || []).filter((service) => topologyRootId(service.id) === root);
   const serviceIDs = new Set(services.map((service) => service.id));
   const edges = (snapshot.edges || []).filter((edge) => serviceIDs.has(edge.from) && serviceIDs.has(edge.to));
-  const findings = (snapshot.findings || []).filter((finding) => findingTouchesRoot(snapshot, finding, root));
-  const mutations = (snapshot.mutations || []).filter((mutation) => topologyRootId(mutation.serviceId) === root);
+  const findings = (snapshot.findings || [])
+    .filter((finding) => findingTouchesRoot(snapshot, finding, root))
+    .map((finding) => remapFindingToInternal(finding, snapshot, root, serviceIDs, edges));
+  const mutations = (snapshot.mutations || [])
+    .filter((mutation) => topologyRootId(mutation.serviceId) === root)
+    .map((mutation) => {
+      if (isSubsystemID(mutation.serviceId) && serviceIDs.has(mutation.serviceId)) {
+        return mutation;
+      }
+      const mappedID = chooseInternalNodeForRole(root, mutation.fieldId, "source", serviceIDs, edges);
+      if (mappedID && serviceIDs.has(mappedID)) {
+        return { ...mutation, serviceId: mappedID };
+      }
+      return mutation;
+    });
   return {
     mode: "service",
     root,
