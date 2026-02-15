@@ -1198,6 +1198,25 @@ select {
   fill: #7f1d1d;
 }
 
+.graph-node .graph-source-ring {
+  fill: none;
+  stroke: #dc2626;
+  stroke-width: 2.2;
+  stroke-dasharray: 4 2;
+  opacity: 0.98;
+}
+
+.topology-graph[data-view-mode="service"] .graph-node.source circle {
+  fill: #ef4444;
+  stroke: #991b1b;
+  stroke-width: 2.8;
+  animation: none;
+}
+
+.topology-graph[data-view-mode="service"] .graph-node.source text {
+  fill: #7f1d1d;
+}
+
 .graph-node.impacted circle {
   fill: rgba(249, 115, 22, 0.16);
   stroke: #d97706;

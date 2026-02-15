@@ -70,6 +70,25 @@ function fieldLabel(fieldId) {
     .replace(/_/g, ".");
 }
 
+function businessFlowLabel(fieldId) {
+  const raw = String(fieldId || "").trim().toLowerCase();
+  if (!raw.startsWith("response_")) {
+    return "Service flow";
+  }
+  const tokens = raw.split("_").slice(2);
+  if (!tokens.length) return "Service flow";
+  const has = (token) => tokens.includes(token);
+  if (has("checkout")) return "Checkout flow";
+  if (has("inventory")) return "Inventory flow";
+  if (has("promotion") || has("promotions")) return "Promotions flow";
+  if (has("payment") || has("pricing")) return "Payments flow";
+  if (has("shipment") || has("delivery") || has("route") || has("logistics")) return "Fulfillment flow";
+  if (has("governance") || has("audit") || has("compliance")) return "Governance flow";
+  if (has("media") || has("audience") || has("ad")) return "Media flow";
+  if (has("risk") || has("fraud") || has("sanctions")) return "Risk flow";
+  return `${titleCaseID(tokens.join("_"))} flow`;
+}
+
 function serviceById(snapshot) {
   return new Map((snapshot.services || []).map((service) => [service.id, service]));
 }
@@ -1356,6 +1375,7 @@ function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Se
   }
   const container = selectors.topologyGraph;
   container.innerHTML = "";
+  container.dataset.viewMode = view.mode || "ecosystem";
   const svgNS = "http://www.w3.org/2000/svg";
   const { width: boxWidth } = container.getBoundingClientRect();
   const width = Math.max(boxWidth || 640, 820);
@@ -1487,6 +1507,14 @@ function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Se
     if (canDrill) classes.push("drillable");
     g.setAttribute("class", classes.join(" "));
     const radius = isSource || isImpacted ? 28 : isTransit ? 24 : isContributor ? 20 : inFlow ? 22 : 16;
+    if (view.mode === "service" && isSource) {
+      const sourceRing = document.createElementNS(svgNS, "circle");
+      sourceRing.setAttribute("class", "graph-source-ring");
+      sourceRing.setAttribute("cx", pos.x);
+      sourceRing.setAttribute("cy", pos.y);
+      sourceRing.setAttribute("r", String(radius + 6));
+      g.appendChild(sourceRing);
+    }
     if (canDrill) {
       const drillRing = document.createElementNS(svgNS, "circle");
       drillRing.setAttribute("class", "graph-drill-ring");
@@ -1869,7 +1897,8 @@ function summarizeFlow(snapshot, referenceSnapshot, nodes, edges, sourceServices
     ? listServiceNames(snapshot, [...impactedServices], 4, namingSnapshot)
     : "none";
   const flowText = `${path.join(" -> ")}${sevText}`;
-  return `Source changed: <strong>${escapeHTML(sourceText)}</strong>. Field: <strong>${escapeHTML(fieldLabel(primaryField))}</strong>. Mutation: <strong>${escapeHTML(primaryMutation)}</strong>. Impacted services: <strong>${escapeHTML(impactedText)}</strong>. Flow: ${escapeHTML(flowText)}`;
+  const businessFlow = businessFlowLabel(primaryField);
+  return `Business flow: <strong>${escapeHTML(businessFlow)}</strong>. Source changed: <strong>${escapeHTML(sourceText)}</strong>. Field: <strong>${escapeHTML(fieldLabel(primaryField))}</strong>. Mutation: <strong>${escapeHTML(primaryMutation)}</strong>. Impacted services: <strong>${escapeHTML(impactedText)}</strong>. Service path: ${escapeHTML(flowText)}`;
 }
 
 function computeImpacts(snapshot) {
