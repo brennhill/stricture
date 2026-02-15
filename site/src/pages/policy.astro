@@ -1,0 +1,110 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout
+  title="Policy Guide"
+  description="Required and optional fields for Stricture policy packs, with examples and best-practice usage."
+>
+  <section class="card">
+    <p class="kicker">Policy</p>
+    <h1>Policy Guide</h1>
+    <p class="lead">
+      Policy packs define required fields, defaults, severity rules, and flow gating. This guide covers
+      every field and how to use it.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Minimal policy pack</h2>
+    <div class="code-shell">
+      <pre><code>{`schema_version: 1
+policy_id: production_standard # org-provided string; can be any useful value
+lineage:
+  findings:
+    require_downstream_impact: true`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Top-level fields</h2>
+    <ul>
+      <li><strong>schema_version</strong> (required): must be <code>1</code>.</li>
+      <li><strong>policy_id</strong> (required): org-defined string identifier.</li>
+      <li><strong>lineage</strong> (required): policy rules for lineage findings and defaults.</li>
+      <li><strong>extends</strong> (optional): list of policy IDs/URLs to compose.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>lineage.require</h2>
+    <p class="muted">Enforces required keys in annotations, registries, and overrides.</p>
+    <ul>
+      <li><strong>field_keys</strong>: required annotation keys.</li>
+      <li><strong>source_query_keys</strong>: required keys inside <code>sources=</code> edge query params.</li>
+      <li><strong>system_registry_keys</strong>: required service registry keys.</li>
+      <li><strong>override_keys</strong>: required fields in overrides.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>lineage.defaults</h2>
+    <p class="muted">Default values used when annotations omit a key.</p>
+    <ul>
+      <li><strong>Key</strong>: annotation key name.</li>
+      <li><strong>Value</strong>: string / number / boolean.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>lineage.severity_overrides</h2>
+    <p class="muted">Override the default severity for specific change types.</p>
+    <ul>
+      <li>Allowed severities: <code>high</code>, <code>medium</code>, <code>low</code>, <code>info</code>.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>lineage.findings</h2>
+    <ul>
+      <li><strong>require_downstream_impact</strong> (default true): only emit findings with downstream impact.</li>
+      <li><strong>unknown_impact_severity</strong> (default low): severity when impact is unknown.</li>
+      <li>
+        <strong>self_only</strong>: controls source-only changes.
+        <ul>
+          <li><code>emit_finding</code> (default false)</li>
+          <li><code>severity</code> (optional)</li>
+          <li><code>publish_change_event</code> (default true)</li>
+        </ul>
+      </li>
+      <li>
+        <strong>flow_criticality</strong>: tier-based gating.
+        <ul>
+          <li><code>enabled</code> (bool)</li>
+          <li><code>level_direction</code> (lower_is_more_critical | higher_is_more_critical)</li>
+          <li><code>fail_on_level</code> (int or null)</li>
+          <li><code>severity_by_level</code> (map level → severity)</li>
+          <li><code>require_service_membership</code> (bool)</li>
+          <li><code>critical_flow_ids</code> (string[])</li>
+          <li><code>critical_flow_block_reason</code> (string)</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>lineage.profiles</h2>
+    <p class="muted">
+      Optional profile buckets for future extensions. Not enforced today, but reserved for layered policies.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Best-practice use cases</h2>
+    <ul>
+      <li><strong>Production</strong>: require key fields, keep <code>require_downstream_impact=true</code>, enable flow criticality.</li>
+      <li><strong>Staging</strong>: use the same policy pack with warn-only CI gating to avoid rule drift.</li>
+      <li><strong>External providers</strong>: require <code>provider_id</code> + <code>as_of</code> for <code>@external</code> edges.</li>
+    </ul>
+  </section>
+</MainLayout>
