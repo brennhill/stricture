@@ -12,6 +12,7 @@ Practical examples across Java, protobuf/buf, Go, Python, and Node.js.
 - Reuse of existing metadata from OpenAPI and OpenTelemetry
 - Inline comments showing where Stricture is "batteries included"
 - Clarified split for Protobuf/Buf and Go: service metadata in registry, field lineage in code
+- Tabbed language view to reduce page length and a flow-tier policy example at the bottom
 
 Read the full page at /examples/.
 `;

@@ -36,30 +36,6 @@ systems:
     flows: [checkout]
 `;
 
-const gatewaySubsystemSnippet = String.raw`- id: CheckoutGateway
-  name: Checkout Gateway
-  owner_team: Payments platform team
-  runbook_url: https://runbooks.example.com/checkout-gateway
-  doc_root: https://docs.example.com/checkout-gateway
-  flows: [checkout]
-  escalation:
-    - role: primary
-      name: Payments Oncall
-      channel: pagerduty:payments-oncall
-- id: CheckoutGateway:API
-  name: Checkout Gateway API (Java)
-  owner_team: Payments platform team
-  runbook_url: https://runbooks.example.com/checkout-gateway-api
-  doc_root: https://docs.example.com/checkout-gateway-api
-  flows: [checkout]
-- id: CheckoutGateway:web-ui
-  name: Checkout Gateway Web UI (Node.js)
-  owner_team: Payments platform team
-  runbook_url: https://runbooks.example.com/checkout-gateway-web-ui
-  doc_root: https://docs.example.com/checkout-gateway-web-ui
-  flows: [checkout]
-`;
-
 const javaSnippet = String.raw`@RestController
 @RequestMapping("/v1/checkout")
 @Tag(name = "Checkout API") // re-used by Stricture: OpenAPI surface docs
@@ -166,49 +142,70 @@ app.get("/v1/checkout/authorize/:cartId", (req, res) => {
 });
 `;
 
+const policyBindingSnippet = String.raw`# .stricture.yml
+'strict:policy_url': https://policies.example.com/stricture/prod.yaml
+'strict:policy_sha256': <optional_sha256_pin>
+'strict:server_url': https://stricture.example.com
+`;
+
+const policySnippet = String.raw`# .stricture/strict-policy.yaml
+schema_version: 1
+policy_id: strict:policy
+
+lineage:
+  findings:
+    require_downstream_impact: true
+    flow_criticality:
+      enabled: true
+      level_direction: lower_is_more_critical
+      fail_on_level: 1
+      critical_flow_ids: [checkout]
+      critical_flow_block_reason: "Risk of order loss"
+  require:
+    system_registry_keys:
+      - escalation
+      - runbook_url
+      - doc_root
+`;
+
 const examples = [
   {
-    id: "java-otel-openapi",
+    id: "java",
+    tabLabel: "Java API",
     title: "Java + OpenTelemetry + OpenAPI",
-    description: "Spring endpoint with OpenAPI annotations and OTel spans. Stricture adds strict field-level lineage near emit logic.",
-    serviceNote: "Service-level metadata lives in strict:systems[] (for example .stricture/strict-lineage-systems.yaml), not in Java source files.",
-    serviceSnippet: gatewaySubsystemSnippet,
+    description: "API subsystem is Java (`CheckoutGateway:API`) with field-level lineage near response emit logic.",
     lang: "java",
     code: javaSnippet,
   },
   {
-    id: "protobuf-buf",
+    id: "proto",
+    tabLabel: "Protobuf/Buf",
     title: "Protobuf + Buf",
-    description: "Buf/proto contracts remain the source of truth. Stricture comments still attach at output field level, while service metadata stays in strict:systems[].",
-    serviceNote: "Yes, Protobuf/Buf has service-level metadata too; it lives in strict:systems[] (for example .stricture/strict-lineage-systems.yaml), not inside .proto service/message blocks.",
-    serviceSnippet: gatewaySubsystemSnippet,
+    description: "Contracts stay in proto/buf, but Stricture annotations still attach at output field level and use the Java API subsystem as source.",
     lang: "proto",
     code: protobufSnippet,
   },
   {
     id: "go",
+    tabLabel: "Go",
     title: "Golang + net/http + OTel",
-    description: "Go handler example with span context and strict field-level annotations at emit points.",
-    serviceNote: "For Go, keep owner/escalation/runbook/docs at service level in strict:systems[] (for example .stricture/strict-lineage-systems.yaml) and keep stricture-source near response fields.",
-    serviceSnippet: gatewaySubsystemSnippet,
+    description: "Go example keeps Stricture annotations at field emit points; service-level owner/runbook/docs remain in strict:systems[].",
     lang: "go",
     code: goSnippet,
   },
   {
     id: "python",
+    tabLabel: "Python",
     title: "Python + FastAPI + OTel",
     description: "FastAPI OpenAPI generation plus OTel tracing, with Stricture lineage comments on response fields.",
-    serviceNote: "Service-level metadata for Python services also lives in strict:systems[] (for example .stricture/strict-lineage-systems.yaml).",
-    serviceSnippet: gatewaySubsystemSnippet,
     lang: "python",
     code: pythonSnippet,
   },
   {
     id: "node",
+    tabLabel: "Node web-ui",
     title: "Node.js + Express + OpenAPI JSDoc + OTel",
-    description: "Express route using OpenAPI JSDoc and OpenTelemetry spans with strict annotations for provenance.",
-    serviceNote: "Service-level metadata for Node services also lives in strict:systems[] (for example .stricture/strict-lineage-systems.yaml).",
-    serviceSnippet: gatewaySubsystemSnippet,
+    description: "Web UI subsystem is Node.js (`CheckoutGateway:web-ui`) with field-level lineage on emitted response fields.",
     lang: "ts",
     code: nodeSnippet,
   },
@@ -244,27 +241,89 @@ const examples = [
     <p class="muted">
       <code>owner_team</code> and flow <code>owner</code> are free-form strings (for example <code>Payments platform team</code> or <code>team.payments-platform</code>). No centralized team inventory is required by default.
     </p>
+    <p class="muted">
+      Flow tier is defined on the flow catalog row (<code>'strict:flows'[].level</code>) and services join that tier via <code>systems[].flows: [checkout]</code>.
+    </p>
     <div class="code-shell">
       <Code code={serviceRegistrySnippet} lang="yaml" />
     </div>
   </section>
 
-  {examples.map((example) => (
-    <section id={example.id} class="card">
-      <h2>{example.title}</h2>
-      <p class="muted">{example.description}</p>
-      <p class="muted">{example.serviceNote}</p>
-      <h3 class="example-subhead">Service-level (strict:systems[])</h3>
-      <div class="code-shell">
-        <Code code={example.serviceSnippet} lang="yaml" />
+  <section class="card">
+    <h2>Language examples (tabbed)</h2>
+    <p class="muted">
+      Same topology, different stack: API is Java (<code>CheckoutGateway:API</code>) and web UI is Node.js (<code>CheckoutGateway:web-ui</code>).
+    </p>
+    <div class="example-tabs" role="tablist" aria-label="Language examples">
+      {examples.map((example, idx) => (
+        <button
+          type="button"
+          class={`example-tab ${idx === 0 ? "is-active" : ""}`}
+          data-example-tab={example.id}
+          role="tab"
+          aria-selected={idx === 0 ? "true" : "false"}
+        >
+          {example.tabLabel}
+        </button>
+      ))}
+    </div>
+
+    {examples.map((example, idx) => (
+      <div
+        class={`example-panel ${idx === 0 ? "is-active" : ""}`}
+        data-example-panel={example.id}
+        hidden={idx !== 0}
+      >
+        <h3 class="example-subhead">{example.title}</h3>
+        <p class="muted">{example.description}</p>
+        <div class="code-shell">
+          <Code code={example.code} lang={example.lang} />
+        </div>
       </div>
-      <h3 class="example-subhead">API/field-level (stricture-source)</h3>
-      <div class="code-shell">
-        <Code code={example.code} lang={example.lang} />
-      </div>
-    </section>
-  ))}
+    ))}
+  </section>
+
+  <section class="card">
+    <h2>Policy example (flow-tier gating)</h2>
+    <p class="muted">
+      Repo-level pointers go in <code>.stricture.yml</code>; policy content can live in <code>.stricture/strict-policy.yaml</code> (or remote URL).
+    </p>
+    <div class="code-shell">
+      <Code code={policyBindingSnippet} lang="yaml" />
+    </div>
+    <div class="code-shell">
+      <Code code={policySnippet} lang="yaml" />
+    </div>
+    <p class="muted">
+      Where checkout tier is declared: flow catalog sets <code>checkout level=1</code>; services bind themselves to checkout via <code>systems[].flows</code>; policy then gates with <code>flow_criticality.fail_on_level</code> and/or <code>critical_flow_ids</code>.
+    </p>
+  </section>
 </MainLayout>
+
+<script is:inline>
+  (() => {
+    const tabs = Array.from(document.querySelectorAll("[data-example-tab]"));
+    const panels = Array.from(document.querySelectorAll("[data-example-panel]"));
+    if (!tabs.length || !panels.length) return;
+
+    const activate = (id) => {
+      tabs.forEach((tab) => {
+        const active = tab.dataset.exampleTab === id;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      panels.forEach((panel) => {
+        const active = panel.dataset.examplePanel === id;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => activate(tab.dataset.exampleTab || ""));
+    });
+  })();
+</script>
 
 <style>
   .code-shell {
@@ -285,5 +344,33 @@ const examples = [
   .example-subhead {
     margin: 0.8rem 0 0.3rem;
     font-size: 0.95rem;
+  }
+
+  .example-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.55rem 0 0.65rem;
+  }
+
+  .example-tab {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    background: #ffffff;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .example-tab.is-active {
+    border-color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 12%, #ffffff);
+    color: var(--brand-ink);
+    font-weight: 600;
+  }
+
+  .example-panel {
+    margin-top: 0.4rem;
   }
 </style>
