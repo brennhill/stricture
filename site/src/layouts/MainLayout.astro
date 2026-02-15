@@ -9,6 +9,8 @@ const siteBase = "https://stricture-lint.com";
 const canonicalUrl = new URL(Astro.url.pathname, siteBase).toString();
 const markdownPath = Astro.url.pathname.endsWith("/") ? `${Astro.url.pathname}index.md` : `${Astro.url.pathname}/index.md`;
 const markdownUrl = new URL(markdownPath, siteBase).toString();
+const socialImageUrl = new URL("/og/stricture-social-card.png", siteBase).toString();
+const socialImageAlt = "Stricture hexagon logo with STRICTURE wordmark and the tagline: Catch API drift before customers do.";
 ---
 
 <!doctype html>
@@ -26,13 +28,19 @@ const markdownUrl = new URL(markdownPath, siteBase).toString();
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:secure_url" content={socialImageUrl} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={socialImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageUrl} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
-    <meta property="og:image" content="https://stricture-lint.com/favicon.svg" />
-    <meta name="twitter:image" content="https://stricture-lint.com/favicon.svg" />
     <title>{title}</title>
   </head>
   <body>
