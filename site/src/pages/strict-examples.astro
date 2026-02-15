@@ -1,0 +1,83 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout
+  title="Strict CLI Examples | Stricture"
+  description="Practical strict CLI examples for scanning, suggesting, applying, and validating lineage annotations."
+>
+  <section class="card">
+    <p class="kicker">Strict CLI</p>
+    <h1>Strict CLI Examples</h1>
+    <p class="lead">
+      Realistic workflows to evaluate usability and show minimal-effort adoption.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>1) Bootstrap a repo in minutes</h2>
+    <p class="muted">Create a sidecar file, then scan for candidates.</p>
+    <div class="code-shell">
+      <pre><code>{`strict init-lineage .
+strict scan .
+strict suggest .
+strict apply --output sidecar .`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2) Import from OpenAPI</h2>
+    <p class="muted">Reuse existing OpenAPI metadata and map fields to code.</p>
+    <div class="code-shell">
+      <pre><code>{`strict import-openapi --spec openapi.yaml --system CheckoutGateway:API .
+strict suggest .
+strict apply --output sidecar .`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3) Validate in CI</h2>
+    <p class="muted">Gate on annotation quality without forcing full coverage immediately.</p>
+    <div class="code-shell">
+      <pre><code>{`strict validate .
+strict validate --strict .`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4) Coverage report</h2>
+    <p class="muted">Find unannotated responses and prioritize the highest-risk ones.</p>
+    <div class="code-shell">
+      <pre><code>{`strict coverage .
+strict coverage internal/handler/`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>5) Refactor-safe rename</h2>
+    <p class="muted">Keep lineage stable when fields or systems are renamed.</p>
+    <div class="code-shell">
+      <pre><code>{`strict migrate-rename response.userId response.user_id
+strict migrate-rename --type system OldService NewService`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>6) Minimal-effort adoption pattern</h2>
+    <ol>
+      <li>Add service registry metadata (owners + escalation).</li>
+      <li>Run <code>strict scan</code> + <code>strict suggest</code>.</li>
+      <li>Approve only the high-confidence annotations.</li>
+      <li>Enable <code>strict validate --strict</code> in CI.</li>
+    </ol>
+    <p class="muted">This keeps manual work small while coverage grows over time.</p>
+  </section>
+
+  <section class="card">
+    <h2>Related docs</h2>
+    <p class="muted">
+      Full spec: <a href="/docs/helper/SPEC">docs/helper/SPEC.md</a> ·
+      Helper reference: <a href="/helper">Helper CLI</a>
+    </p>
+  </section>
+</MainLayout>

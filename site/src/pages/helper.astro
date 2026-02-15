@@ -1,0 +1,110 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+---
+
+<MainLayout
+  title="Stricture Helper | CLI Reference"
+  description="Stricture helper commands, parameters, and when to use each workflow."
+>
+  <section class="card">
+    <p class="kicker">Helper CLI</p>
+    <h1>Stricture Helper Reference</h1>
+    <p class="lead">
+      The helper reduces manual annotation work. It scans code, suggests lineage metadata, applies
+      updates, and validates coverage for CI. CLI entrypoint: <code>strict &lt;command&gt;</code>.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>When to use it</h2>
+    <ul>
+      <li><strong>Bootstrap:</strong> create a sidecar file and populate fields quickly.</li>
+      <li><strong>Routine changes:</strong> keep annotations current as APIs evolve.</li>
+      <li><strong>CI enforcement:</strong> validate and gate on annotation quality.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Core commands</h2>
+    <div class="code-shell">
+      <pre><code>{`# Discovery and generation
+strict scan [paths...]
+strict suggest [paths...]
+strict apply [paths...]
+
+# Quality and validation
+strict quality [paths...]
+strict validate [paths...]
+strict validate --strict [paths...]
+strict coverage [paths...]
+
+# Bootstrap and import
+strict init-lineage [paths...]
+strict import-openapi <spec> [paths...]
+strict import-asyncapi <spec> [paths...]
+strict import-proto <spec> [paths...]
+
+# Migration and maintenance
+strict migrate-rename <old> <new>`}</code></pre>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Command details</h2>
+    <h3>scan</h3>
+    <p class="muted">Discover candidate fields/functions that need lineage annotations.</p>
+    <p class="muted"><strong>Use when:</strong> first pass on a repo or after large refactors.</p>
+
+    <h3>suggest</h3>
+    <p class="muted">Generate annotation proposals with confidence labels.</p>
+    <p class="muted"><strong>Use when:</strong> you want human review before writing changes.</p>
+
+    <h3>apply</h3>
+    <p class="muted">Write annotations to sidecar or inline comments.</p>
+    <p class="muted"><strong>Use when:</strong> you’re ready to update source or sidecar files.</p>
+
+    <h3>quality</h3>
+    <p class="muted">Score annotation completeness and hygiene (0–100).</p>
+    <p class="muted"><strong>Use when:</strong> you want a quick health check.</p>
+
+    <h3>validate</h3>
+    <p class="muted">Validate syntax + semantic consistency; strict mode is CI‑ready.</p>
+    <p class="muted"><strong>Use when:</strong> you gate releases on annotation quality.</p>
+
+    <h3>coverage</h3>
+    <p class="muted">Report annotated vs missing fields per file.</p>
+    <p class="muted"><strong>Use when:</strong> you’re incrementally adopting coverage.</p>
+
+    <h3>init-lineage</h3>
+    <p class="muted">Bootstrap a sidecar file from detected responses/types.</p>
+    <p class="muted"><strong>Use when:</strong> starting from zero annotations.</p>
+
+    <h3>import-openapi / import-asyncapi / import-proto</h3>
+    <p class="muted">Pull field definitions from existing contracts.</p>
+    <p class="muted"><strong>Use when:</strong> you already maintain OpenAPI/AsyncAPI/Protobuf.</p>
+
+    <h3>migrate-rename</h3>
+    <p class="muted">Update annotations after field/struct renames.</p>
+    <p class="muted"><strong>Use when:</strong> refactors would otherwise orphan lineage.</p>
+  </section>
+
+  <section class="card">
+    <h2>Common parameters</h2>
+    <ul>
+      <li><strong>--output</strong>: <code>sidecar</code> (default) or <code>inline</code>.</li>
+      <li><strong>--dry-run</strong>: print results without writing files.</li>
+      <li><strong>--confidence</strong>: filter proposals by <code>high|medium|low</code>.</li>
+      <li><strong>--match-threshold</strong>: minimum confidence score for imports.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Source of truth</h2>
+    <p class="muted">
+      Full spec: <a href="/docs/helper/SPEC">docs/helper/SPEC.md</a>. This page is a readable summary.
+    </p>
+    <p class="muted">
+      See <a href="/strict-examples">Strict CLI Examples</a> for real-world workflows.
+    </p>
+  </section>
+</MainLayout>
