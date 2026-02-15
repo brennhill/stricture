@@ -3,4 +3,11 @@ import { defineConfig } from "astro/config";
 export default defineConfig({
   output: "static",
   scopedStyleStrategy: "where",
+  vite: {
+    server: {
+      fs: {
+        allow: [".."],
+      },
+    },
+  },
 });

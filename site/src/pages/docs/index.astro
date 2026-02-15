@@ -1,0 +1,84 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { getCollection } from "astro:content";
+
+const docs = await getCollection("docs");
+const toTitle = (value) =>
+  String(value || "")
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const entries = docs
+  .map((entry) => ({
+    entry,
+    title: entry.data.title || toTitle(entry.slug.split("/").pop()),
+  }))
+  .sort((a, b) => {
+    const ao = a.entry.data.order ?? 9999;
+    const bo = b.entry.data.order ?? 9999;
+    if (ao !== bo) return ao - bo;
+    return a.title.localeCompare(b.title);
+  });
+---
+
+<MainLayout
+  title="Docs | Stricture"
+  description="Documentation for Stricture specifications, annotations, policy packs, and tools."
+>
+  <section class="card">
+    <p class="kicker">Docs</p>
+    <h1>Stricture Documentation</h1>
+    <p class="lead">
+      Everything in the repository docs folder, published with navigation and a searchable index.
+    </p>
+  </section>
+
+  <section class="card docs-grid">
+    {entries.map(({ entry, title }) => (
+      <a class="doc-card" href={`/docs/${entry.slug}`}>
+        <h3>{title}</h3>
+        <p>{entry.data.description || "Spec and implementation details."}</p>
+        <span>View doc →</span>
+      </a>
+    ))}
+  </section>
+</MainLayout>
+
+<style>
+  .docs-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .doc-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #ffffff;
+    text-decoration: none;
+    color: var(--ink);
+    box-shadow: var(--shadow);
+  }
+
+  .doc-card h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .doc-card p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+  }
+
+  .doc-card span {
+    margin-top: auto;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+</style>
