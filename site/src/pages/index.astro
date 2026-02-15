@@ -6,7 +6,7 @@ export const prerender = true;
 const heroSlides = [
   {
     title: "Build safe with AI.",
-    lead: "AI-generated code can drift APIs without warning. Stricture catches the drift, shows impact, and blocks unsafe deploys before customers feel it.",
+    lead: "AI-generated code can drift APIs without warning. Stricture catches drift, shows impact, and blocks unsafe deploys before customers feel it.",
     visualTitle: "Agent change introduces contract drift",
     visualBody: "A generated PR widens a core field type. Stricture traces downstream consumers, highlights the impacted path, and blocks the deploy until contracts are fixed."
   },
@@ -94,7 +94,7 @@ const specLinks = {
       <div>
         <h2>Use Stricture if…</h2>
         <ul>
-          <li>You ship across multiple services and contracts drift without warning.</li>
+          <li>Multi-service changes cause hidden contract drift.</li>
           <li>AI or high-velocity changes make manual review unreliable.</li>
           <li>You need downstream impact and owner escalation in CI.</li>
           <li>Flow-level business risk should block unsafe deploys.</li>
@@ -104,8 +104,8 @@ const specLinks = {
         <h2>Not a fit if…</h2>
         <ul>
           <li>You have a single service with no external consumers.</li>
-          <li>All contracts are centralized and strictly enforced already.</li>
-          <li>You only need logging/tracing without contract enforcement.</li>
+          <li>Contracts are already centrally enforced with strict gates.</li>
+          <li>You only need tracing/logging without contract enforcement.</li>
         </ul>
       </div>
     </div>
@@ -120,7 +120,7 @@ const specLinks = {
       <p class="kicker">Getting Started</p>
       <h2>Start using Stricture annotations today.</h2>
       <p class="lead">
-        Reuse what you already have—OpenAPI, AsyncAPI, protobuf/buf, or event schemas—and layer Stricture annotations on top to get actionable findings and policy gates. Clear owners, contracts, types, and ranges make the UI and CLI instantly readable.
+        Reuse OpenAPI, AsyncAPI, protobuf/buf, or event schemas. Add lightweight Stricture annotations to get actionable findings and policy gates.
       </p>
       <div class="hero-actions">
         <a class="button button-primary" href="/getting-started">Read the Quickstart</a>
@@ -137,7 +137,7 @@ const specLinks = {
       <p class="kicker">Core Capabilities</p>
       <h2>Critical capabilities that protect multi-system delivery.</h2>
       <p class="lead">
-        These are the features that keep high-velocity, multi-repo delivery safe when contracts and dependencies are changing constantly.
+        Features that keep high-velocity, multi-repo delivery safe when contracts change.
       </p>
     </header>
 
