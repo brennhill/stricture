@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-15T04:57:23Z",
+  "generated_at": "2026-02-15T08:10:26Z",
   "truth": {
     "supportedFlows": 50,
     "annotatedFlows": 50,
@@ -36,6 +36,33 @@
       "flowCount": 0
     },
     {
+      "id": "commercecore:api-service",
+      "name": "API Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.ecommerce-core",
+      "escalation": "pagerduty:ecommerce-core",
+      "flowCount": 1
+    },
+    {
+      "id": "commercecore:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.ecommerce-core",
+      "escalation": "pagerduty:ecommerce-core",
+      "flowCount": 1
+    },
+    {
+      "id": "commercecore:ui-service",
+      "name": "UI Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.ecommerce-core",
+      "escalation": "pagerduty:ecommerce-core",
+      "flowCount": 1
+    },
+    {
       "id": "commercegateway",
       "name": "CommerceGateway Service",
       "domain": "ecommerce",
@@ -43,6 +70,33 @@
       "owner": "team.ecommerce",
       "escalation": "pagerduty:ecommerce-oncall",
       "flowCount": 10
+    },
+    {
+      "id": "commercegateway:api-service",
+      "name": "API Service",
+      "domain": "ecommerce",
+      "kind": "internal",
+      "owner": "team.ecommerce",
+      "escalation": "pagerduty:ecommerce-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "commercegateway:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "ecommerce",
+      "kind": "internal",
+      "owner": "team.ecommerce",
+      "escalation": "pagerduty:ecommerce-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "commercegateway:ui-service",
+      "name": "UI Service",
+      "domain": "ecommerce",
+      "kind": "internal",
+      "owner": "team.ecommerce",
+      "escalation": "pagerduty:ecommerce-oncall",
+      "flowCount": 1
     },
     {
       "id": "fedex",
@@ -54,6 +108,33 @@
       "flowCount": 0
     },
     {
+      "id": "fedex:api-service",
+      "name": "API Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-fedex",
+      "flowCount": 1
+    },
+    {
+      "id": "fedex:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-fedex",
+      "flowCount": 1
+    },
+    {
+      "id": "fedex:ui-service",
+      "name": "UI Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-fedex",
+      "flowCount": 1
+    },
+    {
       "id": "fintechgateway",
       "name": "FintechGateway Service",
       "domain": "fintech",
@@ -61,6 +142,33 @@
       "owner": "team.fintech",
       "escalation": "pagerduty:fintech-oncall",
       "flowCount": 10
+    },
+    {
+      "id": "fintechgateway:api-service",
+      "name": "API Service",
+      "domain": "fintech",
+      "kind": "internal",
+      "owner": "team.fintech",
+      "escalation": "pagerduty:fintech-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "fintechgateway:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "fintech",
+      "kind": "internal",
+      "owner": "team.fintech",
+      "escalation": "pagerduty:fintech-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "fintechgateway:ui-service",
+      "name": "UI Service",
+      "domain": "fintech",
+      "kind": "internal",
+      "owner": "team.fintech",
+      "escalation": "pagerduty:fintech-oncall",
+      "flowCount": 1
     },
     {
       "id": "governancecore",
@@ -72,6 +180,33 @@
       "flowCount": 0
     },
     {
+      "id": "governancecore:api-service",
+      "name": "API Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.governance-core",
+      "escalation": "pagerduty:governance-core",
+      "flowCount": 1
+    },
+    {
+      "id": "governancecore:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.governance-core",
+      "escalation": "pagerduty:governance-core",
+      "flowCount": 1
+    },
+    {
+      "id": "governancecore:ui-service",
+      "name": "UI Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.governance-core",
+      "escalation": "pagerduty:governance-core",
+      "flowCount": 1
+    },
+    {
       "id": "governancehub",
       "name": "GovernanceHub Service",
       "domain": "governance",
@@ -79,6 +214,33 @@
       "owner": "team.governance",
       "escalation": "pagerduty:governance-oncall",
       "flowCount": 10
+    },
+    {
+      "id": "governancehub:api-service",
+      "name": "API Service",
+      "domain": "governance",
+      "kind": "internal",
+      "owner": "team.governance",
+      "escalation": "pagerduty:governance-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "governancehub:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "governance",
+      "kind": "internal",
+      "owner": "team.governance",
+      "escalation": "pagerduty:governance-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "governancehub:ui-service",
+      "name": "UI Service",
+      "domain": "governance",
+      "kind": "internal",
+      "owner": "team.governance",
+      "escalation": "pagerduty:governance-oncall",
+      "flowCount": 1
     },
     {
       "id": "ledgercore",
@@ -90,6 +252,33 @@
       "flowCount": 0
     },
     {
+      "id": "ledgercore:api-service",
+      "name": "API Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.fintech-core",
+      "escalation": "pagerduty:fintech-core",
+      "flowCount": 1
+    },
+    {
+      "id": "ledgercore:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.fintech-core",
+      "escalation": "pagerduty:fintech-core",
+      "flowCount": 1
+    },
+    {
+      "id": "ledgercore:ui-service",
+      "name": "UI Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.fintech-core",
+      "escalation": "pagerduty:fintech-core",
+      "flowCount": 1
+    },
+    {
       "id": "logisticscore",
       "name": "LogisticsCore Core",
       "domain": "shared",
@@ -97,6 +286,33 @@
       "owner": "team.logistics-core",
       "escalation": "pagerduty:logistics-core",
       "flowCount": 0
+    },
+    {
+      "id": "logisticscore:api-service",
+      "name": "API Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.logistics-core",
+      "escalation": "pagerduty:logistics-core",
+      "flowCount": 1
+    },
+    {
+      "id": "logisticscore:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.logistics-core",
+      "escalation": "pagerduty:logistics-core",
+      "flowCount": 1
+    },
+    {
+      "id": "logisticscore:ui-service",
+      "name": "UI Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.logistics-core",
+      "escalation": "pagerduty:logistics-core",
+      "flowCount": 1
     },
     {
       "id": "logisticsevents",
@@ -162,6 +378,33 @@
       "flowCount": 0
     },
     {
+      "id": "mediacore:api-service",
+      "name": "API Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.media-core",
+      "escalation": "pagerduty:media-core",
+      "flowCount": 1
+    },
+    {
+      "id": "mediacore:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.media-core",
+      "escalation": "pagerduty:media-core",
+      "flowCount": 1
+    },
+    {
+      "id": "mediacore:ui-service",
+      "name": "UI Service",
+      "domain": "shared",
+      "kind": "internal",
+      "owner": "team.media-core",
+      "escalation": "pagerduty:media-core",
+      "flowCount": 1
+    },
+    {
       "id": "mediagateway",
       "name": "MediaGateway Service",
       "domain": "media",
@@ -169,6 +412,33 @@
       "owner": "team.media",
       "escalation": "pagerduty:media-oncall",
       "flowCount": 10
+    },
+    {
+      "id": "mediagateway:api-service",
+      "name": "API Service",
+      "domain": "media",
+      "kind": "internal",
+      "owner": "team.media",
+      "escalation": "pagerduty:media-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "mediagateway:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "media",
+      "kind": "internal",
+      "owner": "team.media",
+      "escalation": "pagerduty:media-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "mediagateway:ui-service",
+      "name": "UI Service",
+      "domain": "media",
+      "kind": "internal",
+      "owner": "team.media",
+      "escalation": "pagerduty:media-oncall",
+      "flowCount": 1
     },
     {
       "id": "orderevents",
@@ -198,6 +468,33 @@
       "flowCount": 1
     },
     {
+      "id": "promotionsconfig:api-service",
+      "name": "API Service",
+      "domain": "ecommerce",
+      "kind": "internal",
+      "owner": "team.promotions-config",
+      "escalation": "pagerduty:promotions-config-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "promotionsconfig:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "ecommerce",
+      "kind": "internal",
+      "owner": "team.promotions-config",
+      "escalation": "pagerduty:promotions-config-oncall",
+      "flowCount": 1
+    },
+    {
+      "id": "promotionsconfig:ui-service",
+      "name": "UI Service",
+      "domain": "ecommerce",
+      "kind": "internal",
+      "owner": "team.promotions-config",
+      "escalation": "pagerduty:promotions-config-oncall",
+      "flowCount": 1
+    },
+    {
       "id": "riskevents",
       "name": "Riskevents",
       "domain": "shared",
@@ -216,6 +513,33 @@
       "flowCount": 0
     },
     {
+      "id": "sec:api-service",
+      "name": "API Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-sec",
+      "flowCount": 1
+    },
+    {
+      "id": "sec:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-sec",
+      "flowCount": 1
+    },
+    {
+      "id": "sec:ui-service",
+      "name": "UI Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-sec",
+      "flowCount": 1
+    },
+    {
       "id": "shopify",
       "name": "Shopify External Provider",
       "domain": "external",
@@ -223,6 +547,33 @@
       "owner": "team.external-integrations",
       "escalation": "slack:#provider-shopify",
       "flowCount": 0
+    },
+    {
+      "id": "shopify:api-service",
+      "name": "API Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-shopify",
+      "flowCount": 1
+    },
+    {
+      "id": "shopify:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-shopify",
+      "flowCount": 1
+    },
+    {
+      "id": "shopify:ui-service",
+      "name": "UI Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-shopify",
+      "flowCount": 1
     },
     {
       "id": "spotify",
@@ -234,6 +585,33 @@
       "flowCount": 0
     },
     {
+      "id": "spotify:api-service",
+      "name": "API Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-spotify",
+      "flowCount": 1
+    },
+    {
+      "id": "spotify:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-spotify",
+      "flowCount": 1
+    },
+    {
+      "id": "spotify:ui-service",
+      "name": "UI Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-spotify",
+      "flowCount": 1
+    },
+    {
       "id": "stripe",
       "name": "Stripe External Provider",
       "domain": "external",
@@ -241,6 +619,33 @@
       "owner": "team.external-integrations",
       "escalation": "slack:#provider-stripe",
       "flowCount": 0
+    },
+    {
+      "id": "stripe:api-service",
+      "name": "API Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-stripe",
+      "flowCount": 1
+    },
+    {
+      "id": "stripe:logging-sidecar",
+      "name": "Logging Sidecar",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-stripe",
+      "flowCount": 1
+    },
+    {
+      "id": "stripe:ui-service",
+      "name": "UI Service",
+      "domain": "external",
+      "kind": "internal",
+      "owner": "team.external-integrations",
+      "escalation": "slack:#provider-stripe",
+      "flowCount": 1
     }
   ],
   "edges": [
@@ -455,11 +860,53 @@
       "label": "CommerceCore.GetTaxEstimateTrace"
     },
     {
+      "id": "e_demo_commercecore_api_to_contract",
+      "from": "commercecore:api-service",
+      "to": "commercecore",
+      "fieldId": "response_ecommerce_inventory_reservation_health",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_commercecore_api_to_log",
+      "from": "commercecore:api-service",
+      "to": "commercecore:logging-sidecar",
+      "fieldId": "internal_commercecore_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_commercecore_ui_to_api",
+      "from": "commercecore:ui-service",
+      "to": "commercecore:api-service",
+      "fieldId": "response_ecommerce_inventory_reservation_health",
+      "label": "http:UI.Request"
+    },
+    {
       "id": "e_demo_commercegateway_to_fintechgateway",
       "from": "commercegateway",
       "to": "fintechgateway",
       "fieldId": "response_ecommerce_cart_pricing_waterfall",
       "label": "CommerceGateway.ForwardCheckoutPricing"
+    },
+    {
+      "id": "e_demo_commercegateway_api_to_contract",
+      "from": "commercegateway:api-service",
+      "to": "commercegateway",
+      "fieldId": "response_ecommerce_inventory_reservation_health",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_commercegateway_api_to_log",
+      "from": "commercegateway:api-service",
+      "to": "commercegateway:logging-sidecar",
+      "fieldId": "internal_commercegateway_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_commercegateway_ui_to_api",
+      "from": "commercegateway:ui-service",
+      "to": "commercegateway:api-service",
+      "fieldId": "response_ecommerce_inventory_reservation_health",
+      "label": "http:UI.Request"
     },
     {
       "id": "e_4d0cdbc453de",
@@ -495,6 +942,48 @@
       "to": "logisticsgateway",
       "fieldId": "response_logistics_shipment_eta_projection",
       "label": "Fedex.GetShipmentEtaProjection"
+    },
+    {
+      "id": "e_demo_fedex_api_to_contract",
+      "from": "fedex:api-service",
+      "to": "fedex",
+      "fieldId": "response_logistics_customs_clearance_status",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_fedex_api_to_log",
+      "from": "fedex:api-service",
+      "to": "fedex:logging-sidecar",
+      "fieldId": "internal_fedex_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_fedex_ui_to_api",
+      "from": "fedex:ui-service",
+      "to": "fedex:api-service",
+      "fieldId": "response_logistics_customs_clearance_status",
+      "label": "http:UI.Request"
+    },
+    {
+      "id": "e_demo_fintechgateway_api_to_contract",
+      "from": "fintechgateway:api-service",
+      "to": "fintechgateway",
+      "fieldId": "response_fintech_invoice_factoring_eligibility",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_fintechgateway_api_to_log",
+      "from": "fintechgateway:api-service",
+      "to": "fintechgateway:logging-sidecar",
+      "fieldId": "internal_fintechgateway_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_fintechgateway_ui_to_api",
+      "from": "fintechgateway:ui-service",
+      "to": "fintechgateway:api-service",
+      "fieldId": "response_fintech_invoice_factoring_eligibility",
+      "label": "http:UI.Request"
     },
     {
       "id": "e_4390613ada13",
@@ -567,6 +1056,48 @@
       "label": "GovernanceCore.GetWhistleblowerCaseTracking"
     },
     {
+      "id": "e_demo_governancecore_api_to_contract",
+      "from": "governancecore:api-service",
+      "to": "governancecore",
+      "fieldId": "response_governance_insider_window_enforcement",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_governancecore_api_to_log",
+      "from": "governancecore:api-service",
+      "to": "governancecore:logging-sidecar",
+      "fieldId": "internal_governancecore_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_governancecore_ui_to_api",
+      "from": "governancecore:ui-service",
+      "to": "governancecore:api-service",
+      "fieldId": "response_governance_insider_window_enforcement",
+      "label": "http:UI.Request"
+    },
+    {
+      "id": "e_demo_governancehub_api_to_contract",
+      "from": "governancehub:api-service",
+      "to": "governancehub",
+      "fieldId": "response_governance_insider_window_enforcement",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_governancehub_api_to_log",
+      "from": "governancehub:api-service",
+      "to": "governancehub:logging-sidecar",
+      "fieldId": "internal_governancehub_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_governancehub_ui_to_api",
+      "from": "governancehub:ui-service",
+      "to": "governancehub:api-service",
+      "fieldId": "response_governance_insider_window_enforcement",
+      "label": "http:UI.Request"
+    },
+    {
       "id": "e_4bea840dac97",
       "from": "ledgercore",
       "to": "fintechgateway",
@@ -635,6 +1166,27 @@
       "to": "fintechgateway",
       "fieldId": "response_fintech_treasury_exposure_rollup",
       "label": "LedgerCore.GetTreasuryExposureRollup"
+    },
+    {
+      "id": "e_demo_ledgercore_api_to_contract",
+      "from": "ledgercore:api-service",
+      "to": "ledgercore",
+      "fieldId": "response_fintech_invoice_factoring_eligibility",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_ledgercore_api_to_log",
+      "from": "ledgercore:api-service",
+      "to": "ledgercore:logging-sidecar",
+      "fieldId": "internal_ledgercore_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_ledgercore_ui_to_api",
+      "from": "ledgercore:ui-service",
+      "to": "ledgercore:api-service",
+      "fieldId": "response_fintech_invoice_factoring_eligibility",
+      "label": "http:UI.Request"
     },
     {
       "id": "e_ffca0c190a84",
@@ -712,6 +1264,27 @@
       "to": "logisticsgateway:tracking-api",
       "fieldId": "response_logistics_route_risk_assessment",
       "label": "api:LogisticsCore.GetRouteRiskAssessment"
+    },
+    {
+      "id": "e_demo_logisticscore_api_to_contract",
+      "from": "logisticscore:api-service",
+      "to": "logisticscore",
+      "fieldId": "response_logistics_route_risk_assessment",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_logisticscore_api_to_log",
+      "from": "logisticscore:api-service",
+      "to": "logisticscore:logging-sidecar",
+      "fieldId": "internal_logisticscore_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_logisticscore_ui_to_api",
+      "from": "logisticscore:ui-service",
+      "to": "logisticscore:api-service",
+      "fieldId": "response_logistics_route_risk_assessment",
+      "label": "http:UI.Request"
     },
     {
       "id": "e_0a1c54d31c81",
@@ -882,6 +1455,48 @@
       "label": "MediaCore.GetTrackMetadataUnification"
     },
     {
+      "id": "e_demo_mediacore_api_to_contract",
+      "from": "mediacore:api-service",
+      "to": "mediacore",
+      "fieldId": "response_media_rights_window_enforcement",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_mediacore_api_to_log",
+      "from": "mediacore:api-service",
+      "to": "mediacore:logging-sidecar",
+      "fieldId": "internal_mediacore_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_mediacore_ui_to_api",
+      "from": "mediacore:ui-service",
+      "to": "mediacore:api-service",
+      "fieldId": "response_media_rights_window_enforcement",
+      "label": "http:UI.Request"
+    },
+    {
+      "id": "e_demo_mediagateway_api_to_contract",
+      "from": "mediagateway:api-service",
+      "to": "mediagateway",
+      "fieldId": "response_media_rights_window_enforcement",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_mediagateway_api_to_log",
+      "from": "mediagateway:api-service",
+      "to": "mediagateway:logging-sidecar",
+      "fieldId": "internal_mediagateway_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_mediagateway_ui_to_api",
+      "from": "mediagateway:ui-service",
+      "to": "mediagateway:api-service",
+      "fieldId": "response_media_rights_window_enforcement",
+      "label": "http:UI.Request"
+    },
+    {
       "id": "e_9622d5444872",
       "from": "orderevents",
       "to": "commercegateway",
@@ -964,6 +1579,27 @@
       "to": "promotionsapp",
       "fieldId": "response_ecommerce_cart_pricing_waterfall",
       "label": "PromotionsConfig.GetPromotionType"
+    },
+    {
+      "id": "e_demo_promotionsconfig_api_to_contract",
+      "from": "promotionsconfig:api-service",
+      "to": "promotionsconfig",
+      "fieldId": "response_ecommerce_cart_pricing_waterfall",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_promotionsconfig_api_to_log",
+      "from": "promotionsconfig:api-service",
+      "to": "promotionsconfig:logging-sidecar",
+      "fieldId": "internal_promotionsconfig_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_promotionsconfig_ui_to_api",
+      "from": "promotionsconfig:ui-service",
+      "to": "promotionsconfig:api-service",
+      "fieldId": "response_ecommerce_cart_pricing_waterfall",
+      "label": "http:UI.Request"
     },
     {
       "id": "e_753d6d83fdff",
@@ -1071,6 +1707,27 @@
       "label": "Sec.GetRiskRegisterResidualScore"
     },
     {
+      "id": "e_demo_sec_api_to_contract",
+      "from": "sec:api-service",
+      "to": "sec",
+      "fieldId": "response_governance_insider_window_enforcement",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_sec_api_to_log",
+      "from": "sec:api-service",
+      "to": "sec:logging-sidecar",
+      "fieldId": "internal_sec_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_sec_ui_to_api",
+      "from": "sec:ui-service",
+      "to": "sec:api-service",
+      "fieldId": "response_governance_insider_window_enforcement",
+      "label": "http:UI.Request"
+    },
+    {
       "id": "e_5c25c5d8884f",
       "from": "shopify",
       "to": "commercegateway",
@@ -1104,6 +1761,27 @@
       "to": "commercegateway",
       "fieldId": "response_ecommerce_seller_policy_attestation",
       "label": "Shopify.GetSellerPolicyAttestation"
+    },
+    {
+      "id": "e_demo_shopify_api_to_contract",
+      "from": "shopify:api-service",
+      "to": "shopify",
+      "fieldId": "response_ecommerce_inventory_reservation_health",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_shopify_api_to_log",
+      "from": "shopify:api-service",
+      "to": "shopify:logging-sidecar",
+      "fieldId": "internal_shopify_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_shopify_ui_to_api",
+      "from": "shopify:ui-service",
+      "to": "shopify:api-service",
+      "fieldId": "response_ecommerce_inventory_reservation_health",
+      "label": "http:UI.Request"
     },
     {
       "id": "e_1a11148a6076",
@@ -1141,6 +1819,27 @@
       "label": "Spotify.GetTrackMetadataUnification"
     },
     {
+      "id": "e_demo_spotify_api_to_contract",
+      "from": "spotify:api-service",
+      "to": "spotify",
+      "fieldId": "response_media_moderation_flag_resolution",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_spotify_api_to_log",
+      "from": "spotify:api-service",
+      "to": "spotify:logging-sidecar",
+      "fieldId": "internal_spotify_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_spotify_ui_to_api",
+      "from": "spotify:ui-service",
+      "to": "spotify:api-service",
+      "fieldId": "response_media_moderation_flag_resolution",
+      "label": "http:UI.Request"
+    },
+    {
       "id": "e_24e2b64785ae",
       "from": "stripe",
       "to": "fintechgateway",
@@ -1174,6 +1873,27 @@
       "to": "fintechgateway",
       "fieldId": "response_fintech_treasury_exposure_rollup",
       "label": "Stripe.GetTreasuryExposureRollup"
+    },
+    {
+      "id": "e_demo_stripe_api_to_contract",
+      "from": "stripe:api-service",
+      "to": "stripe",
+      "fieldId": "response_fintech_kyc_profile_consistency",
+      "label": "api:ContractAdapter.Publish"
+    },
+    {
+      "id": "e_demo_stripe_api_to_log",
+      "from": "stripe:api-service",
+      "to": "stripe:logging-sidecar",
+      "fieldId": "internal_stripe_telemetry",
+      "label": "otel:StructuredLogs.Emit"
+    },
+    {
+      "id": "e_demo_stripe_ui_to_api",
+      "from": "stripe:ui-service",
+      "to": "stripe:api-service",
+      "fieldId": "response_fintech_kyc_profile_consistency",
+      "label": "http:UI.Request"
     }
   ],
   "field_metadata": {

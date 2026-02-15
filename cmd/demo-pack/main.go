@@ -405,6 +405,8 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		},
 	}
 
+	addSourceInternalOverlays(&pack)
+
 	return pack, nil
 }
 
@@ -545,6 +547,115 @@ func addLogisticsInternalOverlay(pack *demoPack) {
 		FieldID: "response_logistics_route_risk_assessment",
 		Label:   "api:LogisticsCore.GetRouteRiskAssessment",
 	})
+}
+
+func addSourceInternalOverlays(pack *demoPack) {
+	serviceByID := map[string]demoService{}
+	for _, service := range pack.Services {
+		serviceByID[service.ID] = service
+	}
+
+	rootsToField := map[string]string{}
+	for fieldID, byMutation := range pack.MutationScenarios {
+		for _, scenario := range byMutation {
+			for _, change := range scenario.Changes {
+				if change.Source == nil {
+					continue
+				}
+				root := normalizeID(change.Source.Service)
+				if root == "" {
+					continue
+				}
+				if _, ok := serviceByID[root]; !ok {
+					continue
+				}
+				if hasSubsystemService(pack.Services, root) {
+					continue
+				}
+				if _, exists := rootsToField[root]; !exists {
+					rootsToField[root] = fieldID
+				}
+			}
+		}
+	}
+
+	roots := make([]string, 0, len(rootsToField))
+	for root := range rootsToField {
+		roots = append(roots, root)
+	}
+	sort.Strings(roots)
+
+	for _, root := range roots {
+		parent := serviceByID[root]
+		primaryFieldID := strings.TrimSpace(rootsToField[root])
+		if primaryFieldID == "" {
+			primaryFieldID = "internal_" + root + "_request"
+		}
+
+		apiID := root + ":api-service"
+		uiID := root + ":ui-service"
+		logID := root + ":logging-sidecar"
+
+		ensureDemoService(pack, demoService{
+			ID:         apiID,
+			Name:       "API Service",
+			Domain:     parent.Domain,
+			Kind:       "internal",
+			Owner:      parent.Owner,
+			Escalation: parent.Escalation,
+			FlowCount:  1,
+		})
+		ensureDemoService(pack, demoService{
+			ID:         uiID,
+			Name:       "UI Service",
+			Domain:     parent.Domain,
+			Kind:       "internal",
+			Owner:      parent.Owner,
+			Escalation: parent.Escalation,
+			FlowCount:  1,
+		})
+		ensureDemoService(pack, demoService{
+			ID:         logID,
+			Name:       "Logging Sidecar",
+			Domain:     parent.Domain,
+			Kind:       "internal",
+			Owner:      parent.Owner,
+			Escalation: parent.Escalation,
+			FlowCount:  1,
+		})
+
+		ensureDemoEdge(pack, demoEdge{
+			ID:      "e_demo_" + root + "_ui_to_api",
+			From:    uiID,
+			To:      apiID,
+			FieldID: primaryFieldID,
+			Label:   "http:UI.Request",
+		})
+		ensureDemoEdge(pack, demoEdge{
+			ID:      "e_demo_" + root + "_api_to_contract",
+			From:    apiID,
+			To:      root,
+			FieldID: primaryFieldID,
+			Label:   "api:ContractAdapter.Publish",
+		})
+		ensureDemoEdge(pack, demoEdge{
+			ID:      "e_demo_" + root + "_api_to_log",
+			From:    apiID,
+			To:      logID,
+			FieldID: "internal_" + root + "_telemetry",
+			Label:   "otel:StructuredLogs.Emit",
+		})
+	}
+}
+
+func hasSubsystemService(services []demoService, root string) bool {
+	prefix := root + ":"
+	for _, service := range services {
+		if strings.HasPrefix(service.ID, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func mutateArtifact(base lineage.Artifact, fieldIndex int, typ mutationType) (lineage.Artifact, bool) {
