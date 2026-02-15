@@ -109,11 +109,12 @@ export const prerender = true;
 
         <article class="card">
           <h2>Service Topology</h2>
-          <p class="muted">Visualize how services (nodes) and field-level flows (edges) connect. The graph is arranged left-to-right from cause to impact. Red node = service that introduced the change. Orange node = service where Stricture flags impact. Pale yellow node = service relaying affected data but not failing itself. Orange edge = affected path between them.</p>
+          <p class="muted">Visualize how services (nodes) and field-level flows (edges) connect. The graph is arranged left-to-right from cause to impact. Red node = service that introduced the change. Orange node = service where Stricture flags impact. Pale yellow node = relay on the impacted path. Light yellow node = possible data contributor (not flagged). Orange edge = affected path between them.</p>
           <div class="legend">
             <span class="legend-chip legend-node-source">Source changed</span>
             <span class="legend-chip legend-node-impacted">Service impacted</span>
-            <span class="legend-chip legend-node-transit">Affected-path relay (not failing)</span>
+            <span class="legend-chip legend-node-transit">Path relay</span>
+            <span class="legend-chip legend-node-contributor">Possible data contributor</span>
             <span class="legend-chip legend-edge-affected">Affected path</span>
             <span class="legend-chip legend-edge-healthy">Other healthy flow</span>
           </div>

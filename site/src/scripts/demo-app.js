@@ -733,6 +733,8 @@ function renderGraph(snapshot) {
     failedServices,
     flowNodes,
     flowEdges,
+    pathNodes,
+    pathEdges,
     affectedServices,
     focusFieldSeverity,
   } = computeImpacts(snapshot);
@@ -783,9 +785,9 @@ function renderGraph(snapshot) {
     curve.setAttribute("d", d);
     const isFlow = flowEdges.has(edge.id);
     const isActiveField = activeFields.has(edge.fieldId);
-    const isSourceImpactEdge =
-      isFlow && (sourceServices.has(edge.from) || sourceServices.has(edge.to)) &&
-      (impactedServices.has(edge.from) || impactedServices.has(edge.to) || isActiveField);
+    const isSourceImpactEdge = pathEdges.has(edge.id) ||
+      (isFlow && (sourceServices.has(edge.from) || sourceServices.has(edge.to)) &&
+      (impactedServices.has(edge.from) || impactedServices.has(edge.to) || isActiveField));
     const color = !isFlow ? "var(--line)" : isSourceImpactEdge ? "var(--warn)" : edgeColor(edge.status);
     curve.setAttribute("stroke", color);
     const classes = [`graph-edge`, `edge-${edge.status}`, "flow"];
@@ -808,9 +810,11 @@ function renderGraph(snapshot) {
     const statusClass = nodeStatusForService(node.id, snapshot.findings);
     const isolated = (node.edgeDegree || 0) === 0;
     const inFlow = flowNodes.has(node.id);
+    const inPath = pathNodes.has(node.id);
     const isSource = sourceServices.has(node.id);
     const isImpacted = impactedServices.has(node.id);
-    const isTransit = inFlow && !isSource && !isImpacted;
+    const isTransit = inPath && !isSource && !isImpacted;
+    const isContributor = inFlow && !inPath && !isSource && !isImpacted;
     const isFailing = failedServices.has(node.id);
     const classes = ["graph-node", statusClass];
     if (isolated) classes.push("isolated");
@@ -818,12 +822,13 @@ function renderGraph(snapshot) {
     if (isSource) classes.push("source");
     if (isImpacted) classes.push("impacted");
     if (isTransit) classes.push("transit");
+    if (isContributor) classes.push("contributor");
     if (isFailing) classes.push("failing");
     g.setAttribute("class", classes.join(" "));
     const circle = document.createElementNS(svgNS, "circle");
     circle.setAttribute("cx", pos.x);
     circle.setAttribute("cy", pos.y);
-    circle.setAttribute("r", isSource || isImpacted ? "28" : inFlow ? "24" : "16");
+    circle.setAttribute("r", isSource || isImpacted ? "28" : isTransit ? "24" : isContributor ? "20" : inFlow ? "22" : "16");
     g.appendChild(circle);
     const label = document.createElementNS(svgNS, "text");
     label.setAttribute("x", pos.x);
@@ -1172,14 +1177,68 @@ function computeImpacts(snapshot) {
   }
   const flowEdges = new Set();
   const flowNodes = new Set();
+  const activeFieldEdges = [];
   (snapshot.edges || []).forEach((e) => {
     if (activeFields.has(e.fieldId)) {
+      activeFieldEdges.push(e);
       flowEdges.add(e.id);
       flowNodes.add(e.from);
       flowNodes.add(e.to);
       affectedServices.add(e.from);
       affectedServices.add(e.to);
     }
+  });
+  const outgoing = new Map();
+  activeFieldEdges.forEach((edge) => {
+    const list = outgoing.get(edge.from) || [];
+    list.push(edge);
+    outgoing.set(edge.from, list);
+  });
+
+  const pathNodes = new Set();
+  const pathEdges = new Set();
+  const shortestPath = (start, goal) => {
+    if (!start || !goal) return null;
+    if (start === goal) return { nodes: [start], edges: [] };
+    const queue = [start];
+    const seen = new Set([start]);
+    const prevNode = new Map();
+    const prevEdge = new Map();
+    while (queue.length) {
+      const current = queue.shift();
+      const nextEdges = outgoing.get(current) || [];
+      for (const edge of nextEdges) {
+        if (seen.has(edge.to)) continue;
+        seen.add(edge.to);
+        prevNode.set(edge.to, current);
+        prevEdge.set(edge.to, edge.id);
+        if (edge.to === goal) {
+          const nodes = [];
+          const edges = [];
+          let node = goal;
+          nodes.push(node);
+          while (prevNode.has(node)) {
+            edges.push(prevEdge.get(node));
+            node = prevNode.get(node);
+            nodes.push(node);
+          }
+          nodes.reverse();
+          edges.reverse();
+          return { nodes, edges };
+        }
+        queue.push(edge.to);
+      }
+    }
+    return null;
+  };
+
+  sourceServices.forEach((sourceID) => {
+    impactedServices.forEach((impactID) => {
+      const path = shortestPath(sourceID, impactID);
+      if (!path) return;
+      path.nodes.forEach((id) => pathNodes.add(id));
+      path.edges.forEach((id) => pathEdges.add(id));
+    });
   });
   sourceServices.forEach((serviceId) => affectedServices.add(serviceId));
   impactedServices.forEach((serviceId) => affectedServices.add(serviceId));
@@ -1191,6 +1250,8 @@ function computeImpacts(snapshot) {
     affectedServices,
     flowNodes,
     flowEdges,
+    pathNodes,
+    pathEdges,
     focusFieldSeverity: focus?.severity || null,
   };
 }
