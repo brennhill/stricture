@@ -453,6 +453,23 @@ main > * + * {
   color: var(--ink-soft);
 }
 
+.hero-link {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.hero-link a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.hero-link a:hover,
+.hero-link a:focus-visible {
+  text-decoration: underline;
+}
+
 .hero-nav {
   border: 1px solid var(--line);
   background: #ffffff;
@@ -771,6 +788,11 @@ select {
 
 .card h2 {
   font-size: 1rem;
+}
+
+.card .lead,
+.card .muted {
+  max-width: 72ch;
 }
 
 .muted {
