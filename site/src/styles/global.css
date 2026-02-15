@@ -18,6 +18,7 @@
   --line: rgba(15, 23, 42, 0.22);
   --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   --accent-shadow: rgba(29, 78, 216, 0.24);
+  --section-gap: 1.6rem;
   --panel-glow: rgba(29, 78, 216, 0);
   --panel-border: rgba(29, 78, 216, 0.36);
   --icon-lineage: #1d4ed8;
@@ -286,6 +287,10 @@ main {
   width: min(1120px, 92vw);
   margin: 0 auto;
   padding-bottom: 4rem;
+}
+
+main > * + * {
+  margin-top: var(--section-gap);
 }
 
 .hero {
