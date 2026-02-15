@@ -10,9 +10,32 @@
       "type": "string",
       "const": "1"
     },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "systems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/system" }
+    },
     "fields": {
       "type": "array",
       "items": { "$ref": "#/$defs/annotation" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
     },
     "overrides": {
       "type": "array",
@@ -20,6 +43,58 @@
     }
   },
   "$defs": {
+    "system": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$" },
+        "name": { "type": "string" },
+        "owner_team": { "type": "string" },
+        "kind": { "type": "string" },
+        "flows": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "field_id": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "finding": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "rule_id": { "type": "string" },
+        "severity": { "type": "string", "enum": ["high", "medium", "low", "info"] },
+        "field_id": { "type": "string" },
+        "message": { "type": "string" },
+        "flow_context": {
+          "type": "object",
+          "properties": {
+            "flow_ids": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            },
+            "effective_level": { "type": "integer", "minimum": 0 },
+            "policy_reason": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
     "annotation": {
       "type": "object",
       "required": [
