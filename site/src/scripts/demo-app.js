@@ -125,8 +125,17 @@ function titleCaseID(value) {
   return parts.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
-function hasSubsystems(snapshot, rootId) {
-  return (snapshot.services || []).some((service) => topologyRootId(service.id) === rootId && isSubsystemID(service.id));
+function inferSourceRoots(snapshot) {
+  const latest = latestMutation(snapshot);
+  const sourceIDs = inferSourceServices(snapshot, snapshot.findings || [], latest);
+  const roots = new Set();
+  sourceIDs.forEach((id) => {
+    const root = topologyRootId(id);
+    if (root) {
+      roots.add(root);
+    }
+  });
+  return roots;
 }
 
 function latestMutation(snapshot) {
@@ -403,6 +412,7 @@ function mapFindingToTopologyRoot(snapshot, finding) {
 function buildEcosystemView(snapshot) {
   const groups = new Map();
   const internalRoots = new Set();
+  const sourceRoots = inferSourceRoots(snapshot);
 
   (snapshot.services || []).forEach((service) => {
     const root = topologyRootId(service.id);
@@ -428,7 +438,13 @@ function buildEcosystemView(snapshot) {
   const services = [...groups.values()]
     .map((group) => {
       const rootService = group.rootService || group.members[0];
-      const internalCount = group.members.filter((service) => isSubsystemID(service.id)).length;
+      let internalCount = group.members.filter((service) => isSubsystemID(service.id)).length;
+      if (internalCount === 0 && sourceRoots.has(group.root)) {
+        internalCount = 3;
+      }
+      if (internalCount > 0) {
+        internalRoots.add(group.root);
+      }
       return {
         id: group.root,
         name: rootService?.name || titleCaseID(group.root),
@@ -524,10 +540,80 @@ function findingTouchesRoot(snapshot, finding, root) {
 
 function buildServiceView(snapshot, root) {
   const services = (snapshot.services || []).filter((service) => topologyRootId(service.id) === root);
-  const serviceIDs = new Set(services.map((service) => service.id));
-  const edges = (snapshot.edges || []).filter((edge) => serviceIDs.has(edge.from) && serviceIDs.has(edge.to));
+  const hasRealInternals = services.some((service) => isSubsystemID(service.id));
   const findings = (snapshot.findings || []).filter((finding) => findingTouchesRoot(snapshot, finding, root));
   const mutations = (snapshot.mutations || []).filter((mutation) => topologyRootId(mutation.serviceId) === root);
+
+  if (!hasRealInternals && inferSourceRoots(snapshot).has(root)) {
+    const rootService = services.find((service) => !isSubsystemID(service.id)) || services[0] || null;
+    const apiID = `${root}:api-service`;
+    const uiID = `${root}:ui-service`;
+    const logID = `${root}:logging-sidecar`;
+    const rootName = rootService?.name || titleCaseID(root);
+    const owner = rootService?.owner || "team.unknown";
+    const escalation = rootService?.escalation || "slack:#unknown-oncall";
+    const domain = rootService?.domain || "shared";
+    const kind = rootService?.kind || "internal";
+    const flowCount = Number(rootService?.flowCount || 0);
+    const hasHigh = findings.some((finding) => finding.severity === "high");
+    const hasAnyFinding = findings.length > 0;
+    const apiStatus = hasHigh ? "blocked" : hasAnyFinding ? "warning" : "healthy";
+    const primaryFieldId = mutations[0]?.fieldId || findings[0]?.fieldId || `internal_${root}_request`;
+    const mapContext = (ctx) => {
+      if (!ctx) return ctx;
+      const ctxRoot = topologyRootId(ctx.serviceId || resolveServiceId(snapshot, ctx.service));
+      if (ctxRoot !== root) return ctx;
+      return {
+        ...ctx,
+        serviceId: apiID,
+        service: `${rootName} API Service`,
+      };
+    };
+    return {
+      mode: "service",
+      root,
+      snapshot: {
+        ...snapshot,
+        services: [
+          { id: uiID, name: "UI Service", domain, kind, owner, escalation, flowCount: 0 },
+          { id: apiID, name: "API Service", domain, kind, owner, escalation, flowCount },
+          { id: logID, name: "Logging Sidecar", domain, kind, owner, escalation, flowCount: 0 },
+        ],
+        edges: [
+          {
+            id: `syn_${root}_ui_api`,
+            from: uiID,
+            to: apiID,
+            fieldId: primaryFieldId,
+            status: apiStatus,
+            label: "ui request",
+          },
+          {
+            id: `syn_${root}_api_log`,
+            from: apiID,
+            to: logID,
+            fieldId: `internal_${root}_telemetry`,
+            status: "healthy",
+            label: "structured logs",
+          },
+        ],
+        findings: findings.map((finding) => ({
+          ...finding,
+          serviceId: apiID,
+          source: mapContext(finding.source),
+          impact: mapContext(finding.impact),
+        })),
+        mutations: mutations.map((mutation) => ({
+          ...mutation,
+          serviceId: apiID,
+        })),
+      },
+      internalRoots: new Set(),
+    };
+  }
+
+  const serviceIDs = new Set(services.map((service) => service.id));
+  const edges = (snapshot.edges || []).filter((edge) => serviceIDs.has(edge.from) && serviceIDs.has(edge.to));
   return {
     mode: "service",
     root,
@@ -624,7 +710,7 @@ function updateTopologyViewState(view, originalSnapshot) {
     .map((root) => serviceName(originalSnapshot, root))
     .filter(Boolean);
   const inspectableHint = inspectableNames.length === 0
-    ? "No services in this scenario expose mapped internals."
+    ? "No services in this scenario expose mapped or generated internals."
     : `Select a highlighted service node with a layers icon to inspect internals (for example: ${inspectableNames.slice(0, 2).join(", ")}${inspectableNames.length > 2 ? ", ..." : ""}).`;
 
   const setTabState = (button, wrapper, active, disabled, title) => {
@@ -1725,7 +1811,7 @@ function addGraphInteractions(svg, view, originalSnapshot) {
     node.setAttribute("aria-label", `Inspect internals for ${label}`);
     const open = () => {
       const root = node.dataset.drillRoot || "";
-      if (!root || !hasSubsystems(originalSnapshot, root)) {
+      if (!root || !view.internalRoots?.has(root)) {
         return;
       }
       state.topologyRoot = root;
