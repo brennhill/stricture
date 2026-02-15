@@ -8,11 +8,26 @@ const toTitle = (value) =>
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const extractSummary = (body) => {
+  const lines = String(body || "").split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith("#")) continue;
+    return trimmed.replace(/\[(.*?)\]\((.*?)\)/g, "$1");
+  }
+  return "Spec and implementation details.";
+};
+
 const entries = docs
-  .map((entry) => ({
-    entry,
-    title: entry.data.title || toTitle(entry.slug.split("/").pop()),
-  }))
+  .map((entry) => {
+    const summary = entry.data.description || extractSummary(entry.body);
+    return {
+      entry,
+      title: entry.data.title || toTitle(entry.slug.split("/").pop()),
+      summary,
+    };
+  })
   .sort((a, b) => {
     const ao = a.entry.data.order ?? 9999;
     const bo = b.entry.data.order ?? 9999;
@@ -31,24 +46,52 @@ const entries = docs
     <p class="lead">
       Everything in the repository docs folder, published with navigation and a searchable index.
     </p>
+    <input class="docs-search" type="search" placeholder="Search docs…" aria-label="Search docs" />
   </section>
 
   <section class="card docs-grid">
-    {entries.map(({ entry, title }) => (
-      <a class="doc-card" href={`/docs/${entry.slug}`}>
+    {entries.map(({ entry, title, summary }) => (
+      <a class="doc-card" href={`/docs/${entry.slug}`} data-doc-card data-doc-title={title} data-doc-summary={summary}>
         <h3>{title}</h3>
-        <p>{entry.data.description || "Spec and implementation details."}</p>
+        <p>{summary}</p>
         <span>View doc →</span>
       </a>
     ))}
   </section>
 </MainLayout>
 
+<script is:inline>
+  (() => {
+    const search = document.querySelector(".docs-search");
+    const cards = Array.from(document.querySelectorAll("[data-doc-card]"));
+    if (!search || !cards.length) return;
+    search.addEventListener("input", () => {
+      const q = String(search.value || "").trim().toLowerCase();
+      cards.forEach((card) => {
+        const title = card.getAttribute("data-doc-title") || "";
+        const summary = card.getAttribute("data-doc-summary") || "";
+        const hay = `${title} ${summary}`.toLowerCase();
+        card.style.display = hay.includes(q) ? "" : "none";
+      });
+    });
+  })();
+</script>
+
 <style>
   .docs-grid {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .docs-search {
+    margin-top: 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.55rem 0.7rem;
+    font: inherit;
+    width: min(420px, 100%);
+    background: #ffffff;
   }
 
   .doc-card {
