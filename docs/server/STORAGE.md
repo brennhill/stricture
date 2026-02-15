@@ -31,12 +31,47 @@ Each ingest request becomes one immutable record envelope:
   - `findings` (impact-gated policy candidates)
   - `change_events` (includes `self_only` drift for publication history)
 - optional policy/flow context:
-  - effective flow levels derived from `'strict:flows'` + `systems[].flows`
+  - effective flow levels derived from `stricture_flows` + `systems[].flows`
   - policy hard-block rationale when flow-criticality rules trigger
 - optional service metadata context:
   - `owner_team`, `escalation`, `runbook_url`, `doc_root`
 - metadata: commit SHA, timestamps, arbitrary metadata map
 - server fields: `received_at`
+
+## Deployment Ledger Records
+
+Deployment records are append-only and stored alongside ingest records.
+
+Record shape (JSON):
+
+```json
+{
+  "service_id": "commercegateway:api-service",
+  "environment": "prod",
+  "deployed_at": "2026-02-15T20:04:12Z",
+  "version": "v2026.02.15",
+  "commit": "a1b2c3d4",
+  "flow_ids": ["checkout"],
+  "region": ["us-east-1"],
+  "rollout": {
+    "strategy": "canary",
+    "percent": 25,
+    "status": "in_progress",
+    "started_at": "2026-02-15T20:00:00Z",
+    "updated_at": "2026-02-15T20:04:12Z"
+  }
+}
+```
+
+Storage layout (suggested):
+
+```text
+<prefix>/v1/deployments/org=<organization>/project=<project>/service=<service>/env=<environment>/date=<YYYY-MM-DD>/at=<timestamp>.json
+<prefix>/v1/deployments/org=<organization>/project=<project>/service=<service>/env=<environment>/latest.json
+```
+
+Flow-level summaries are derived at query time by scanning latest per-service
+records and aggregating by `flow_ids`.
 
 ## Canonical Key Layout (Object Store)
 

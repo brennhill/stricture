@@ -25,10 +25,11 @@ It is intentionally append-only for v0 and does not require a relational DB.
 5. Preserve both:
    - impact-gated findings for CI/policy workflows
    - non-impacting change events for publication/audit workflows
-6. Preserve flow-tier context (`'strict:flows'`, `systems[].flows`) for policy
+6. Preserve flow-tier context (`stricture_flows`, `systems[].flows`) for policy
    evaluation and reporting.
 7. Preserve optional service metadata links (`runbook_url`, `doc_root`) for
    responder workflows.
+8. Record deployment events and expose flow-level deployment recency views.
 
 ## Non-Goals (v0)
 
@@ -56,6 +57,25 @@ It is intentionally append-only for v0 and does not require a relational DB.
   - `summary` (optional text/markdown)
   - `metadata` (optional map)
 - Response: `202 {"accepted":true,"run_id":"...","location":"..."}`.
+
+### Deployment Ledger APIs (v0)
+
+Deployment records are append-only and can be ingested by CI/CD or manual push.
+
+- `POST /v1/deployments`  
+  Body: `{ service_id, environment, deployed_at, version, commit?, flow_ids?, region?, rollout? }`
+
+- `GET /v1/deployments?service_id=&environment=&flow_id=`  
+  Returns latest deployments for a service, environment, or flow.
+
+- `GET /v1/flows/{flow_id}/deployments`  
+  Returns the most recent deployment per service in the flow + flow-level summary.
+
+Rollout object (optional):
+- `strategy` (canary, blue_green, ring, custom)
+- `percent` (0–100)
+- `status` (in_progress, completed, rolled_back)
+- `started_at`, `updated_at`, `completed_at`
 
 ## Finding vs Change Event Contract (Default)
 
@@ -140,8 +160,8 @@ Detailed design: `docs/server/STORAGE.md`.
 
 Client binding notes:
 
-1. Repos typically bind policy with `'strict:policy_url'`.
-2. Repos may bind server endpoints with `'strict:server_url'` for helper/policy
+1. Repos typically bind policy with `stricture_policy_url`.
+2. Repos may bind server endpoints with `stricture_server_url` for helper/policy
    discovery workflows.
 
 ## Repo Layout

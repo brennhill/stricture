@@ -78,13 +78,14 @@ Scope:
 5. Expose APIs/webhooks for CI, chatops, ticketing, and SIEM pipelines.
 6. Support policy packs at org/team/service levels.
 7. Serve policy packs to CI/local tooling with offline cache support and GitHub fallback refs.
-8. Add org compliance check to ensure repos reference approved `strict:policy_url` values.
-9. Serve flow-tier catalogs (`'strict:flows'`) and policy snapshots to local/CI clients.
+8. Add org compliance check to ensure repos reference approved `stricture_policy_url` values.
+9. Serve flow-tier catalogs (`stricture_flows`) and policy snapshots to local/CI clients.
+10. Record deployment events and show flow-level deployment recency.
 
 Planned phases:
 
 1. **v0 (ingest):** receive artifacts, store history, org-level diff API.
-2. **v1 (monitor):** rules engine scheduling + alerting + escalation routing.
+2. **v1 (monitor):** rules engine scheduling + alerting + escalation routing + deployment ledger.
 3. **v2 (platform):** multi-tenant RBAC, SSO, audit trails, policy governance.
 4. **v3 (assist):** auto-remediation suggestions and AI copilot workflows.
 
@@ -107,10 +108,45 @@ Planned phases:
 2. **v1 (assist):** helper hints to auto-suggest missing `sources` from traces.
 3. **v2 (monitor):** server-side continuous audit with alerting and dashboards.
 
+### Track F — Annotation Ergonomics + LLM Integration
+
+Goal: make Stricture annotations trivially easy to write, self-evident to read,
+and reliable for LLMs to generate and maintain.
+
+Spec: `docs/data-lineage-annotations.md`, `docs/design/LLM-INTEGRATION.md`
+
+Scope:
+
+1. Redesigned `stricture-source` format: multi-line block syntax, minimal
+   `from ServiceName` shorthand, decomposed source ref grammar.
+2. `stricture-lineage.yml` sidecar files as primary authoring surface for
+   lineage metadata (alternative to inline comments).
+3. Expanded `stricture helper` with `init-lineage`, `import-openapi`,
+   `validate`, and `migrate` commands.
+4. LLM prompt templates and autocomplete-friendly annotation patterns.
+5. IDE extension spec for annotation validation, autocomplete, and coverage
+   gutter indicators.
+6. Canonical field ordering and synonym deprecation for consistency.
+
+Design constraints:
+
+- A team should adopt linter rules in under 5 minutes with zero annotations.
+- Lineage annotations should require at most 2 manual fields per annotation.
+- Every annotation must be writable by an LLM from code context alone.
+- The expanded 18-field canonical form must never appear in source code.
+
+Planned phases:
+
+1. **v0 (format):** multi-line syntax, `from` shorthand, `stricture-lineage.yml`.
+2. **v1 (tooling):** expanded helper commands, CI staleness checks.
+3. **v2 (intelligence):** LLM prompt templates, IDE extension, autocomplete.
+
 ## Sequencing
 
 1. Finish defaults implementation and compact UX.
-2. Deliver `stricture-helper` v0.
-3. Deliver `stricture-visualizer` v0.
-4. Deliver `stricture-server` v0 ingest + org diff API.
-5. Integrate helper/visualizer/server into CI templates and docs quickstart.
+2. **Deliver annotation format v2 spec and parser support.**
+3. Deliver `stricture-helper` v0 (expanded scope).
+4. Deliver `stricture-visualizer` v0.
+5. Deliver `stricture-server` v0 ingest + org diff API.
+6. **Deliver LLM integration utilities and IDE extension.**
+7. Integrate helper/visualizer/server into CI templates and docs quickstart.
