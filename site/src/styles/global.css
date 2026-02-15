@@ -1782,6 +1782,21 @@ select {
   gap: 0.33rem;
 }
 
+.what-visual {
+  margin: 1rem 0 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.what-visual img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .what-grid {
   display: grid;
   gap: 0.65rem;

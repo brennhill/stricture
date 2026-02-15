@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="520" viewBox="0 0 1200 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7fafc"/>
+      <stop offset="100%" stop-color="#edf2f7"/>
+    </linearGradient>
+    <linearGradient id="drift" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="healthy" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="520" rx="22" fill="url(#bg)"/>
+
+  <g font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" fill="#0f172a">
+    <text x="40" y="52" font-weight="700">Spec Drift Across Services</text>
+    <text x="40" y="78" fill="#475569">One local change compounds across the ecosystem.</text>
+  </g>
+
+  <!-- Nodes -->
+  <g filter="url(#soft)">
+    <rect x="80" y="140" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="80" y="260" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="80" y="380" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+
+    <rect x="490" y="110" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="490" y="230" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="490" y="350" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+
+    <rect x="900" y="170" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="900" y="300" width="220" height="90" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+  </g>
+
+  <!-- Labels -->
+  <g font-family="Archivo Expanded, ui-sans-serif" font-size="16" fill="#0f172a">
+    <text x="110" y="190">Orders API</text>
+    <text x="110" y="310">Payments Core</text>
+    <text x="110" y="430">Promotions</text>
+
+    <text x="520" y="160">Commerce Gateway</text>
+    <text x="520" y="280">Billing Service</text>
+    <text x="520" y="400">Notifications</text>
+
+    <text x="930" y="220">Customer Apps</text>
+    <text x="930" y="350">Reporting</text>
+  </g>
+
+  <!-- Edges -->
+  <g stroke-linecap="round" stroke-width="4">
+    <path d="M300 185 C380 170, 420 150, 490 155" stroke="url(#drift)"/>
+    <path d="M300 305 C380 300, 420 280, 490 275" stroke="url(#healthy)"/>
+    <path d="M300 425 C380 410, 420 390, 490 395" stroke="url(#healthy)"/>
+
+    <path d="M710 155 C790 160, 830 190, 900 215" stroke="url(#drift)"/>
+    <path d="M710 275 C790 280, 830 315, 900 330" stroke="url(#healthy)"/>
+  </g>
+
+  <!-- Drift highlight -->
+  <g>
+    <circle cx="190" cy="185" r="10" fill="#dc2626"/>
+    <circle cx="600" cy="155" r="10" fill="#f59e0b"/>
+    <circle cx="1010" cy="215" r="10" fill="#f59e0b"/>
+  </g>
+
+  <!-- Legend -->
+  <g font-family="IBM Plex Mono, ui-monospace" font-size="12" fill="#0f172a">
+    <rect x="40" y="460" width="1120" height="40" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+    <circle cx="70" cy="480" r="6" fill="#dc2626"/>
+    <text x="85" y="484">Source drift</text>
+    <circle cx="210" cy="480" r="6" fill="#f59e0b"/>
+    <text x="225" y="484">Impacted services</text>
+    <line x1="390" y1="480" x2="430" y2="480" stroke="url(#healthy)" stroke-width="4"/>
+    <text x="440" y="484">Healthy flow</text>
+    <line x1="560" y1="480" x2="600" y2="480" stroke="url(#drift)" stroke-width="4"/>
+    <text x="610" y="484">Drift path</text>
+  </g>
+</svg>
