@@ -13,6 +13,11 @@ Registry format is defined in:
 - `docs/schemas/lineage-system-registry.schema.json`
 - example: `docs/config-examples/lineage-systems.yml`
 
+Registry may also include flow catalog + membership:
+
+- `'strict:flows'`: canonical flow IDs and numeric levels
+- `systems[].flows`: service membership in flow IDs
+
 By default, registry escalation contacts are strongly recommended but not
 globally required; organizations can enforce stricter requirements via policy.
 
@@ -40,6 +45,7 @@ including:
 - `contacts`
 - `depth`
 - `reason`
+- `flows` (when registry includes service flow memberships)
 
 If a system is missing in the registry, Stricture falls back to annotation
 fields (`owner`, `escalation`) where available.

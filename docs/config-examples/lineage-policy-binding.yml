@@ -2,3 +2,4 @@
 # Add these keys to your .stricture.yml (or equivalent project config surface).
 'strict:policy_url': https://policies.example.com/stricture/prod.yml
 'strict:policy_sha256': 9f0e6e7ccfa6c54f0b8a8ec61c8ab1a3c0c6c3f8875f0c6ad6d8b6c2c3d1f8a4
+'strict:server_url': https://stricture.example.com

@@ -6,27 +6,31 @@ import MainLayout from "../layouts/MainLayout.astro";
   <section class="card">
     <p class="kicker">Start Here</p>
     <h1>Getting Started with Stricture</h1>
-    <p class="lead">Three steps: annotate, set policy, run Stricture. Clear annotations make findings readable and actionable.</p>
+    <p class="lead">Three steps: annotate, set policy, run Stricture. Keep source comments compact; let defaults and helper/server automation compute the rest.</p>
   </section>
 
   <section class="card">
-    <h2>1) Annotate fields well</h2>
+    <h2>1) Annotate fields (minimal + clear)</h2>
     <ul>
-      <li><strong>Owner & escalation</strong>: team slug + on-call channel.</li>
-      <li><strong>Contract ref</strong>: git ref or URL to API/event schema.</li>
-      <li><strong>Type & limits</strong>: exact type, units, ranges, enum values, nullable?, max sizes.</li>
-      <li><strong>Versioning</strong>: <code>source_version</code> and <code>min_supported_source_version</code>.</li>
-      <li><strong>Freshness</strong>: as-of + max staleness for external data.</li>
-      <li><strong>Examples</strong>: realistic payloads incl. edge values.</li>
+      <li><strong>Required core</strong>: <code>field/field_id</code>, <code>source_system</code>, <code>source_version</code>, <code>sources</code>.</li>
+      <li><strong>Contract ref</strong>: always include <code>contract_ref</code> in each source edge.</li>
+      <li><strong>External source keys</strong>: include <code>provider_id</code> + <code>as_of</code> for <code>@external</code>.</li>
+      <li><strong>Computed/defaulted keys</strong>: owner/escalation/merge/flow/note can be normalized automatically.</li>
+      <li><strong>Hierarchy</strong>: use <code>service</code> and <code>service:subsystem</code> IDs (no extra key).</li>
+      <li><strong>Flow tiers</strong>: define flow levels in <code>'strict:flows'</code>; map services via <code>systems[].flows</code>.</li>
     </ul>
     <p>See the <a href="/annotations">Annotation Guide + Index</a> for the object model and complete A-Z key reference, then use the <a href="/annotation-quality">Annotation Quality Guide</a> for writing quality.</p>
   </section>
 
   <section class="card">
-    <h2>2) Set policy and overrides</h2>
+    <h2>2) Set policy and server bindings</h2>
     <ul>
+      <li><strong>Policy URL</strong>: set <code>strict:policy_url</code> (optional <code>strict:policy_sha256</code> pin).</li>
+      <li><strong>Server URL</strong>: set <code>strict:server_url</code> for shared catalogs/registration.</li>
       <li><strong>Policy mode</strong>: <code>warn</code> (surface) vs <code>block</code> (stop deploy).</li>
       <li><strong>Fail-on threshold</strong>: high/medium/low; use <code>high</code> to block only severe drift.</li>
+      <li><strong>Downstream-impact default</strong>: keep <code>require_downstream_impact=true</code> unless intentionally changed.</li>
+      <li><strong>Flow criticality</strong>: enable <code>lineage.findings.flow_criticality</code> for business-tier hard blocks.</li>
       <li><strong>Overrides</strong>: time-bound, ticketed, field + change-type scoped; use <code>*</code> only for emergency waivers.</li>
     </ul>
   </section>

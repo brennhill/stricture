@@ -1,6 +1,6 @@
 # Stricture Server Storage + Auth Design
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 ## Objectives
 
@@ -30,6 +30,9 @@ Each ingest request becomes one immutable record envelope:
 - derived drift partitions:
   - `findings` (impact-gated policy candidates)
   - `change_events` (includes `self_only` drift for publication history)
+- optional policy/flow context:
+  - effective flow levels derived from `'strict:flows'` + `systems[].flows`
+  - policy hard-block rationale when flow-criticality rules trigger
 - metadata: commit SHA, timestamps, arbitrary metadata map
 - server fields: `received_at`
 
@@ -52,6 +55,7 @@ Policy objects (draft):
 ```text
 <prefix>/v1/policies/<policy_id>/versions/<version>/policy.yml
 <prefix>/v1/policies/<policy_id>/latest.json
+<prefix>/v1/flows/<catalog_id>/versions/<version>/flows.yml
 ```
 
 Notes:

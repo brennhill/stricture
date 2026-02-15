@@ -1,6 +1,6 @@
 # Stricture Product Roadmap
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 ## Objective
 
@@ -9,6 +9,7 @@ Ship a production-ready lineage/drift workflow that is easy to adopt in real rep
 1. Minimal annotation authoring burden.
 2. Deterministic CI gates.
 3. Clear, visual blast-radius understanding.
+4. Service-level flow-tier policy decisions with plain-language outputs.
 
 ## Priority Tracks
 
@@ -77,6 +78,7 @@ Scope:
 6. Support policy packs at org/team/service levels.
 7. Serve policy packs to CI/local tooling with offline cache support and GitHub fallback refs.
 8. Add org compliance check to ensure repos reference approved `strict:policy_url` values.
+9. Serve flow-tier catalogs (`'strict:flows'`) and policy snapshots to local/CI clients.
 
 Planned phases:
 

@@ -19,7 +19,7 @@ A successful demo makes these claims obvious to humans and tools:
 - Stricture can trace every output field to one or more sources.
 - Stricture can detect schema/version/contract drift quickly and deterministically.
 - Stricture can explain blast radius and who must respond.
-- Stricture can support both warn and block policies with governed overrides.
+- Stricture can support both warn and block policies with flow-tier governance.
 - Stricture can run across a multi-service topology, not just one API in isolation.
 
 ## Runtime Architecture
@@ -61,8 +61,9 @@ A successful demo makes these claims obvious to humans and tools:
 - `healthy`: green edge/node glow
 - `warning`: amber pulse + badge
 - `blocked`: red animated edge break + banner
-- `override active`: blue chip with expiry countdown
 - `stale external source`: orange clock badge (`as_of` age)
+- `flow-tier block`: red gate chip with explicit policy reason (for example
+  `checkout level 1: risk of order loss`)
 
 ## Core Pages
 
@@ -180,33 +181,32 @@ Demonstrate that changes in API outputs immediately alter Stricture risk and gra
 - status transitions are fast and deterministic
 - each failed edge links to specific finding and remediation
 
-## Page 5: Policy Mode and Override Governance
+## Page 5: Policy Mode and Flow-Tier Governance
 
 ## Purpose
 
-Show operational policy behavior: warn vs block, with strict temporary override mechanics.
+Show operational policy behavior: warn vs block plus flow-tier criticality and
+explicit policy rationale.
 
 ## UI
 
 - policy toggle: `warn` or `block`
 - threshold selector: `high|medium|low`
-- override form:
-  - field_id
-  - change_type
-  - expiry
-  - reason
-  - ticket
+- flow policy panel:
+  - flow ID and level
+  - effective level touched by finding
+  - hard-block reason (when configured)
 
 ## Interaction
 
 - rerun with `--mode warn` and `--mode block`
-- add override and rerun
-- show override expiry countdown and audit trail entry
+- show flow-tier escalation and rerun
+- show policy reason that caused block (severity threshold vs flow tier)
 
 ## Expected proof
 
 - users understand enforcement semantics
-- overrides are controlled, time-bounded, and attributable
+- flow-tier gates are understandable and attributable
 
 ## Page 6: Escalation Chain Explorer
 
@@ -314,7 +314,7 @@ Start with 3 per domain, then add full 50-flow matrix.
 ## Minute 5-6
 
 - switch from warn to block
-- apply temporary override with expiry and ticket
+- show flow-tier hard-block reason and effective tier context
 
 ## Minute 6-7
 
@@ -346,7 +346,7 @@ Start with 3 per domain, then add full 50-flow matrix.
 ## Phase C: Policy + Escalation + Gate
 
 - implement warn/block controls
-- implement override creation and visibility
+- implement flow-tier policy visibility and reason chips
 - implement escalation chain viewer
 - implement baseline-vs-head gate screen
 

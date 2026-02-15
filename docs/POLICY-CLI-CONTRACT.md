@@ -1,6 +1,6 @@
 # Stricture Policy CLI Contract (Draft)
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 Status: Draft v0
 
 This document locks the command contract for policy URL binding, cache usage,
@@ -58,6 +58,8 @@ Behavior:
 2. otherwise fetches URL
 3. if offline and stale cache exists, uses stale cache and emits info notice
 4. exits non-zero if no resolvable policy exists
+5. when flow criticality is enabled, resolves required flow catalog metadata
+   from configured server/repo source or cache
 
 ## `stricture policy verify-ref`
 
@@ -88,7 +90,8 @@ Behavior:
 
 1. validates against `docs/schemas/lineage-policy-pack.schema.json`
 2. validates known keys and severity values
-3. fails on unknown required-key paths
+3. validates `lineage.findings.flow_criticality` keys and value shapes
+4. fails on unknown required-key paths
 
 ## Exit Codes
 
@@ -117,6 +120,13 @@ stricture policy fetch --config .stricture.yml
 stricture policy lint --policy .stricture-policy.yml
 stricture policy resolve --config .stricture.yml
 ```
+
+Flow-tier policy note:
+
+1. policy lint should validate `critical_flow_ids` against configured registry
+   flow IDs when registry input is provided.
+2. CI can fail fast when policy references unknown flow IDs to prevent silent
+   mis-gating.
 
 ## Org-wide compliance scan
 

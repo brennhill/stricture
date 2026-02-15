@@ -18,6 +18,7 @@ const heroPoints = [
 const coreCapabilities = [
   "Field-level lineage with multi-source annotations.",
   "Cross-repo drift detection on schema, enums, and provider versions.",
+  "Service-level flow tier policy controls for business-critical paths.",
   "Warn/block/override policy gates wired into CI/CD.",
   "Ownership and escalation chains attached to every drifting field.",
   "Architecture invariants for dependency direction and provenance completeness.",
@@ -28,7 +29,7 @@ const workflow = [
   "Ingest service topology and field annotations from source repos and APIs.",
   "Map overlays to OpenAPI, OpenTelemetry, OpenLineage, AsyncAPI, and Buf/Protobuf schemas.",
   "Export lineage artifacts, compare against baseline snapshots, and classify drift severity.",
-  "Enforce warn/block gates with override expirations and escalation routing.",
+  "Enforce warn/block gates with flow-tier policy, override expirations, and escalation routing.",
   "Track source-system versions and as-of freshness for internal and external providers." 
 ];
 

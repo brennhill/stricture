@@ -106,7 +106,10 @@ to required for specific environments or domains.
 Example draft shape:
 
 ```yaml
-'strict:policy':
+schema_version: 1
+policy_id: strict:policy
+
+lineage:
   require:
     field_keys:
       - owner
@@ -117,10 +120,16 @@ Example draft shape:
       - escalation[].name
       - escalation[].channel
   defaults:
-    escalation: pagerduty:platform-oncall
     break_policy: strict
+  findings:
+    require_downstream_impact: true
+    flow_criticality:
+      enabled: true
+      fail_on_level: 1
+      critical_flow_ids: [checkout]
+      critical_flow_block_reason: "Risk of order loss"
   severity_overrides:
-    missing_escalation: high
+    missing_required_key: high
 ```
 
 Notes:
@@ -130,6 +139,8 @@ Notes:
    same baseline on day one.
 3. `strict:policy` naming is a draft reference handle; concrete CLI/config
    wiring is part of helper/server roadmap phases.
+4. docs/tooling reference handles use `strict:*`; parser/source syntax remains
+   `stricture-source` and `stricture-lineage-override`.
 
 Policy source and cache model:
 

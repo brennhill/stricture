@@ -1,6 +1,6 @@
 # Lineage Plain-Language Message Library (Draft)
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 ## Purpose
 
@@ -23,6 +23,9 @@ For each drift change, Stricture should emit:
 3. `impact`: impacted context (`service`, `api`) when known.
 4. `validation`: plain-language failure mode/risk statement.
 5. `suggestion`: plain-language next step.
+6. `flow_context` (optional): impacted flow IDs and effective flow tier level.
+7. `policy_reason` (optional): explicit hard-block rationale when policy uses
+   flow criticality controls.
 
 When no downstream impact is detected, default behavior is:
 
@@ -42,6 +45,14 @@ When no downstream impact is detected, default behavior is:
 | `source_removed` | One upstream source no longer contributes to this field. | Fallback/value composition may change unexpectedly. | Validate fallback behavior and downstream assumptions. |
 | `source_added` | New upstream source now contributes to this field. | Precedence and final values may change. | Validate precedence/merge expectations end-to-end. |
 | `external_as_of_rollback` | External snapshot date moved backwards. | Stale provider data may reintroduce old/incompatible values. | Refresh provider snapshot and verify freshness-sensitive invariants. |
+
+Flow-tier narrative requirements:
+
+1. If a finding touches a named critical flow, include flow name + level in the
+   message (for example `checkout (level 1)`).
+2. If policy escalates/blocks due to flow tier, state that explicitly.
+3. Avoid ambiguous policy text; say whether block is severity-driven or
+   flow-criticality-driven.
 
 ## Language Rules
 

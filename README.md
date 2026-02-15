@@ -28,12 +28,18 @@ architecture invariants, and release policies **semantic + deterministic**.
 ## Core Capabilities
 
 - Lineage annotations per output field
+- Service-level business flow tiers (`'strict:flows'`, `systems[].flows`)
 - Drift classification with severity and deterministic ordering
 - Architecture invariant enforcement
 - Warn/block mode and time-bounded overrides
 - Source system version and as-of freshness controls
 - Owner and escalation chain resolution
+- Policy URL/server distribution (`strict:policy_url`, `strict:server_url`)
 - Export/report pipelines for CI and governance workflows
+
+Reference handle namespace in docs/tooling UX uses `strict:*` (for example
+`strict:source`, `strict:systems[]`). Source-comment parser syntax remains
+`stricture-source` / `stricture-lineage-override`.
 
 ## Quickstart
 

@@ -12,9 +12,9 @@ const heroSlides = [
   },
   {
     title: "Keep AI-generated changes inside enforceable guardrails.",
-    lead: "Define acceptable changes with annotations, ownership, and policy gates so teams can move fast while still protecting production contracts.",
+    lead: "Define acceptable changes with annotations, ownership, service-level flow tiers, and policy gates so teams can move fast while still protecting production contracts.",
     visualTitle: "Policy mode protects release flow",
-    visualBody: "Teams run in warn mode first, then promote rules to block mode once confidence is high and owners are assigned."
+    visualBody: "Teams run in warn mode first, then promote rules to block mode and flow-tier hard blocks once confidence is high and owners are assigned."
   },
   {
     title: "Detect API drift before it becomes an incident.",
@@ -151,7 +151,7 @@ const specLinks = {
           </span>
           <h2>Warn, Block, Override</h2>
         </div>
-        <p>Move from warning mode to strict release blocks with time-bounded override controls.</p>
+        <p>Move from warning mode to strict release blocks with flow-tier criticality and time-bounded overrides.</p>
       </article>
 
       <article class="panel">
@@ -206,7 +206,7 @@ const specLinks = {
         <a href="/why-not/spectral"> Spectral</a> via overlays, so teams avoid redundant metadata work.
       </li>
       <li>Export lineage artifacts and compare against a baseline release snapshot.</li>
-      <li>Classify drift by severity and enforce policy in warn or block mode.</li>
+      <li>Classify drift by severity, impacted flows, and enforce policy in warn or block mode.</li>
       <li>Attach ownership and escalation routes directly to affected fields.</li>
       <li>Evaluate architecture invariants such as dependency direction and provenance completeness.</li>
     </ol>

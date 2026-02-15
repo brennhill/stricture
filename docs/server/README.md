@@ -7,3 +7,5 @@
   same API contract (see `docs/server/SPEC.md`).
 - Default drift model: warn/block findings require downstream impact; self-only
   drift is still tracked for publication/audit.
+- Flow-tier policy context is supported via `'strict:flows'` and
+  `systems[].flows` metadata carried with artifacts/registries.

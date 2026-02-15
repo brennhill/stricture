@@ -38,6 +38,16 @@ Accepted comment prefixes:
 - `# stricture-source ...`
 - `# stricture:source ...`
 
+Reference handles for docs/tooling UX use `strict:*` forms:
+
+- `strict:source`
+- `strict:source-edge`
+- `strict:systems[]`
+- `strict:flows[]`
+- `strict:lineage-override`
+
+Backward-compatible `stricture:*` reference aliases remain acceptable.
+
 ## Authoring-Minimal Keys
 
 To keep annotations compact, only these keys are required in source comments:

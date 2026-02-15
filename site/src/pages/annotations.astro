@@ -5,28 +5,35 @@ const objectRows = [
   {
     object: "Field lineage annotation",
     where: "Code comments near emit/transform logic",
-    reference: "stricture:source",
+    reference: "strict:source",
     syntax: "stricture-source",
     why: "Defines per-field provenance, ownership, and drift semantics."
   },
   {
     object: "Source edge entry",
     where: "Inside `sources=` on a field annotation",
-    reference: "stricture:source-edge",
+    reference: "strict:source-edge",
     syntax: "kind:target#path@scope?contract_ref=...",
     why: "Defines the upstream contract edge used for blast-radius tracing."
   },
   {
     object: "Service registry record",
     where: "`lineage-systems.yml` (or equivalent registry file)",
-    reference: "stricture:systems[]",
+    reference: "strict:systems[]",
     syntax: "systems[] objects",
-    why: "Defines service-level ownership and escalation defaults."
+    why: "Defines service-level ownership, escalation defaults, and flow memberships."
+  },
+  {
+    object: "Flow registry catalog",
+    where: "Top-level in `lineage-systems.yml`",
+    reference: "strict:flows[]",
+    syntax: "'strict:flows' objects",
+    why: "Defines named business flows and numeric tier levels for policy gating."
   },
   {
     object: "Temporary lineage override",
     where: "Code comments during migration windows",
-    reference: "stricture:lineage-override",
+    reference: "strict:lineage-override",
     syntax: "stricture-lineage-override",
     why: "Allows time-bounded exceptions with explicit reason and expiry."
   }
@@ -74,10 +81,19 @@ const serviceRegistryKeys = [
   { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier. Use `parent` for topology and `parent:child` for internal subsystems.", mode: "autogen" },
   { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
   { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team slug.", mode: "manual-required" },
+  { key: "flows", required: "No (recommended for multi-service policy)", defaultValue: "None", purpose: "Flow IDs this service participates in.", mode: "recommended" },
   { key: "escalation", required: "No (policy can require)", defaultValue: "None", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
   { key: "escalation[].channel", required: "No (policy can require)", defaultValue: "None", purpose: "How responders are reached.", mode: "recommended" },
   { key: "escalation[].name", required: "No (policy can require)", defaultValue: "None", purpose: "Contact display name.", mode: "recommended" },
   { key: "escalation[].role", required: "No (policy can require)", defaultValue: "None", purpose: "Escalation role (primary/secondary/vendor/etc).", mode: "recommended" }
+];
+
+const flowRegistryKeys = [
+  { key: "strict:flows[].id", required: "Yes", defaultValue: "None", purpose: "Stable flow ID used by service memberships.", mode: "manual-required" },
+  { key: "strict:flows[].name", required: "Yes", defaultValue: "None", purpose: "Human-readable flow name.", mode: "manual-required" },
+  { key: "strict:flows[].level", required: "Yes", defaultValue: "None", purpose: "Numeric tier level (org-defined scale).", mode: "manual-required" },
+  { key: "strict:flows[].owner", required: "No", defaultValue: "None", purpose: "Owning team for business flow governance.", mode: "recommended" },
+  { key: "strict:flows[].business_risk", required: "No", defaultValue: "None", purpose: "Short reason for policy criticality (for example order_loss).", mode: "recommended" }
 ];
 
 const modeMeta = {
@@ -97,11 +113,12 @@ const modeMeta = {
       This page answers three questions: what objects you annotate, why each one exists, and exactly which keys are required vs defaulted.
     </p>
     <p class="muted">
-      Scope: lineage authoring (`stricture-source`, source edges, service registry, and temporary lineage overrides).
+      Scope: lineage authoring (`stricture-source`, source edges, service + flow registries, and temporary lineage overrides).
     </p>
     <p class="muted">
-      `stricture:*` labels on this page are reference handles for docs and tooling UX; parser syntax is shown separately in the syntax column.
+      `strict:*` labels on this page are reference handles for docs and tooling UX; parser syntax is shown separately in the syntax column.
     </p>
+    <p class="muted">Backward-compatible alias handles using `stricture:*` remain accepted in docs/tooling.</p>
     <div class="anno-legend">
       {Object.values(modeMeta).map((mode) => (
         <span class={`anno-chip ${mode.className}`}>{mode.label}</span>
@@ -233,7 +250,7 @@ const modeMeta = {
   <section class="card">
     <h2>Service registry keys (A-Z)</h2>
     <p class="muted">
-      Service-level ownership and escalation are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
+      Service-level ownership, escalation, and flow memberships are defined in a registry file (for example `lineage-systems.yml`), not inline in each handler.
     </p>
     <p class="muted">
       If a `strict:server_url` is configured, helper/server workflows can bootstrap service IDs automatically and register them centrally.
@@ -251,6 +268,37 @@ const modeMeta = {
         </thead>
         <tbody>
           {serviceRegistryKeys.map((item) => (
+            <tr>
+              <td><code>{item.key}</code></td>
+              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td>{item.required}</td>
+              <td>{item.defaultValue}</td>
+              <td>{item.purpose}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Flow registry keys (A-Z)</h2>
+    <p class="muted">
+      Flow catalogs are top-level registry metadata (`'strict:flows'`) used by policy to map drift findings to business-critical tiers.
+    </p>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Mode</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {flowRegistryKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
               <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
@@ -292,8 +340,15 @@ lineage:
   defaults:
     escalation: pagerduty:platform-oncall
     break_policy: strict
-  severity_overrides:
-    missing_escalation: high`}</code></pre>
+  findings:
+    require_downstream_impact: true
+    flow_criticality:
+      enabled: true
+      level_direction: lower_is_more_critical
+      fail_on_level: 1
+      critical_flow_ids:
+        - checkout
+      critical_flow_block_reason: "Risk of order loss"`}</code></pre>
   </section>
 
   <section class="card">

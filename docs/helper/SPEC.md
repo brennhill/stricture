@@ -1,6 +1,6 @@
 # Stricture Helper Spec (Draft)
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 Status: Draft v0
 
 ## Purpose
@@ -41,6 +41,10 @@ High-priority automation targets:
 5. service registry `id`: bootstrap from repo/service identity and optionally
    register to `strict:server_url` (including optional hierarchical IDs like
    `location-tracking-service:tracking-api`).
+6. service flow memberships (`systems[].flows`): infer from known topology,
+   path usage, and org registry defaults (with review hints when uncertain).
+7. field/source keys marked defaulted in spec: emit compact source comments and
+   rely on deterministic normalization for expanded artifacts.
 
 ## Non-Goals (v0)
 
@@ -62,6 +66,10 @@ High-priority automation targets:
 2. **Expanded normalized artifact** (full explicit fields in export output).
 
 This keeps source code terse while preserving deterministic policy checks.
+
+Reference handles in helper output/report UX SHOULD use `strict:*` names (for
+example `strict:source`, `strict:systems[]`) while preserving parser-compatible
+source comment syntax (`stricture-source`).
 
 ## Automation Tiers
 
@@ -138,6 +146,7 @@ Low score gates can run in warn mode first, then promote to block mode.
 3. contract import sources
 4. confidence thresholds + block/warn behavior
 5. patch application rules (safe paths only, review-required zones)
+6. optional flow-tier defaults and membership hints from policy/server catalogs
 
 ## Risks + Mitigations
 

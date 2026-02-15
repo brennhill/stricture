@@ -136,6 +136,12 @@ Detailed design: `docs/server/STORAGE.md`.
 - `STRICTURE_SERVER_AUTH_MODE` (`none` or `token`)
 - `STRICTURE_SERVER_INGEST_TOKEN` (required when auth mode is `token`)
 
+Client binding notes:
+
+1. Repos typically bind policy with `'strict:policy_url'`.
+2. Repos may bind server endpoints with `'strict:server_url'` for helper/policy
+   discovery workflows.
+
 ## Repo Layout
 
 ```text
@@ -158,6 +164,9 @@ docs/server/
    - `GET /v1/policies/{policy_id}`
    - `GET /v1/policies/{policy_id}/versions/{version}`
    - metadata endpoint for caching hints.
+8. Flow-catalog distribution APIs for CI/local clients:
+   - `GET /v1/flows/{catalog_id}`
+   - `GET /v1/flows/{catalog_id}/versions/{version}`
 
 ## Day 1 Acceptance Criteria
 

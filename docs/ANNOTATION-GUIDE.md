@@ -13,6 +13,10 @@ For CI/build automation and `.stricture-history` design, see
 
 Everything else can be defaulted by Stricture and expanded in normalized artifacts.
 
+Reference handle namespace in docs/tooling UX uses `strict:*` (for example
+`strict:source`, `strict:systems[]`, `strict:flows[]`). Source-comment syntax
+remains `stricture-source`.
+
 ## Hierarchical service IDs (for ecosystem + internals)
 - Use one optional `:` in system IDs to model internals without new keys.
 - Topology service: `location-tracking-service`
@@ -24,6 +28,7 @@ Everything else can be defaulted by Stricture and expanded in normalized artifac
 - Tag services with flow membership (`systems[].flows`).
 - Do not assign criticality tiers directly on individual APIs by default.
 - Let lineage path analysis determine which APIs/edges are affected at runtime.
+- Keep flow tier decisions in policy packs (`lineage.findings.flow_criticality`).
 
 ## Good vs bad examples
 - **Type/size**

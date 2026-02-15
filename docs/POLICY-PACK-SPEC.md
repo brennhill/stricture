@@ -204,6 +204,10 @@ Optional server binding for registry/bootstrap workflows:
 'strict:server_url': https://stricture.example.com
 ```
 
+When flow-criticality rules are enabled, clients should also resolve flow
+catalog metadata (for example `'strict:flows'`) from the same governed source
+as policy packs (server API or pinned GitHub source).
+
 ## Resolution Order
 
 When `'strict:policy_url'` is configured, clients should resolve in this order:
