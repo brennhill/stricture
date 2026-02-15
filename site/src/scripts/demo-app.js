@@ -1,6 +1,7 @@
 const state = {
   sessionId: "",
   snapshot: null,
+  mutationPending: false,
 };
 
 const selectors = {
@@ -528,7 +529,7 @@ function renderRunSummary(snapshot) {
   }
   const summary = snapshot.runSummary;
   if (!summary || summary.runCount === 0) {
-    selectors.runSummaryText.textContent = "Awaiting first run. Apply a mutation then rerun to see how Stricture flags drift.";
+    selectors.runSummaryText.textContent = "Awaiting first run. Apply a change to run Stricture instantly and see impact.";
     return;
   }
   const mutation = latestMutation(snapshot);
@@ -714,17 +715,32 @@ async function run() {
 }
 
 async function mutate() {
-  if (!state.sessionId) {
+  if (!state.sessionId || state.mutationPending) {
     return;
+  }
+  state.mutationPending = true;
+  if (selectors.applyMutation) {
+    selectors.applyMutation.disabled = true;
   }
   const payload = {
     type: selectors.mutationType?.value,
     serviceId: selectors.mutationService?.value,
     fieldId: selectors.mutationField?.value,
   };
-  const response = await request(`/api/session/${state.sessionId}/mutations`, "POST", payload);
-  render(response.snapshot);
-  revealFindings();
+  try {
+    await request(`/api/session/${state.sessionId}/mutations`, "POST", payload);
+    const rerun = await request(`/api/session/${state.sessionId}/run`, "POST", {});
+    render(rerun.snapshot);
+    revealFindings();
+  } finally {
+    state.mutationPending = false;
+    if (state.snapshot) {
+      syncMutationControls(state.snapshot);
+      updateControlStats(state.snapshot);
+    } else if (selectors.applyMutation) {
+      selectors.applyMutation.disabled = false;
+    }
+  }
 }
 
 async function updatePolicy() {
@@ -868,7 +884,6 @@ async function applyPreset() {
   });
   updateControlStats(state.snapshot);
   await mutate();
-  await run();
 }
 
 function toggleEdgeList() {
