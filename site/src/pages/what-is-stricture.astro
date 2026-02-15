@@ -126,7 +126,7 @@ const references = [
     <p>
       Stricture's goal is to make lineage and contract intent executable. Instead of relying on tribal
       knowledge, it ties each output field to declared sources, ownership, and policy so CI/CD can warn,
-      block, or require explicit override when risk thresholds are crossed.
+      block, apply flow-tier hard blocks, or require explicit override when risk thresholds are crossed.
     </p>
   </section>
 
@@ -183,8 +183,8 @@ const references = [
       <li>Annotate every emitted field with source systems, transforms, and ownership.</li>
       <li>Normalize annotation synonyms from major profiles (Stricture, OpenLineage, OpenTelemetry conventions, OpenAPI extensions).</li>
       <li>Resolve multi-hop lineage into a graph and compare against release baselines.</li>
-      <li>Classify drift by severity, confidence, and blast radius.</li>
-      <li>Enforce warn/block policy with expiring override metadata and escalation chains.</li>
+      <li>Classify drift by severity, confidence, blast radius, and impacted flow tiers.</li>
+      <li>Enforce warn/block policy with downstream-impact gating, flow-tier controls, and escalation chains.</li>
       <li>Publish machine-readable reports for CI, governance, and incident response workflows.</li>
     </ol>
 
@@ -297,7 +297,7 @@ x-stricture-lineage:
       <article class="diagram-card">
         <h3>Diagram 4: Incident Workflow</h3>
         <div class="diagram-placeholder">
-          <p>Placeholder: alert -> drift classification -> override decision -> escalation call tree.</p>
+          <p>Placeholder: alert -> drift + flow-tier classification -> policy decision -> escalation call tree.</p>
         </div>
         <p class="muted">
           Demonstrate operational value: if data is bad, responders know who to call in dependency order.

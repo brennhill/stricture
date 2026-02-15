@@ -104,8 +104,8 @@ const rollout = [
       <li>Normalize equivalent keys with overlays (OpenAPI, OpenLineage, OpenTelemetry, AsyncAPI, etc.).</li>
       <li>Resolve field-level lineage and service dependency graph.</li>
       <li>Evaluate invariant rules against current and baseline snapshots.</li>
-      <li>Emit warn/block decisions with precise field/system evidence.</li>
-      <li>Allow controlled overrides with expiry and audit trail.</li>
+      <li>Emit warn/block decisions with precise field/system evidence and impacted flow-tier context.</li>
+      <li>Allow controlled overrides with expiry and audit trail when policy permits.</li>
     </ol>
 
     <pre class="code-view compare-code"><code>{`# invariants.yml (example)
@@ -173,7 +173,7 @@ invariants:
       <article class="diagram-card">
         <h3>Override Lifecycle</h3>
         <div class="diagram-placeholder">
-          <p>Placeholder: warning -> temporary override -> expiry -> re-evaluation -> pass/block.</p>
+          <p>Placeholder: warning -> temporary override -> expiry -> re-evaluation -> severity/flow-tier gate decision.</p>
         </div>
       </article>
     </div>
