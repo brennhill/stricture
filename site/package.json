@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "astro dev",
     "demo-pack": "go run ../cmd/demo-pack --artifact ../tests/lineage/usecases/current.json --systems ../tests/lineage/usecases/systems.yml --out-json public/demo/demo-pack.json --out-ts worker/src/generated/demo-pack.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "npm run demo-pack && astro build",
     "preview": "astro preview",
     "worker:dev": "wrangler dev --config worker/wrangler.toml",
@@ -16,6 +18,7 @@
     "@cloudflare/workers-types": "^4.20260210.0",
     "astro": "^5.2.0",
     "typescript": "^5.8.0",
+    "vitest": "^3.2.4",
     "wrangler": "^4.0.0"
   }
 }

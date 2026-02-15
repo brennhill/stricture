@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build build-server test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality test-server lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset publication-agent publication-agent-status publication-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
+.PHONY: build build-server test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality test-server lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset publication-agent publication-agent-status publication-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-test site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
 
 GOFLAGS ?=
 GOCACHE ?= $(PWD)/.cache/go-build
@@ -239,6 +239,9 @@ quick-check: lint test-phase1 check-messages
 
 site-install:
 	cd site && npm install
+
+site-test:
+	cd site && npm run test
 
 site-demo-pack:
 	go run ./cmd/demo-pack

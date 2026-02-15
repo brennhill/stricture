@@ -18,6 +18,7 @@ This repo’s live demo is a static snapshot generated from the Go engine and se
 - On `main` pushes and PRs touching site/demo-pack/go files:
   - `npm ci`
   - `npm run demo-pack` (fails build if demo pack generation fails)
+  - `npm run test` (fails build on demo unit/worker/invariant regressions)
   - `npm run build`
 - On `main` with `CF_DEPLOY_ENABLED=true` and `CLOUDFLARE_API_TOKEN` secret set:
   - Re-runs `npm run demo-pack`
@@ -39,6 +40,7 @@ npm run worker:deploy # deploy to Cloudflare (requires CLOUDFLARE_API_TOKEN)
 cd site
 npm ci
 npm run demo-pack
+npm run test
 npm run build
 ```
 
@@ -46,4 +48,3 @@ npm run build
 - **Demo stuck at “Awaiting first run”**: ensure `npm run demo-pack` was executed and artifacts are fresh; rebuild and redeploy.
 - **Routes not attached**: confirm Cloudflare token has Zone:Read + Workers Routes:Edit and rerun `npm run worker:deploy`.
 - **Stale data**: rerun `npm run demo-pack` and redeploy.
-

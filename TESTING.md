@@ -10,6 +10,7 @@ make build
 make test
 make lint
 make test-coverage
+make site-test
 ```
 
 ## Phase Gates

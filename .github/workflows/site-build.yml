@@ -50,6 +50,9 @@ jobs:
       - name: Generate demo pack (must pass)
         run: npm run demo-pack
 
+      - name: Run demo tests
+        run: npm run test
+
       - name: Build site
         run: npm run build
 
@@ -88,6 +91,9 @@ jobs:
 
       - name: Generate demo pack (must pass)
         run: npm run demo-pack
+
+      - name: Run demo tests
+        run: npm run test
 
       - name: Publish via Wrangler
         env:

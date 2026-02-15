@@ -646,3 +646,10 @@ export class DemoSession {
     return textResponse("not found", 404);
   }
 }
+
+export const __test = {
+  defaultSnapshot,
+  computeFindings,
+  runEngine,
+  findingHasDownstreamImpact,
+};

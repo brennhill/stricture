@@ -6,37 +6,40 @@ const state = {
   topologyMode: "ecosystem",
 };
 
+const hasDOM = typeof document !== "undefined";
+const query = (selector) => (hasDOM ? document.querySelector(selector) : null);
+
 const selectors = {
-  gateBanner: document.querySelector("#gate-banner"),
-  topology: document.querySelector("#topology"),
-  topologyGraph: document.querySelector("#topology-graph"),
-  topologyViewState: document.querySelector("#topology-view-state"),
-  topologyViewGuidance: document.querySelector("#topology-view-guidance"),
-  topologyTabEcosystem: document.querySelector("#topology-tab-ecosystem"),
-  topologyTabServiceWrap: document.querySelector("#topology-tab-service-wrap"),
-  topologyTabService: document.querySelector("#topology-tab-service"),
-  topologyTabFieldWrap: document.querySelector("#topology-tab-field-wrap"),
-  topologyTabField: document.querySelector("#topology-tab-field"),
-  edgeList: document.querySelector("#edge-list"),
-  flowPathSummary: document.querySelector("#flow-path-summary"),
-  findings: document.querySelector("#findings"),
-  runSummaryText: document.querySelector("#run-summary-text"),
-  controlStats: document.querySelector("#control-stats"),
-  scenarioNarrative: document.querySelector("#scenario-narrative"),
-  presetScenario: document.querySelector("#preset-scenario"),
-  mutationType: document.querySelector("#mutation-type"),
-  mutationService: document.querySelector("#mutation-service"),
-  mutationField: document.querySelector("#mutation-field"),
-  policyMode: document.querySelector("#policy-mode"),
-  policyFailOn: document.querySelector("#policy-fail-on"),
-  policyCriticalService: document.querySelector("#policy-critical-service"),
-  policyPromotionsHardBlock: document.querySelector("#policy-promotions-hard-block"),
-  policyHardBlockReason: document.querySelector("#policy-hard-block-reason"),
-  applyMutation: document.querySelector("#apply-mutation"),
-  updatePolicy: document.querySelector("#update-policy"),
-  runStricture: document.querySelector("#run-stricture"),
-  resetSession: document.querySelector("#reset-session"),
-  toggleEdges: document.querySelector("#toggle-edges"),
+  gateBanner: query("#gate-banner"),
+  topology: query("#topology"),
+  topologyGraph: query("#topology-graph"),
+  topologyViewState: query("#topology-view-state"),
+  topologyViewGuidance: query("#topology-view-guidance"),
+  topologyTabEcosystem: query("#topology-tab-ecosystem"),
+  topologyTabServiceWrap: query("#topology-tab-service-wrap"),
+  topologyTabService: query("#topology-tab-service"),
+  topologyTabFieldWrap: query("#topology-tab-field-wrap"),
+  topologyTabField: query("#topology-tab-field"),
+  edgeList: query("#edge-list"),
+  flowPathSummary: query("#flow-path-summary"),
+  findings: query("#findings"),
+  runSummaryText: query("#run-summary-text"),
+  controlStats: query("#control-stats"),
+  scenarioNarrative: query("#scenario-narrative"),
+  presetScenario: query("#preset-scenario"),
+  mutationType: query("#mutation-type"),
+  mutationService: query("#mutation-service"),
+  mutationField: query("#mutation-field"),
+  policyMode: query("#policy-mode"),
+  policyFailOn: query("#policy-fail-on"),
+  policyCriticalService: query("#policy-critical-service"),
+  policyPromotionsHardBlock: query("#policy-promotions-hard-block"),
+  policyHardBlockReason: query("#policy-hard-block-reason"),
+  applyMutation: query("#apply-mutation"),
+  updatePolicy: query("#update-policy"),
+  runStricture: query("#run-stricture"),
+  resetSession: query("#reset-session"),
+  toggleEdges: query("#toggle-edges"),
 };
 
 const humanChange = {
@@ -1341,9 +1344,11 @@ function toggleEdgeList() {
   selectors.toggleEdges.textContent = isCollapsed ? "Show details" : "Hide details";
 }
 
-bindEvents();
-bootstrap().catch(showError);
-scheduleResizeRender();
+if (hasDOM) {
+  bindEvents();
+  bootstrap().catch(showError);
+  scheduleResizeRender();
+}
 
 function renderGraph(snapshot, view = { mode: "ecosystem", internalRoots: new Set() }, originalSnapshot = snapshot) {
   if (!selectors.topologyGraph) {
@@ -1987,3 +1992,12 @@ function computeImpacts(snapshot) {
     focusFieldSeverity: focus?.severity || null,
   };
 }
+
+export const __test = {
+  topologyRootId,
+  buildFieldMutationMap,
+  fieldsForService,
+  relatedServiceIdsForFinding,
+  classifyEscalationServiceIds,
+  summarizeFlow,
+};
