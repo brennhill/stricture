@@ -22,6 +22,24 @@ lineage:
     break_policy: strict
     data_classification: internal
 
+  findings:
+    require_downstream_impact: true
+    unknown_impact_severity: low
+    self_only:
+      emit_finding: false
+      publish_change_event: true
+    flow_criticality:
+      enabled: true
+      level_direction: lower_is_more_critical
+      fail_on_level: 1
+      severity_by_level:
+        "1": high
+        "2": medium
+      critical_flow_ids:
+        - checkout
+      critical_flow_block_reason: "Risk of order loss"
+
   severity_overrides:
     missing_required_key: high
     invalid_default_value: medium
+    unknown_flow_id: medium

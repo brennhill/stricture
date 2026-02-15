@@ -19,6 +19,12 @@ Everything else can be defaulted by Stricture and expanded in normalized artifac
 - Internal subsystem: `location-tracking-service:tracking-api`
 - Use the same format in `source_system` and `upstream_system`.
 
+## Flow tiers (service-level, not API-level)
+- Define business flows in registry metadata (`'strict:flows'`) with numeric levels.
+- Tag services with flow membership (`systems[].flows`).
+- Do not assign criticality tiers directly on individual APIs by default.
+- Let lineage path analysis determine which APIs/edges are affected at runtime.
+
 ## Good vs bad examples
 - **Type/size**
   - Bad: `type: number`

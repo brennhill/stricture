@@ -66,6 +66,54 @@ This convention is valid for:
 The prefix before `:` is the ecosystem/topology ID; the suffix identifies the
 internal subsystem.
 
+## Business Flows And Tier Levels
+
+Stricture supports named business flows with numeric criticality levels (tiers).
+Use this for "checkout is tier 1, support is tier 3" style governance.
+
+Flow criticality is modeled at the service/system layer, not per API field.
+
+Why:
+
+1. service membership is maintainable and auditable
+2. per-API tier tagging is easy to under-declare in subtle failure paths
+3. lineage graph analysis already determines affected edges/fields at runtime
+
+Recommended registry shape:
+
+```yaml
+'strict:flows':
+  - id: checkout
+    name: Checkout
+    level: 1
+    owner: team.payments
+    business_risk: order_loss
+  - id: support
+    name: Customer Support
+    level: 3
+    owner: team.support
+    business_risk: customer_delay
+
+systems:
+  - id: commerce-gateway
+    name: CommerceGateway Service
+    owner_team: team.ecommerce
+    flows: [checkout]
+  - id: support-console
+    name: Support Console
+    owner_team: team.support
+    flows: [support]
+```
+
+Rules:
+
+1. `level` is numeric and organization-defined (no fixed max level count).
+2. each service can belong to zero or more flows (`systems[].flows`).
+3. flow definitions are canonical in `'strict:flows'`; do not duplicate levels on
+   each service membership row.
+4. findings derive impacted flows from affected services + lineage paths.
+5. per-API flow tier tags are intentionally not part of the baseline model.
+
 ## Normalization Defaults
 
 If omitted, Stricture fills:
@@ -227,6 +275,9 @@ Default behavior:
 2. `self_only` -> no warning/error finding by default.
 3. `self_only` -> still tracked and publishable as a change event.
 4. `unknown` -> emits low-severity finding unless policy overrides.
+
+When flow criticality is enabled in policy, downstream findings also carry
+derived flow context (flow IDs + effective tier) based on affected services.
 
 This keeps deploy gates focused on actual blast radius while still preserving a
 complete change history for internal/external consumers.

@@ -6,6 +6,21 @@
   "type": "object",
   "required": ["systems"],
   "properties": {
+    "strict:flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "level"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$" },
+          "name": { "type": "string", "minLength": 1 },
+          "level": { "type": "integer", "minimum": 0 },
+          "owner": { "type": "string", "minLength": 1 },
+          "business_risk": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
     "systems": {
       "type": "array",
       "items": {
@@ -15,6 +30,11 @@
           "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}(:[A-Za-z][A-Za-z0-9_-]{0,63})?$" },
           "name": { "type": "string", "minLength": 1 },
           "owner_team": { "type": "string", "minLength": 1 },
+          "flows": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "uniqueItems": true
+          },
           "escalation": {
             "type": "array",
             "items": {

@@ -1,6 +1,6 @@
 # Stricture Policy Pack Spec (Draft)
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 Status: Draft v0
 
 ## Purpose
@@ -15,6 +15,7 @@ This is the control plane for:
 3. tuning severity for policy findings
 4. enforcing different strictness by environment/profile
 5. defining when drift becomes a finding vs. a tracked/published change event
+6. applying business-flow tier criticality to drift gating
 
 ## Scope
 
@@ -24,6 +25,7 @@ This spec covers lineage-facing policy behavior for:
 2. source edge query keys (`sources=...?...`)
 3. service registry keys (`systems[]`)
 4. lineage override keys (`stricture-lineage-override`)
+5. business flow tier metadata (`'strict:flows'`, `systems[].flows`)
 
 System IDs in policy scope can use hierarchical form `parent:child` to model
 internal subsystems without introducing new annotation keys.
@@ -123,6 +125,41 @@ Interpretation:
    release notes, and external customer visibility.
 4. Unknown impact defaults to `low` severity unless overridden.
 
+### `lineage.findings.flow_criticality`
+
+Controls optional flow-tier aware gating based on service membership.
+
+Default model (if omitted):
+
+```yaml
+lineage:
+  findings:
+    flow_criticality:
+      enabled: false
+      level_direction: lower_is_more_critical
+      fail_on_level: null
+      severity_by_level: {}
+      require_service_membership: false
+      critical_flow_ids: []
+      critical_flow_block_reason: ""
+```
+
+Interpretation:
+
+1. flow criticality is evaluated only for downstream-impact findings.
+2. impacted flow set is derived from affected services (`source`, `impact`,
+   and affected path nodes) by joining service IDs to `systems[].flows`.
+3. effective finding level is the highest criticality level touched:
+   - `lower_is_more_critical`: minimum numeric level
+   - `higher_is_more_critical`: maximum numeric level
+4. when `fail_on_level` is set, findings touching that level (or more critical)
+   are escalated for gating.
+5. `severity_by_level` can override computed severity by effective level.
+6. `critical_flow_ids` forces block behavior for listed flows regardless of base
+   severity threshold.
+7. per-API tier tags are intentionally out of baseline policy; flow membership
+   is service-level by design.
+
 ## Merge And Evaluation Order
 
 1. Parse source annotations.
@@ -130,9 +167,10 @@ Interpretation:
 3. Apply policy default overrides.
 4. Apply selected profile overlay (if any).
 5. Compute impact scope per drift (`downstream`, `self_only`, `unknown`).
-6. Evaluate required-key checks.
-7. Emit policy findings with configured severities and `lineage.findings` rules.
-8. Gate via existing warn/block mode using final severities.
+6. Compute impacted flows/effective level when flow criticality is enabled.
+7. Evaluate required-key checks.
+8. Emit policy findings with configured severities and `lineage.findings` rules.
+9. Gate via existing warn/block mode using final severities and flow overrides.
 
 ## Distribution Model (Locked Requirement)
 
@@ -225,6 +263,8 @@ See CLI command contract: `docs/POLICY-CLI-CONTRACT.md`.
 3. `unknown_policy_key`
 4. `disallowed_value`
 5. `unknown_impact_scope`
+6. `unknown_flow_id`
+7. `missing_flow_membership`
 
 ## Reference Strict Policy Example
 
@@ -255,9 +295,21 @@ lineage:
     self_only:
       emit_finding: false
       publish_change_event: true
+    flow_criticality:
+      enabled: true
+      level_direction: lower_is_more_critical
+      fail_on_level: 1
+      severity_by_level:
+        "1": high
+        "2": medium
+      require_service_membership: false
+      critical_flow_ids:
+        - checkout
+      critical_flow_block_reason: "Risk of order loss"
   severity_overrides:
     missing_required_key: high
     unknown_impact_scope: low
+    unknown_flow_id: medium
 ```
 
 ## Compatibility Notes

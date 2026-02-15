@@ -52,6 +52,15 @@
             "self_only": {
               "emit_finding": false,
               "publish_change_event": true
+            },
+            "flow_criticality": {
+              "enabled": false,
+              "level_direction": "lower_is_more_critical",
+              "fail_on_level": null,
+              "severity_by_level": {},
+              "require_service_membership": false,
+              "critical_flow_ids": [],
+              "critical_flow_block_reason": ""
             }
           },
           "properties": {
@@ -74,6 +83,52 @@
                   "enum": ["high", "medium", "low", "info"]
                 },
                 "publish_change_event": { "type": "boolean", "default": true }
+              },
+              "additionalProperties": false
+            },
+            "flow_criticality": {
+              "type": "object",
+              "default": {
+                "enabled": false,
+                "level_direction": "lower_is_more_critical",
+                "fail_on_level": null,
+                "severity_by_level": {},
+                "require_service_membership": false,
+                "critical_flow_ids": [],
+                "critical_flow_block_reason": ""
+              },
+              "properties": {
+                "enabled": { "type": "boolean", "default": false },
+                "level_direction": {
+                  "type": "string",
+                  "enum": ["lower_is_more_critical", "higher_is_more_critical"],
+                  "default": "lower_is_more_critical"
+                },
+                "fail_on_level": {
+                  "type": ["integer", "null"],
+                  "minimum": 0
+                },
+                "severity_by_level": {
+                  "type": "object",
+                  "propertyNames": {
+                    "pattern": "^[0-9]+$"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "enum": ["high", "medium", "low", "info"]
+                  },
+                  "default": {}
+                },
+                "require_service_membership": { "type": "boolean", "default": false },
+                "critical_flow_ids": {
+                  "type": "array",
+                  "items": { "type": "string", "minLength": 1 },
+                  "default": []
+                },
+                "critical_flow_block_reason": {
+                  "type": "string",
+                  "default": ""
+                }
               },
               "additionalProperties": false
             }

@@ -1,7 +1,25 @@
+'strict:flows':
+  - id: checkout
+    name: Checkout
+    level: 1
+    owner: team.payments
+    business_risk: order_loss
+  - id: identity
+    name: Identity And Access
+    level: 2
+    owner: team.identity
+    business_risk: login_failure
+  - id: media
+    name: Media Integrations
+    level: 3
+    owner: team.media
+    business_risk: degraded_experience
+
 systems:
   - id: Identity
     name: Identity Service
     owner_team: team.identity
+    flows: [identity, checkout]
     escalation:
       - role: primary
         name: Identity Oncall
@@ -13,6 +31,7 @@ systems:
   - id: ServiceX
     name: Service X
     owner_team: team.servicex
+    flows: [checkout]
     escalation:
       - role: primary
         name: Service X Oncall
@@ -21,6 +40,7 @@ systems:
   - id: spotify
     name: Spotify API
     owner_team: vendor.spotify
+    flows: [media]
     escalation:
       - role: vendor
         name: Spotify Developer Support

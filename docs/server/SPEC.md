@@ -1,6 +1,6 @@
 # Stricture Server Spec
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 ## Scope
 
@@ -25,6 +25,8 @@ It is intentionally append-only for v0 and does not require a relational DB.
 5. Preserve both:
    - impact-gated findings for CI/policy workflows
    - non-impacting change events for publication/audit workflows
+6. Preserve flow-tier context (`'strict:flows'`, `systems[].flows`) for policy
+   evaluation and reporting.
 
 ## Non-Goals (v0)
 
@@ -65,6 +67,10 @@ default interpretation:
 This keeps CI noise low while still publishing provider-facing contract changes.
 Published human-readable messages should follow the plain-language template
 library in `docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.
+
+When policy enables flow criticality, server-side consumers should evaluate
+impacted flow tiers from affected service sets and include effective flow level
+in gate/audit outputs.
 
 ## Runtime + Operation Model (Day 1 Requirement)
 

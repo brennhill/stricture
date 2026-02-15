@@ -1,6 +1,6 @@
 # Lineage Automation Spec (Draft)
 
-Last updated: 2026-02-14
+Last updated: 2026-02-15
 
 ## Goal
 
@@ -70,6 +70,8 @@ Automation tiers:
 | `field_id` | Auto | derive from `field` | stable slug transform |
 | `field` | Auto | derive from `field_id` | fallback only |
 | `source_system` | Suggest/Auto+Policy | repo/service mapping | can be defaulted from module map |
+| `systems[].flows` | Auto+Policy / Manual | service registry + org policy | service-level business flow membership |
+| `'strict:flows'` definitions | Manual / Policy | org governance | canonical flow IDs, names, numeric levels |
 | `source_version` | Auto | `.stricture-history/versions.json` + contract ref revision | computed build version, preferably pinned to contract commit/tag |
 | `min_supported_source_version` | Auto | source version policy | default same as `source_version` |
 | `transform_type` | Auto+Policy / Suggest | defaults + static analysis hints | default `passthrough` |
@@ -146,6 +148,20 @@ Service registry bootstrap model:
    - topology service: `location-tracking-service`
    - subsystem: `location-tracking-service:tracking-api`
 5. hierarchy is inferred from ID shape only (no additional annotation keys)
+6. helper should prefer service-level flow membership (`systems[].flows`) and
+   avoid per-API tier declarations by default
+
+## Flow Tier Criticality Model (Draft)
+
+Organizations can define named flows with numeric levels in registry metadata:
+
+1. `'strict:flows'[]` defines canonical `id`, `name`, and numeric `level`.
+2. `systems[].flows` declares service membership in those flow IDs.
+3. Drift findings derive impacted flows from affected service/path sets.
+4. Effective level is the highest criticality level touched (policy-configured
+   direction, default `lower_is_more_critical`).
+5. Flow-specific hard-block rules (for example checkout/order-loss risk) are
+   policy-managed, not hard-coded in source annotations.
 
 ## CI Workflow (Reference)
 
