@@ -1,0 +1,222 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import { Code } from "astro:components";
+
+export const prerender = true;
+
+const serviceRegistrySnippet = String.raw`'strict:flows':
+  - id: checkout
+    name: Checkout
+    level: 1
+    owner: team.payments
+    business_risk: order_loss
+
+systems:
+  - id: CheckoutGatewayJava
+    name: Checkout Gateway (Java)
+    owner_team: team.payments-platform
+    runbook_url: https://runbooks.example.com/checkout-gateway
+    doc_root: https://docs.example.com/checkout-gateway
+    flows: [checkout]
+    escalation:
+      - role: primary
+        name: Payments Oncall
+        channel: pagerduty:payments-oncall
+`;
+
+const javaSnippet = String.raw`@RestController
+@RequestMapping("/v1/checkout")
+@Tag(name = "Checkout API") // re-used by Stricture: OpenAPI surface docs
+class CheckoutController {
+
+  @WithSpan("checkout.authorize") // re-used by Stricture: OpenTelemetry span context
+  @Operation(summary = "Authorize payment")
+  @GetMapping("/authorize/{cartId}")
+  PaymentResponse authorize(@PathVariable String cartId) {
+    // stricture-source field=response.checkout.payment_status source_system=CheckoutGatewayJava
+    // source_version=v2026.08
+    // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+    // re-used by Stricture, batteries included: OpenAPI + OTel + strict provenance
+    return checkoutService.authorize(cartId);
+  }
+}
+`;
+
+const protobufSnippet = String.raw`syntax = "proto3";
+
+package checkout.v1;
+
+import "google/api/annotations.proto";
+
+service CheckoutService {
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse) {
+    option (google.api.http) = { get: "/v1/checkout/authorize/{cart_id}" };
+  }
+}
+
+message AuthorizeResponse {
+  // re-used by Stricture: Buf/proto schema docs and field identity
+  // stricture-source field=response.checkout.payment_status source_system=CheckoutProtoGateway
+  // source_version=v2026.08
+  // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=buf://acme/payment-core/payment/v1/payment.proto
+  string payment_status = 1;
+}
+`;
+
+const goSnippet = String.raw`type CheckoutResponse struct {
+  PaymentStatus string ` + "`json:\"payment_status\"`" + `
+}
+
+func (h *Handler) Authorize(w http.ResponseWriter, r *http.Request) {
+  ctx, span := h.tracer.Start(r.Context(), "checkout.authorize") // re-used by Stricture: OpenTelemetry trace
+  defer span.End()
+
+  // stricture-source field=response.checkout.payment_status source_system=CheckoutGatewayGo
+  // source_version=v2026.08
+  // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+  // re-used by Stricture, batteries included: OTel + OpenAPI contract pointers
+  resp := CheckoutResponse{PaymentStatus: "authorized"}
+  _ = ctx
+  json.NewEncoder(w).Encode(resp)
+}
+`;
+
+const pythonSnippet = String.raw`from fastapi import FastAPI
+from pydantic import BaseModel
+from opentelemetry import trace
+
+app = FastAPI(title="Checkout API")  # re-used by Stricture: OpenAPI generation
+tracer = trace.get_tracer(__name__)
+
+class CheckoutResponse(BaseModel):
+    payment_status: str
+
+@app.get("/v1/checkout/authorize/{cart_id}", response_model=CheckoutResponse)
+def authorize(cart_id: str) -> CheckoutResponse:
+    with tracer.start_as_current_span("checkout.authorize"):  # re-used by Stricture: OTel span
+        # stricture-source field=response.checkout.payment_status source_system=CheckoutGatewayPython
+        # source_version=v2026.08
+        # sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+        # re-used by Stricture, batteries included: FastAPI OpenAPI + OTel + strict lineage
+        return CheckoutResponse(payment_status="authorized")
+`;
+
+const nodeSnippet = String.raw`import express from "express";
+import { trace } from "@opentelemetry/api";
+
+const app = express();
+const tracer = trace.getTracer("checkout-gateway");
+
+/**
+ * @openapi
+ * /v1/checkout/authorize/{cartId}:
+ *   get:
+ *     summary: Authorize payment
+ *     responses:
+ *       "200":
+ *         description: Checkout authorization
+ */
+app.get("/v1/checkout/authorize/:cartId", (req, res) => {
+  tracer.startActiveSpan("checkout.authorize", (span) => { // re-used by Stricture: OTel
+    // stricture-source field=response.checkout.payment_status source_system=CheckoutGatewayNode
+    // source_version=v2026.08
+    // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+    // re-used by Stricture, batteries included: OpenAPI JSDoc + OTel + strict lineage
+    res.json({ payment_status: "authorized" });
+    span.end();
+  });
+});
+`;
+
+const examples = [
+  {
+    id: "java-otel-openapi",
+    title: "Java + OpenTelemetry + OpenAPI",
+    description: "Spring endpoint with OpenAPI annotations and OTel spans. Stricture adds strict field-level lineage near emit logic.",
+    lang: "java",
+    code: javaSnippet,
+  },
+  {
+    id: "protobuf-buf",
+    title: "Protobuf + Buf",
+    description: "Buf/proto contracts remain the source of truth. Stricture comments bind output fields to upstream sources/contracts.",
+    lang: "proto",
+    code: protobufSnippet,
+  },
+  {
+    id: "go",
+    title: "Golang + net/http + OTel",
+    description: "Go handler example with span context and strict annotations for API output fields.",
+    lang: "go",
+    code: goSnippet,
+  },
+  {
+    id: "python",
+    title: "Python + FastAPI + OTel",
+    description: "FastAPI OpenAPI generation plus OTel tracing, with Stricture lineage comments on response fields.",
+    lang: "python",
+    code: pythonSnippet,
+  },
+  {
+    id: "node",
+    title: "Node.js + Express + OpenAPI JSDoc + OTel",
+    description: "Express route using OpenAPI JSDoc and OpenTelemetry spans with strict annotations for provenance.",
+    lang: "ts",
+    code: nodeSnippet,
+  },
+];
+---
+
+<MainLayout
+  title="Examples | Stricture"
+  description="Practical Stricture annotation examples across Java, Protobuf/Buf, Go, Python, and Node.js with OpenAPI and OpenTelemetry integration."
+>
+  <section class="card">
+    <p class="kicker">Examples</p>
+    <h1>Strict annotations in real stacks</h1>
+    <p class="lead">
+      Use your existing framework metadata (OpenAPI, OpenTelemetry, protobuf/buf), then add strict lineage comments where fields are emitted or transformed.
+    </p>
+    <p class="muted">
+      Pattern: keep service-level metadata in <code>strict:systems[]</code>, and API/field-level provenance in <code>stricture-source</code> comments.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Service-level annotations (registry)</h2>
+    <p class="muted">
+      This is where ownership, escalation, docs, runbooks, and flow tiers live.
+    </p>
+    <div class="code-shell">
+      <Code code={serviceRegistrySnippet} lang="yaml" />
+    </div>
+  </section>
+
+  {examples.map((example) => (
+    <section id={example.id} class="card">
+      <h2>{example.title}</h2>
+      <p class="muted">{example.description}</p>
+      <div class="code-shell">
+        <Code code={example.code} lang={example.lang} />
+      </div>
+    </section>
+  ))}
+</MainLayout>
+
+<style>
+  .code-shell {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 0.65rem;
+  }
+
+  .code-shell :global(pre.astro-code) {
+    margin: 0;
+    padding: 1rem;
+    font-size: 0.79rem;
+    line-height: 1.45;
+    overflow-x: auto;
+  }
+</style>
+
