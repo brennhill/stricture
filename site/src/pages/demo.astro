@@ -54,14 +54,14 @@ export const prerender = true;
 
         <h2>Policy</h2>
         <label>
-          Mode
+          Gate mode
           <select id="policy-mode">
             <option value="warn">warn</option>
             <option value="block">block</option>
           </select>
         </label>
         <label>
-          Fail On
+          Block when severity is at least
           <select id="policy-fail-on">
             <option value="high">high</option>
             <option value="medium">medium</option>
@@ -69,19 +69,19 @@ export const prerender = true;
           </select>
         </label>
         <label>
-          Critical Service
+          Critical impacted service
           <select id="policy-critical-service"></select>
         </label>
         <label>
-          <input id="policy-promotions-hard-block" type="checkbox" checked />
-          Hard block promotions drift for critical service
+          <input id="policy-promotions-hard-block" type="checkbox" />
+          Hard-block promotion enum drift for this service
         </label>
         <label>
-          Hard-block Rationale
+          Hard-block reason shown in findings
           <input id="policy-hard-block-reason" type="text" value="Risk of order loss" />
         </label>
-        <p class="hint">Block: stop deploy when severity ≥ threshold. Warn: allow deploy but surface findings.</p>
-        <button id="update-policy" class="button button-secondary">Update Policy</button>
+        <p class="hint">Warn = never blocks. Block = blocks at threshold. Applying policy reruns findings immediately.</p>
+        <button id="update-policy" class="button button-secondary">Apply policy</button>
 
         <h2>Temporary Exception</h2>
         <p class="hint" id="override-target">No active finding to suppress yet. Run Stricture after a change.</p>

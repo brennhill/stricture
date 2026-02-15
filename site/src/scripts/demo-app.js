@@ -19,6 +19,9 @@ const selectors = {
   mutationField: document.querySelector("#mutation-field"),
   policyMode: document.querySelector("#policy-mode"),
   policyFailOn: document.querySelector("#policy-fail-on"),
+  policyCriticalService: document.querySelector("#policy-critical-service"),
+  policyPromotionsHardBlock: document.querySelector("#policy-promotions-hard-block"),
+  policyHardBlockReason: document.querySelector("#policy-hard-block-reason"),
   overrideTarget: document.querySelector("#override-target"),
   overrideReason: document.querySelector("#override-reason"),
   applyMutation: document.querySelector("#apply-mutation"),
@@ -537,8 +540,11 @@ function renderRunSummary(snapshot) {
   const delta = parseFindingDelta(top);
   const { sourceName, impactName } = findingCauseImpact(snapshot, top, mutation);
   const gateText = summary.gate === "BLOCK" ? "Deploy blocked." : "Deploy allowed.";
+  const policyConfig = snapshot.policy?.hardBlockPromotionsDrift
+    ? `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+ with promotions hard-block on ${serviceName(snapshot, snapshot.policy.criticalServiceId)}.`
+    : `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+.`;
   const policyText = summary.policyRationale ? ` ${summary.policyRationale}` : "";
-  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} blocking, ${summary.warningCount} warning). ${gateText}${policyText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
+  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} blocking, ${summary.warningCount} warning). ${gateText} ${policyConfig}${policyText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
 }
 
 function nodeStatusForService(serviceId, findings) {
@@ -677,6 +683,19 @@ function render(snapshot) {
   if (selectors.policyFailOn) {
     selectors.policyFailOn.value = snapshot.policy.failOn;
   }
+  if (selectors.policyCriticalService) {
+    const serviceIDs = snapshot.services.map((service) => service.id);
+    setOptions(selectors.policyCriticalService, serviceIDs, (id) => serviceName(snapshot, id));
+    if (serviceIDs.includes(snapshot.policy.criticalServiceId)) {
+      selectors.policyCriticalService.value = snapshot.policy.criticalServiceId;
+    }
+  }
+  if (selectors.policyPromotionsHardBlock) {
+    selectors.policyPromotionsHardBlock.checked = !!snapshot.policy.hardBlockPromotionsDrift;
+  }
+  if (selectors.policyHardBlockReason) {
+    selectors.policyHardBlockReason.value = snapshot.policy.hardBlockReason || "";
+  }
 }
 
 async function bootstrap() {
@@ -715,6 +734,9 @@ async function updatePolicy() {
   const payload = {
     mode: selectors.policyMode?.value,
     failOn: selectors.policyFailOn?.value,
+    criticalServiceId: selectors.policyCriticalService?.value,
+    hardBlockPromotionsDrift: selectors.policyPromotionsHardBlock?.checked,
+    hardBlockReason: selectors.policyHardBlockReason?.value.trim(),
   };
   const response = await request(`/api/session/${state.sessionId}/policy`, "POST", payload);
   render(response.snapshot);
@@ -783,6 +805,20 @@ function bindEvents() {
     if (state.snapshot) {
       updateControlStats(state.snapshot);
     }
+  });
+  selectors.policyMode?.addEventListener("change", () => updatePolicy().catch(showError));
+  selectors.policyFailOn?.addEventListener("change", () => updatePolicy().catch(showError));
+  selectors.policyCriticalService?.addEventListener("change", () => updatePolicy().catch(showError));
+  selectors.policyPromotionsHardBlock?.addEventListener("change", () => updatePolicy().catch(showError));
+  selectors.policyHardBlockReason?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      updatePolicy().catch(showError);
+    }
+  });
+  selectors.policyHardBlockReason?.addEventListener("blur", () => {
+    if (!state.sessionId) return;
+    updatePolicy().catch(showError);
   });
 }
 

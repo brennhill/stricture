@@ -89,6 +89,9 @@ interface Override {
 interface Policy {
   mode: GateMode;
   failOn: Severity;
+  hardBlockPromotionsDrift: boolean;
+  criticalServiceId: string;
+  hardBlockReason: string;
 }
 
 interface RunSummary {
@@ -183,23 +186,6 @@ const remediationByChangeType: Record<string, string> = {
   source_removed: "Restore source mapping or annotate accepted migration override.",
 };
 
-interface HardBlockRule {
-  id: string;
-  sourceServiceID?: string;
-  changeType?: string;
-  fieldPrefix?: string;
-  rationale: string;
-}
-
-const hardBlockRules: HardBlockRule[] = [
-  {
-    id: "promotions_enum_order_loss",
-    sourceServiceID: "promotionsconfig",
-    changeType: "enum_changed",
-    rationale: "Risk of order loss",
-  },
-];
-
 function nowISO(): string {
   return new Date().toISOString();
 }
@@ -266,6 +252,9 @@ function defaultSnapshot(): DemoSnapshot {
     policy: {
       mode: "warn",
       failOn: "high",
+      hardBlockPromotionsDrift: true,
+      criticalServiceId: "fintechgateway",
+      hardBlockReason: "Risk of order loss",
     },
     runSummary: {
       runCount: 0,
@@ -293,23 +282,26 @@ function remediationFor(changeType: string): string {
   return remediationByChangeType[changeType] || "Inspect diff details and update source annotations/contracts.";
 }
 
-function policyRationaleForFinding(finding: Finding): string | undefined {
-  for (const rule of hardBlockRules) {
-    if (rule.changeType && rule.changeType !== finding.changeType) {
-      continue;
-    }
-    if (rule.sourceServiceID) {
-      const sourceID = normalizeID(finding.source?.serviceId || finding.source?.service || "");
-      if (sourceID !== normalizeID(rule.sourceServiceID)) {
-        continue;
-      }
-    }
-    if (rule.fieldPrefix && !finding.fieldId.startsWith(rule.fieldPrefix)) {
-      continue;
-    }
-    return rule.rationale;
+function policyRationaleForFinding(finding: Finding, policy: Policy): string | undefined {
+  if (!policy.hardBlockPromotionsDrift) {
+    return undefined;
   }
-  return undefined;
+  if (finding.changeType !== "enum_changed") {
+    return undefined;
+  }
+
+  const sourceID = normalizeID(finding.source?.serviceId || finding.source?.service || "");
+  if (sourceID !== "promotionsconfig") {
+    return undefined;
+  }
+
+  const impactedID = normalizeID(finding.impact?.serviceId || finding.serviceId || "");
+  const criticalID = normalizeID(policy.criticalServiceId);
+  if (criticalID && impactedID && impactedID !== criticalID) {
+    return undefined;
+  }
+
+  return policy.hardBlockReason || "Risk of order loss";
 }
 
 function computeFindings(snapshot: DemoSnapshot): Finding[] {
@@ -430,7 +422,7 @@ function runEngine(snapshot: DemoSnapshot): DemoSnapshot {
     return findingHasDownstreamImpact(snapshot, finding);
   });
   const findingsWithPolicy = activeFindings.map((finding) => {
-    const rationale = policyRationaleForFinding(finding);
+    const rationale = policyRationaleForFinding(finding, snapshot.policy);
     if (!rationale) {
       return finding;
     }
@@ -587,18 +579,28 @@ export class DemoSession {
       const body = await parseJSON(request);
       const mode = String(body.mode || "") as GateMode;
       const failOn = String(body.failOn || "") as Severity;
+      const hardBlockPromotionsDrift = Boolean(body.hardBlockPromotionsDrift);
+      const criticalServiceId = normalizeID(String(body.criticalServiceId || ""));
+      const hardBlockReason = String(body.hardBlockReason || "").trim();
 
       if ((mode !== "warn" && mode !== "block") || !(failOn in severityRank)) {
         return textResponse("policy requires valid mode and failOn", 400);
       }
+      if (!snapshot.services.some((service) => service.id === criticalServiceId)) {
+        return textResponse("policy requires valid criticalServiceId", 400);
+      }
 
-      const next = {
+      const updated = {
         ...snapshot,
         policy: {
           mode,
           failOn,
+          hardBlockPromotionsDrift,
+          criticalServiceId,
+          hardBlockReason: hardBlockReason || "Risk of order loss",
         },
       };
+      const next = runEngine(updated);
       await this.ctx.storage.put("snapshot", next);
       return jsonResponse({ snapshot: next });
     }
