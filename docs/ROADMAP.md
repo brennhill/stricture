@@ -87,6 +87,25 @@ Planned phases:
 3. **v2 (platform):** multi-tenant RBAC, SSO, audit trails, policy governance.
 4. **v3 (assist):** auto-remediation suggestions and AI copilot workflows.
 
+### Track E — Trace Audit + Drift Validation
+
+Goal: cross-check runtime traces (B3/W3C/OTel) against Stricture annotations to detect
+unexpected edges, missing lineage, and "dishonest" or stale annotations.
+
+Scope:
+
+1. Ingest trace data (B3, W3C Trace Context, OpenTelemetry exports).
+2. Compare observed service/field flows against annotated `sources`.
+3. Flag missing edges, unexpected edges, and field provenance mismatches.
+4. Provide coverage scores per service and per flow tier.
+5. Emit findings + suggested annotation fixes or contract updates.
+
+Planned phases:
+
+1. **v0 (audit):** offline validator that checks traces vs annotations.
+2. **v1 (assist):** helper hints to auto-suggest missing `sources` from traces.
+3. **v2 (monitor):** server-side continuous audit with alerting and dashboards.
+
 ## Sequencing
 
 1. Finish defaults implementation and compact UX.
