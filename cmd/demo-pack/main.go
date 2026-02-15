@@ -200,6 +200,8 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		}
 	}
 
+	ensureParentNodesFromSubsystems(nodes)
+
 	for id, node := range nodes {
 		if meta, ok := registryByID[id]; ok {
 			node.Name = fallbackString(meta.Name, node.Name)
@@ -328,6 +330,15 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		FlowCount:  1,
 	})
 	ensureDemoService(&pack, demoService{
+		ID:         "promotionsconfig:api-service",
+		Name:       "PromotionsConfig API Service",
+		Domain:     "ecommerce",
+		Kind:       "internal",
+		Owner:      "team.promotions-config",
+		Escalation: "pagerduty:promotions-config-oncall",
+		FlowCount:  1,
+	})
+	ensureDemoService(&pack, demoService{
 		ID:         "promotionsapp",
 		Name:       "PromotionsApplication Service",
 		Domain:     "ecommerce",
@@ -336,24 +347,33 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		Escalation: "pagerduty:promotions-app-oncall",
 		FlowCount:  1,
 	})
+	ensureDemoService(&pack, demoService{
+		ID:         "promotionsapp:api-service",
+		Name:       "PromotionsApplication API Service",
+		Domain:     "ecommerce",
+		Kind:       "internal",
+		Owner:      "team.promotions-app",
+		Escalation: "pagerduty:promotions-app-oncall",
+		FlowCount:  1,
+	})
 	ensureDemoEdge(&pack, demoEdge{
 		ID:      "e_demo_promotionsconfig_to_promotionsapp",
-		From:    "promotionsconfig",
-		To:      "promotionsapp",
+		From:    "promotionsconfig:api-service",
+		To:      "promotionsapp:api-service",
 		FieldID: "response_ecommerce_cart_pricing_waterfall",
 		Label:   "PromotionsConfig.GetPromotionType",
 	})
 	ensureDemoEdge(&pack, demoEdge{
 		ID:      "e_demo_promotionsapp_to_commercegateway",
-		From:    "promotionsapp",
-		To:      "commercegateway",
+		From:    "promotionsapp:api-service",
+		To:      "commercegateway:api-service",
 		FieldID: "response_ecommerce_cart_pricing_waterfall",
 		Label:   "PromotionsApplication.ApplyPromotion",
 	})
 	ensureDemoEdge(&pack, demoEdge{
 		ID:      "e_demo_commercegateway_to_fintechgateway",
-		From:    "commercegateway",
-		To:      "fintechgateway",
+		From:    "commercegateway:api-service",
+		To:      "fintechgateway:api-service",
 		FieldID: "response_ecommerce_cart_pricing_waterfall",
 		Label:   "CommerceGateway.ForwardCheckoutPricing",
 	})
@@ -387,11 +407,11 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 				FieldID:    customField,
 				Message:    "Producer widened from uint8 to uint16; JS consumer coerces to Number and passes through values >255; downstream Go consumer overflows.",
 				Source: &lineage.DriftEdge{
-					Service: "CommerceCore",
+					Service: "CommerceCore:api-service",
 					API:     "CommerceCore.GetCheckoutRiskGate",
 				},
 				Impact: &lineage.DriftEdge{
-					Service: "CommerceGateway",
+					Service: "CommerceGateway:api-service",
 					API:     customField,
 				},
 				TypeDelta: &lineage.TypeDelta{
@@ -404,8 +424,6 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 			},
 		},
 	}
-
-	addSourceInternalOverlays(&pack)
 
 	return pack, nil
 }
@@ -459,14 +477,14 @@ func overridePaymentsEnumScenario(pack *demoPack) {
 				FieldID:    fieldID,
 				Message:    "PromotionsConfig added promotion_type=stacked_cashback. PromotionsApplication was updated in tandem and passes it through, but the payment path still handles only percentage,fixed_amount,bogo. Promotion-applied checkouts can fail payment authorization until payment services are updated.",
 				Source: &lineage.DriftEdge{
-					Service: "PromotionsConfig",
+					Service: "PromotionsConfig:api-service",
 					API:     "PromotionsConfig.GetPromotionType",
 				},
 				Impact: &lineage.DriftEdge{
-					Service: "FintechGateway",
+					Service: "FintechGateway:api-service",
 					API:     "FintechGateway.GetPaymentAuthorizationDecision",
 				},
-				ModifiedBy: []string{"PromotionsApplication", "CommerceGateway"},
+				ModifiedBy: []string{"PromotionsApplication:api-service", "CommerceGateway:api-service"},
 				Validation: "promotion type allowlist mismatch between config/app services and payment authorization path",
 				Suggestion: "add enum contract tests across PromotionsConfig -> PromotionsApplication -> CommerceGateway -> FintechGateway and define unknown-type fallback before rollout",
 			},
@@ -547,115 +565,6 @@ func addLogisticsInternalOverlay(pack *demoPack) {
 		FieldID: "response_logistics_route_risk_assessment",
 		Label:   "api:LogisticsCore.GetRouteRiskAssessment",
 	})
-}
-
-func addSourceInternalOverlays(pack *demoPack) {
-	serviceByID := map[string]demoService{}
-	for _, service := range pack.Services {
-		serviceByID[service.ID] = service
-	}
-
-	rootsToField := map[string]string{}
-	for fieldID, byMutation := range pack.MutationScenarios {
-		for _, scenario := range byMutation {
-			for _, change := range scenario.Changes {
-				if change.Source == nil {
-					continue
-				}
-				root := normalizeID(change.Source.Service)
-				if root == "" {
-					continue
-				}
-				if _, ok := serviceByID[root]; !ok {
-					continue
-				}
-				if hasSubsystemService(pack.Services, root) {
-					continue
-				}
-				if _, exists := rootsToField[root]; !exists {
-					rootsToField[root] = fieldID
-				}
-			}
-		}
-	}
-
-	roots := make([]string, 0, len(rootsToField))
-	for root := range rootsToField {
-		roots = append(roots, root)
-	}
-	sort.Strings(roots)
-
-	for _, root := range roots {
-		parent := serviceByID[root]
-		primaryFieldID := strings.TrimSpace(rootsToField[root])
-		if primaryFieldID == "" {
-			primaryFieldID = "internal_" + root + "_request"
-		}
-
-		apiID := root + ":api-service"
-		uiID := root + ":ui-service"
-		logID := root + ":logging-sidecar"
-
-		ensureDemoService(pack, demoService{
-			ID:         apiID,
-			Name:       "API Service",
-			Domain:     parent.Domain,
-			Kind:       "internal",
-			Owner:      parent.Owner,
-			Escalation: parent.Escalation,
-			FlowCount:  1,
-		})
-		ensureDemoService(pack, demoService{
-			ID:         uiID,
-			Name:       "UI Service",
-			Domain:     parent.Domain,
-			Kind:       "internal",
-			Owner:      parent.Owner,
-			Escalation: parent.Escalation,
-			FlowCount:  1,
-		})
-		ensureDemoService(pack, demoService{
-			ID:         logID,
-			Name:       "Logging Sidecar",
-			Domain:     parent.Domain,
-			Kind:       "internal",
-			Owner:      parent.Owner,
-			Escalation: parent.Escalation,
-			FlowCount:  1,
-		})
-
-		ensureDemoEdge(pack, demoEdge{
-			ID:      "e_demo_" + root + "_ui_to_api",
-			From:    uiID,
-			To:      apiID,
-			FieldID: primaryFieldID,
-			Label:   "http:UI.Request",
-		})
-		ensureDemoEdge(pack, demoEdge{
-			ID:      "e_demo_" + root + "_api_to_contract",
-			From:    apiID,
-			To:      root,
-			FieldID: primaryFieldID,
-			Label:   "api:ContractAdapter.Publish",
-		})
-		ensureDemoEdge(pack, demoEdge{
-			ID:      "e_demo_" + root + "_api_to_log",
-			From:    apiID,
-			To:      logID,
-			FieldID: "internal_" + root + "_telemetry",
-			Label:   "otel:StructuredLogs.Emit",
-		})
-	}
-}
-
-func hasSubsystemService(services []demoService, root string) bool {
-	prefix := root + ":"
-	for _, service := range services {
-		if strings.HasPrefix(service.ID, prefix) {
-			return true
-		}
-	}
-	return false
 }
 
 func mutateArtifact(base lineage.Artifact, fieldIndex int, typ mutationType) (lineage.Artifact, bool) {
@@ -784,6 +693,35 @@ func ensureNode(nodes map[string]*nodeMeta, id string) *nodeMeta {
 	created := &nodeMeta{ID: id}
 	nodes[id] = created
 	return created
+}
+
+func ensureParentNodesFromSubsystems(nodes map[string]*nodeMeta) {
+	ids := make([]string, 0, len(nodes))
+	for id := range nodes {
+		ids = append(ids, id)
+	}
+	for _, id := range ids {
+		cut := strings.Index(id, ":")
+		if cut <= 0 {
+			continue
+		}
+		rootID := id[:cut]
+		child := nodes[id]
+		parent := ensureNode(nodes, rootID)
+		parent.Domain = preferDomain(parent.Domain, child.Domain)
+		if strings.TrimSpace(parent.Owner) == "" {
+			parent.Owner = child.Owner
+		}
+		if strings.TrimSpace(parent.Escalation) == "" {
+			parent.Escalation = child.Escalation
+		}
+		if strings.TrimSpace(parent.Kind) == "" || (parent.Kind == "internal" && child.Kind == "external") {
+			parent.Kind = child.Kind
+		}
+		if child.FlowCount > 0 {
+			parent.FlowCount += child.FlowCount
+		}
+	}
 }
 
 func normalizeID(raw string) string {

@@ -241,7 +241,23 @@ func buildFlows(domains []domainDefinition) []flowCatalogEntry {
 				useCases = append(useCases, useCaseExternalProvider)
 			}
 
+			producerSubsystem := subsystemID(domain.Service, "api-service")
+			coreSubsystem := subsystemID(domain.CoreSystem, "api-service")
+			eventSubsystem := subsystemID(domain.EventSystem, "stream-service")
+			uiSubsystem := subsystemID(domain.Service, "ui-service")
+			loggingSubsystem := subsystemID(domain.Service, "logging-sidecar")
+			providerSubsystem := subsystemID(domain.ProviderID, "api-service")
+
 			sources := []string{
+				fmt.Sprintf(
+					"event:%s.Ui%sObserved#payload.%s@internal?contract_ref=internal://events/%s/%s_ui_observed&upstream_system=%s",
+					domain.Service,
+					camelCase(slug),
+					slug,
+					domain.Name,
+					slug,
+					uiSubsystem,
+				),
 				fmt.Sprintf(
 					"api:%s.Get%s#response.%s@cross_repo?contract_ref=git+https://github.com/acme/%s-core//openapi.yaml@r%02d",
 					domain.CoreSystem,
@@ -251,18 +267,31 @@ func buildFlows(domains []domainDefinition) []flowCatalogEntry {
 					wIndex+1,
 				),
 				fmt.Sprintf(
-					"event:%s.%sChanged#payload.%s@internal?contract_ref=internal://events/%s/%s_changed",
+					"event:%s.%sChanged#payload.%s@internal?contract_ref=internal://events/%s/%s_changed&upstream_system=%s",
 					domain.EventSystem,
 					camelCase(slug),
 					slug,
 					domain.Name,
 					slug,
+					eventSubsystem,
 				),
+			}
+			sources[1] = sources[1] + "&upstream_system=" + coreSubsystem
+			if wIndex%3 == 0 {
+				sources = append(sources, fmt.Sprintf(
+					"event:%s.Trace%sCaptured#payload.%s_trace@internal?contract_ref=internal://events/%s/%s_trace_captured&upstream_system=%s",
+					domain.Service,
+					camelCase(slug),
+					slug,
+					domain.Name,
+					slug,
+					loggingSubsystem,
+				))
 			}
 			if hasExternal {
 				asOf := time.Date(2026, time.February, 10+(wIndex%18), 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 				sources = append(sources, fmt.Sprintf(
-					"api:%s.Get%s#response.%s@external!%s?provider_id=%s&contract_ref=https://api.%s.example.com/%s",
+					"api:%s.Get%s#response.%s@external!%s?provider_id=%s&contract_ref=https://api.%s.example.com/%s&upstream_system=%s",
 					titleCase(domain.ProviderID),
 					camelCase(slug),
 					slug,
@@ -270,6 +299,7 @@ func buildFlows(domains []domainDefinition) []flowCatalogEntry {
 					domain.ProviderID,
 					domain.ProviderID,
 					slug,
+					providerSubsystem,
 				))
 			}
 
@@ -290,7 +320,7 @@ func buildFlows(domains []domainDefinition) []flowCatalogEntry {
 				Annotation: annotationSpec{
 					FieldID:                   fieldID,
 					Field:                     fieldPath,
-					SourceSystem:              domain.Service,
+					SourceSystem:              producerSubsystem,
 					SourceVersion:             sourceVersion,
 					MinSupportedSourceVersion: defaultMinSupportedVersion,
 					TransformType:             transformTypes[(dIndex+wIndex)%len(transformTypes)],
@@ -303,7 +333,7 @@ func buildFlows(domains []domainDefinition) []flowCatalogEntry {
 					ContractTestID:            fmt.Sprintf("ci://contracts/%s/%s", domain.Name, slug),
 					IntroducedAt:              introducedAt,
 					Sources:                   sources,
-					Flow:                      fmt.Sprintf("from @%s %s @self", domain.CoreSystem, verb),
+					Flow:                      fmt.Sprintf("from @%s %s @self", coreSubsystem, verb),
 					Note: fmt.Sprintf(
 						"Combines %s flow inputs with governed schema checks; reference=https://specs.example.com/%s/%s",
 						domain.Name,
@@ -344,20 +374,37 @@ func writeSystemRegistry(domains []domainDefinition) error {
 	b.WriteString("systems:\n")
 
 	for _, domain := range domains {
-		fmt.Fprintf(&b, "  - id: %s\n", domain.Service)
-		fmt.Fprintf(&b, "    name: %s Service\n", domain.Service)
-		fmt.Fprintf(&b, "    owner_team: team.%s\n", domain.Name)
-		b.WriteString("    escalation:\n")
-		fmt.Fprintf(&b, "      - role: primary\n        name: %s Oncall\n        channel: pagerduty:%s-oncall\n", titleCase(domain.Name), domain.Name)
-		fmt.Fprintf(&b, "      - role: backup\n        name: %s Platform\n        channel: slack:#%s-platform\n", titleCase(domain.Name), domain.Name)
+		writeSystemRegistryEntry(&b, domain.Service, domain.Service+" Service", "team."+domain.Name, []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " Oncall", Channel: "pagerduty:" + domain.Name + "-oncall"},
+			{Role: "backup", Name: titleCase(domain.Name) + " Platform", Channel: "slack:#" + domain.Name + "-platform"},
+		})
+		writeSystemRegistryEntry(&b, subsystemID(domain.Service, "api-service"), domain.Service+" API Service", "team."+domain.Name, []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " API Oncall", Channel: "pagerduty:" + domain.Name + "-api"},
+		})
+		writeSystemRegistryEntry(&b, subsystemID(domain.Service, "ui-service"), domain.Service+" UI Service", "team."+domain.Name, []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " UI Oncall", Channel: "slack:#" + domain.Name + "-ui-oncall"},
+		})
+		writeSystemRegistryEntry(&b, subsystemID(domain.Service, "logging-sidecar"), domain.Service+" Logging Sidecar", "team."+domain.Name, []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " Observability", Channel: "slack:#" + domain.Name + "-observability"},
+		})
 	}
 
 	for _, domain := range domains {
-		fmt.Fprintf(&b, "  - id: %s\n", domain.CoreSystem)
-		fmt.Fprintf(&b, "    name: %s Core\n", domain.CoreSystem)
-		fmt.Fprintf(&b, "    owner_team: team.%s-core\n", domain.Name)
-		b.WriteString("    escalation:\n")
-		fmt.Fprintf(&b, "      - role: primary\n        name: %s Core Oncall\n        channel: pagerduty:%s-core\n", titleCase(domain.Name), domain.Name)
+		writeSystemRegistryEntry(&b, domain.CoreSystem, domain.CoreSystem+" Core", "team."+domain.Name+"-core", []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " Core Oncall", Channel: "pagerduty:" + domain.Name + "-core"},
+		})
+		writeSystemRegistryEntry(&b, subsystemID(domain.CoreSystem, "api-service"), domain.CoreSystem+" API Service", "team."+domain.Name+"-core", []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " Core API", Channel: "pagerduty:" + domain.Name + "-core-api"},
+		})
+	}
+
+	for _, domain := range domains {
+		writeSystemRegistryEntry(&b, domain.EventSystem, domain.EventSystem+" Stream", "team."+domain.Name+"-events", []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " Events Oncall", Channel: "slack:#" + domain.Name + "-events"},
+		})
+		writeSystemRegistryEntry(&b, subsystemID(domain.EventSystem, "stream-service"), domain.EventSystem+" Stream Service", "team."+domain.Name+"-events", []registryContact{
+			{Role: "primary", Name: titleCase(domain.Name) + " Stream Oncall", Channel: "slack:#" + domain.Name + "-stream"},
+		})
 	}
 
 	seenProviders := map[string]bool{}
@@ -367,14 +414,33 @@ func writeSystemRegistry(domains []domainDefinition) error {
 			continue
 		}
 		seenProviders[provider] = true
-		fmt.Fprintf(&b, "  - id: %s\n", provider)
-		fmt.Fprintf(&b, "    name: %s External Provider\n", titleCase(provider))
-		fmt.Fprintf(&b, "    owner_team: team.external-integrations\n")
-		b.WriteString("    escalation:\n")
-		fmt.Fprintf(&b, "      - role: provider\n        name: %s Provider Ops\n        channel: slack:#provider-%s\n", titleCase(provider), provider)
+		writeSystemRegistryEntry(&b, provider, titleCase(provider)+" External Provider", "team.external-integrations", []registryContact{
+			{Role: "provider", Name: titleCase(provider) + " Provider Ops", Channel: "slack:#provider-" + provider},
+		})
+		writeSystemRegistryEntry(&b, subsystemID(provider, "api-service"), titleCase(provider)+" Provider API", "team.external-integrations", []registryContact{
+			{Role: "provider", Name: titleCase(provider) + " API Ops", Channel: "slack:#provider-" + provider + "-api"},
+		})
 	}
 
 	return os.WriteFile(outputRegistryPath, []byte(b.String()), 0o644)
+}
+
+type registryContact struct {
+	Role    string
+	Name    string
+	Channel string
+}
+
+func writeSystemRegistryEntry(b *strings.Builder, id string, name string, ownerTeam string, contacts []registryContact) {
+	fmt.Fprintf(b, "  - id: %s\n", id)
+	fmt.Fprintf(b, "    name: %s\n", name)
+	fmt.Fprintf(b, "    owner_team: %s\n", ownerTeam)
+	b.WriteString("    escalation:\n")
+	for _, contact := range contacts {
+		fmt.Fprintf(b, "      - role: %s\n", contact.Role)
+		fmt.Fprintf(b, "        name: %s\n", contact.Name)
+		fmt.Fprintf(b, "        channel: %s\n", contact.Channel)
+	}
 }
 
 func writeFixtureSources(domains []domainDefinition, flows []flowCatalogEntry) error {
@@ -506,6 +572,10 @@ func camelCase(snake string) string {
 		parts[i] = titleCase(part)
 	}
 	return strings.Join(parts, "")
+}
+
+func subsystemID(system string, subsystem string) string {
+	return fmt.Sprintf("%s:%s", system, subsystem)
 }
 
 func titleCase(raw string) string {

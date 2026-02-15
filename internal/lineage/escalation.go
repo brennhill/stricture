@@ -144,14 +144,20 @@ func BuildEscalationChain(serviceID string, artifact Artifact, registry SystemRe
 
 func buildUpstreamGraph(artifact Artifact) map[string][]string {
 	edges := map[string]map[string]bool{}
+	addEdge := func(from string, to string) {
+		if from == "" || to == "" || from == to {
+			return
+		}
+		if _, ok := edges[from]; !ok {
+			edges[from] = map[string]bool{}
+		}
+		edges[from][to] = true
+	}
 
 	for _, field := range artifact.Fields {
 		from := normalizeSystemID(field.SourceSystem)
 		if from == "" {
 			continue
-		}
-		if _, ok := edges[from]; !ok {
-			edges[from] = map[string]bool{}
 		}
 
 		for _, source := range field.Sources {
@@ -159,7 +165,8 @@ func buildUpstreamGraph(artifact Artifact) map[string][]string {
 			if upstream == "" || upstream == from {
 				continue
 			}
-			edges[from][upstream] = true
+			addEdge(from, upstream)
+			addEdge(topologyRootSystemID(from), topologyRootSystemID(upstream))
 		}
 	}
 
@@ -171,6 +178,17 @@ func buildUpstreamGraph(artifact Artifact) map[string][]string {
 		sort.Strings(graph[from])
 	}
 	return graph
+}
+
+func topologyRootSystemID(value string) string {
+	value = normalizeSystemID(value)
+	if value == "" {
+		return ""
+	}
+	if cut := strings.Index(value, ":"); cut > 0 {
+		return value[:cut]
+	}
+	return value
 }
 
 func deriveUpstreamSystem(source SourceRef) string {

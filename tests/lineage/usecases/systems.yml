@@ -9,6 +9,27 @@ systems:
       - role: backup
         name: Logistics Platform
         channel: slack:#logistics-platform
+  - id: LogisticsGateway:api-service
+    name: LogisticsGateway API Service
+    owner_team: team.logistics
+    escalation:
+      - role: primary
+        name: Logistics API Oncall
+        channel: pagerduty:logistics-api
+  - id: LogisticsGateway:ui-service
+    name: LogisticsGateway UI Service
+    owner_team: team.logistics
+    escalation:
+      - role: primary
+        name: Logistics UI Oncall
+        channel: slack:#logistics-ui-oncall
+  - id: LogisticsGateway:logging-sidecar
+    name: LogisticsGateway Logging Sidecar
+    owner_team: team.logistics
+    escalation:
+      - role: primary
+        name: Logistics Observability
+        channel: slack:#logistics-observability
   - id: FintechGateway
     name: FintechGateway Service
     owner_team: team.fintech
@@ -19,6 +40,27 @@ systems:
       - role: backup
         name: Fintech Platform
         channel: slack:#fintech-platform
+  - id: FintechGateway:api-service
+    name: FintechGateway API Service
+    owner_team: team.fintech
+    escalation:
+      - role: primary
+        name: Fintech API Oncall
+        channel: pagerduty:fintech-api
+  - id: FintechGateway:ui-service
+    name: FintechGateway UI Service
+    owner_team: team.fintech
+    escalation:
+      - role: primary
+        name: Fintech UI Oncall
+        channel: slack:#fintech-ui-oncall
+  - id: FintechGateway:logging-sidecar
+    name: FintechGateway Logging Sidecar
+    owner_team: team.fintech
+    escalation:
+      - role: primary
+        name: Fintech Observability
+        channel: slack:#fintech-observability
   - id: MediaGateway
     name: MediaGateway Service
     owner_team: team.media
@@ -29,6 +71,27 @@ systems:
       - role: backup
         name: Media Platform
         channel: slack:#media-platform
+  - id: MediaGateway:api-service
+    name: MediaGateway API Service
+    owner_team: team.media
+    escalation:
+      - role: primary
+        name: Media API Oncall
+        channel: pagerduty:media-api
+  - id: MediaGateway:ui-service
+    name: MediaGateway UI Service
+    owner_team: team.media
+    escalation:
+      - role: primary
+        name: Media UI Oncall
+        channel: slack:#media-ui-oncall
+  - id: MediaGateway:logging-sidecar
+    name: MediaGateway Logging Sidecar
+    owner_team: team.media
+    escalation:
+      - role: primary
+        name: Media Observability
+        channel: slack:#media-observability
   - id: CommerceGateway
     name: CommerceGateway Service
     owner_team: team.ecommerce
@@ -39,6 +102,27 @@ systems:
       - role: backup
         name: Ecommerce Platform
         channel: slack:#ecommerce-platform
+  - id: CommerceGateway:api-service
+    name: CommerceGateway API Service
+    owner_team: team.ecommerce
+    escalation:
+      - role: primary
+        name: Ecommerce API Oncall
+        channel: pagerduty:ecommerce-api
+  - id: CommerceGateway:ui-service
+    name: CommerceGateway UI Service
+    owner_team: team.ecommerce
+    escalation:
+      - role: primary
+        name: Ecommerce UI Oncall
+        channel: slack:#ecommerce-ui-oncall
+  - id: CommerceGateway:logging-sidecar
+    name: CommerceGateway Logging Sidecar
+    owner_team: team.ecommerce
+    escalation:
+      - role: primary
+        name: Ecommerce Observability
+        channel: slack:#ecommerce-observability
   - id: GovernanceHub
     name: GovernanceHub Service
     owner_team: team.governance
@@ -49,6 +133,27 @@ systems:
       - role: backup
         name: Governance Platform
         channel: slack:#governance-platform
+  - id: GovernanceHub:api-service
+    name: GovernanceHub API Service
+    owner_team: team.governance
+    escalation:
+      - role: primary
+        name: Governance API Oncall
+        channel: pagerduty:governance-api
+  - id: GovernanceHub:ui-service
+    name: GovernanceHub UI Service
+    owner_team: team.governance
+    escalation:
+      - role: primary
+        name: Governance UI Oncall
+        channel: slack:#governance-ui-oncall
+  - id: GovernanceHub:logging-sidecar
+    name: GovernanceHub Logging Sidecar
+    owner_team: team.governance
+    escalation:
+      - role: primary
+        name: Governance Observability
+        channel: slack:#governance-observability
   - id: LogisticsCore
     name: LogisticsCore Core
     owner_team: team.logistics-core
@@ -56,6 +161,13 @@ systems:
       - role: primary
         name: Logistics Core Oncall
         channel: pagerduty:logistics-core
+  - id: LogisticsCore:api-service
+    name: LogisticsCore API Service
+    owner_team: team.logistics-core
+    escalation:
+      - role: primary
+        name: Logistics Core API
+        channel: pagerduty:logistics-core-api
   - id: LedgerCore
     name: LedgerCore Core
     owner_team: team.fintech-core
@@ -63,6 +175,13 @@ systems:
       - role: primary
         name: Fintech Core Oncall
         channel: pagerduty:fintech-core
+  - id: LedgerCore:api-service
+    name: LedgerCore API Service
+    owner_team: team.fintech-core
+    escalation:
+      - role: primary
+        name: Fintech Core API
+        channel: pagerduty:fintech-core-api
   - id: MediaCore
     name: MediaCore Core
     owner_team: team.media-core
@@ -70,6 +189,13 @@ systems:
       - role: primary
         name: Media Core Oncall
         channel: pagerduty:media-core
+  - id: MediaCore:api-service
+    name: MediaCore API Service
+    owner_team: team.media-core
+    escalation:
+      - role: primary
+        name: Media Core API
+        channel: pagerduty:media-core-api
   - id: CommerceCore
     name: CommerceCore Core
     owner_team: team.ecommerce-core
@@ -77,6 +203,13 @@ systems:
       - role: primary
         name: Ecommerce Core Oncall
         channel: pagerduty:ecommerce-core
+  - id: CommerceCore:api-service
+    name: CommerceCore API Service
+    owner_team: team.ecommerce-core
+    escalation:
+      - role: primary
+        name: Ecommerce Core API
+        channel: pagerduty:ecommerce-core-api
   - id: GovernanceCore
     name: GovernanceCore Core
     owner_team: team.governance-core
@@ -84,6 +217,83 @@ systems:
       - role: primary
         name: Governance Core Oncall
         channel: pagerduty:governance-core
+  - id: GovernanceCore:api-service
+    name: GovernanceCore API Service
+    owner_team: team.governance-core
+    escalation:
+      - role: primary
+        name: Governance Core API
+        channel: pagerduty:governance-core-api
+  - id: LogisticsEvents
+    name: LogisticsEvents Stream
+    owner_team: team.logistics-events
+    escalation:
+      - role: primary
+        name: Logistics Events Oncall
+        channel: slack:#logistics-events
+  - id: LogisticsEvents:stream-service
+    name: LogisticsEvents Stream Service
+    owner_team: team.logistics-events
+    escalation:
+      - role: primary
+        name: Logistics Stream Oncall
+        channel: slack:#logistics-stream
+  - id: RiskEvents
+    name: RiskEvents Stream
+    owner_team: team.fintech-events
+    escalation:
+      - role: primary
+        name: Fintech Events Oncall
+        channel: slack:#fintech-events
+  - id: RiskEvents:stream-service
+    name: RiskEvents Stream Service
+    owner_team: team.fintech-events
+    escalation:
+      - role: primary
+        name: Fintech Stream Oncall
+        channel: slack:#fintech-stream
+  - id: AudienceEvents
+    name: AudienceEvents Stream
+    owner_team: team.media-events
+    escalation:
+      - role: primary
+        name: Media Events Oncall
+        channel: slack:#media-events
+  - id: AudienceEvents:stream-service
+    name: AudienceEvents Stream Service
+    owner_team: team.media-events
+    escalation:
+      - role: primary
+        name: Media Stream Oncall
+        channel: slack:#media-stream
+  - id: OrderEvents
+    name: OrderEvents Stream
+    owner_team: team.ecommerce-events
+    escalation:
+      - role: primary
+        name: Ecommerce Events Oncall
+        channel: slack:#ecommerce-events
+  - id: OrderEvents:stream-service
+    name: OrderEvents Stream Service
+    owner_team: team.ecommerce-events
+    escalation:
+      - role: primary
+        name: Ecommerce Stream Oncall
+        channel: slack:#ecommerce-stream
+  - id: AuditEvents
+    name: AuditEvents Stream
+    owner_team: team.governance-events
+    escalation:
+      - role: primary
+        name: Governance Events Oncall
+        channel: slack:#governance-events
+  - id: AuditEvents:stream-service
+    name: AuditEvents Stream Service
+    owner_team: team.governance-events
+    escalation:
+      - role: primary
+        name: Governance Stream Oncall
+        channel: slack:#governance-stream
   - id: fedex
     name: Fedex External Provider
     owner_team: team.external-integrations
@@ -91,6 +301,13 @@ systems:
       - role: provider
         name: Fedex Provider Ops
         channel: slack:#provider-fedex
+  - id: fedex:api-service
+    name: Fedex Provider API
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Fedex API Ops
+        channel: slack:#provider-fedex-api
   - id: stripe
     name: Stripe External Provider
     owner_team: team.external-integrations
@@ -98,6 +315,13 @@ systems:
       - role: provider
         name: Stripe Provider Ops
         channel: slack:#provider-stripe
+  - id: stripe:api-service
+    name: Stripe Provider API
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Stripe API Ops
+        channel: slack:#provider-stripe-api
   - id: spotify
     name: Spotify External Provider
     owner_team: team.external-integrations
@@ -105,6 +329,13 @@ systems:
       - role: provider
         name: Spotify Provider Ops
         channel: slack:#provider-spotify
+  - id: spotify:api-service
+    name: Spotify Provider API
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Spotify API Ops
+        channel: slack:#provider-spotify-api
   - id: shopify
     name: Shopify External Provider
     owner_team: team.external-integrations
@@ -112,6 +343,13 @@ systems:
       - role: provider
         name: Shopify Provider Ops
         channel: slack:#provider-shopify
+  - id: shopify:api-service
+    name: Shopify Provider API
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Shopify API Ops
+        channel: slack:#provider-shopify-api
   - id: sec
     name: Sec External Provider
     owner_team: team.external-integrations
@@ -119,3 +357,10 @@ systems:
       - role: provider
         name: Sec Provider Ops
         channel: slack:#provider-sec
+  - id: sec:api-service
+    name: Sec Provider API
+    owner_team: team.external-integrations
+    escalation:
+      - role: provider
+        name: Sec API Ops
+        channel: slack:#provider-sec-api

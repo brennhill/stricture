@@ -21,7 +21,7 @@
     "annotation": {
       "field_id": "response_ecommerce_cart_pricing_waterfall",
       "field": "response.ecommerce.cart_pricing_waterfall",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.01",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -34,11 +34,13 @@
       "contract_test_id": "ci://contracts/ecommerce/cart_pricing_waterfall",
       "introduced_at": "2026-02-15",
       "sources": [
-        "api:CommerceCore.GetCartPricingWaterfall#response.cart_pricing_waterfall@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r01",
-        "event:OrderEvents.CartPricingWaterfallChanged#payload.cart_pricing_waterfall@internal?contract_ref=internal://events/ecommerce/cart_pricing_waterfall_changed",
-        "api:Shopify.GetCartPricingWaterfall#response.cart_pricing_waterfall@external!2026-02-10?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/cart_pricing_waterfall"
+        "event:CommerceGateway.UiCartPricingWaterfallObserved#payload.cart_pricing_waterfall@internal?contract_ref=internal://events/ecommerce/cart_pricing_waterfall_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetCartPricingWaterfall#response.cart_pricing_waterfall@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r01\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.CartPricingWaterfallChanged#payload.cart_pricing_waterfall@internal?contract_ref=internal://events/ecommerce/cart_pricing_waterfall_changed\u0026upstream_system=OrderEvents:stream-service",
+        "event:CommerceGateway.TraceCartPricingWaterfallCaptured#payload.cart_pricing_waterfall_trace@internal?contract_ref=internal://events/ecommerce/cart_pricing_waterfall_trace_captured\u0026upstream_system=CommerceGateway:logging-sidecar",
+        "api:Shopify.GetCartPricingWaterfall#response.cart_pricing_waterfall@external!2026-02-10?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/cart_pricing_waterfall\u0026upstream_system=shopify:api-service"
       ],
-      "flow": "from @CommerceCore mapped @self",
+      "flow": "from @CommerceCore:api-service mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/cart_pricing_waterfall"
     }
   },
@@ -63,7 +65,7 @@
     "annotation": {
       "field_id": "response_ecommerce_checkout_risk_gate",
       "field": "response.ecommerce.checkout_risk_gate",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.02",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -76,10 +78,11 @@
       "contract_test_id": "ci://contracts/ecommerce/checkout_risk_gate",
       "introduced_at": "2026-02-16",
       "sources": [
-        "api:CommerceCore.GetCheckoutRiskGate#response.checkout_risk_gate@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r02",
-        "event:OrderEvents.CheckoutRiskGateChanged#payload.checkout_risk_gate@internal?contract_ref=internal://events/ecommerce/checkout_risk_gate_changed"
+        "event:CommerceGateway.UiCheckoutRiskGateObserved#payload.checkout_risk_gate@internal?contract_ref=internal://events/ecommerce/checkout_risk_gate_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetCheckoutRiskGate#response.checkout_risk_gate@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r02\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.CheckoutRiskGateChanged#payload.checkout_risk_gate@internal?contract_ref=internal://events/ecommerce/checkout_risk_gate_changed\u0026upstream_system=OrderEvents:stream-service"
       ],
-      "flow": "from @CommerceCore normalized @self",
+      "flow": "from @CommerceCore:api-service normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/checkout_risk_gate"
     }
   },
@@ -105,7 +108,7 @@
     "annotation": {
       "field_id": "response_ecommerce_inventory_reservation_health",
       "field": "response.ecommerce.inventory_reservation_health",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.03",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -118,11 +121,12 @@
       "contract_test_id": "ci://contracts/ecommerce/inventory_reservation_health",
       "introduced_at": "2026-02-17",
       "sources": [
-        "api:CommerceCore.GetInventoryReservationHealth#response.inventory_reservation_health@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r03",
-        "event:OrderEvents.InventoryReservationHealthChanged#payload.inventory_reservation_health@internal?contract_ref=internal://events/ecommerce/inventory_reservation_health_changed",
-        "api:Shopify.GetInventoryReservationHealth#response.inventory_reservation_health@external!2026-02-12?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/inventory_reservation_health"
+        "event:CommerceGateway.UiInventoryReservationHealthObserved#payload.inventory_reservation_health@internal?contract_ref=internal://events/ecommerce/inventory_reservation_health_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetInventoryReservationHealth#response.inventory_reservation_health@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r03\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.InventoryReservationHealthChanged#payload.inventory_reservation_health@internal?contract_ref=internal://events/ecommerce/inventory_reservation_health_changed\u0026upstream_system=OrderEvents:stream-service",
+        "api:Shopify.GetInventoryReservationHealth#response.inventory_reservation_health@external!2026-02-12?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/inventory_reservation_health\u0026upstream_system=shopify:api-service"
       ],
-      "flow": "from @CommerceCore mapped @self",
+      "flow": "from @CommerceCore:api-service mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/inventory_reservation_health"
     }
   },
@@ -147,7 +151,7 @@
     "annotation": {
       "field_id": "response_ecommerce_shipping_quote_selection",
       "field": "response.ecommerce.shipping_quote_selection",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.04",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -160,10 +164,12 @@
       "contract_test_id": "ci://contracts/ecommerce/shipping_quote_selection",
       "introduced_at": "2026-02-18",
       "sources": [
-        "api:CommerceCore.GetShippingQuoteSelection#response.shipping_quote_selection@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r04",
-        "event:OrderEvents.ShippingQuoteSelectionChanged#payload.shipping_quote_selection@internal?contract_ref=internal://events/ecommerce/shipping_quote_selection_changed"
+        "event:CommerceGateway.UiShippingQuoteSelectionObserved#payload.shipping_quote_selection@internal?contract_ref=internal://events/ecommerce/shipping_quote_selection_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetShippingQuoteSelection#response.shipping_quote_selection@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r04\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.ShippingQuoteSelectionChanged#payload.shipping_quote_selection@internal?contract_ref=internal://events/ecommerce/shipping_quote_selection_changed\u0026upstream_system=OrderEvents:stream-service",
+        "event:CommerceGateway.TraceShippingQuoteSelectionCaptured#payload.shipping_quote_selection_trace@internal?contract_ref=internal://events/ecommerce/shipping_quote_selection_trace_captured\u0026upstream_system=CommerceGateway:logging-sidecar"
       ],
-      "flow": "from @CommerceCore normalized @self",
+      "flow": "from @CommerceCore:api-service normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/shipping_quote_selection"
     }
   },
@@ -189,7 +195,7 @@
     "annotation": {
       "field_id": "response_ecommerce_return_policy_eligibility",
       "field": "response.ecommerce.return_policy_eligibility",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.05",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -202,11 +208,12 @@
       "contract_test_id": "ci://contracts/ecommerce/return_policy_eligibility",
       "introduced_at": "2026-02-19",
       "sources": [
-        "api:CommerceCore.GetReturnPolicyEligibility#response.return_policy_eligibility@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r05",
-        "event:OrderEvents.ReturnPolicyEligibilityChanged#payload.return_policy_eligibility@internal?contract_ref=internal://events/ecommerce/return_policy_eligibility_changed",
-        "api:Shopify.GetReturnPolicyEligibility#response.return_policy_eligibility@external!2026-02-14?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/return_policy_eligibility"
+        "event:CommerceGateway.UiReturnPolicyEligibilityObserved#payload.return_policy_eligibility@internal?contract_ref=internal://events/ecommerce/return_policy_eligibility_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetReturnPolicyEligibility#response.return_policy_eligibility@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r05\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.ReturnPolicyEligibilityChanged#payload.return_policy_eligibility@internal?contract_ref=internal://events/ecommerce/return_policy_eligibility_changed\u0026upstream_system=OrderEvents:stream-service",
+        "api:Shopify.GetReturnPolicyEligibility#response.return_policy_eligibility@external!2026-02-14?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/return_policy_eligibility\u0026upstream_system=shopify:api-service"
       ],
-      "flow": "from @CommerceCore mapped @self",
+      "flow": "from @CommerceCore:api-service mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/return_policy_eligibility"
     }
   },
@@ -231,7 +238,7 @@
     "annotation": {
       "field_id": "response_ecommerce_catalog_attribute_enrichment",
       "field": "response.ecommerce.catalog_attribute_enrichment",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.06",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -244,10 +251,11 @@
       "contract_test_id": "ci://contracts/ecommerce/catalog_attribute_enrichment",
       "introduced_at": "2026-02-20",
       "sources": [
-        "api:CommerceCore.GetCatalogAttributeEnrichment#response.catalog_attribute_enrichment@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r06",
-        "event:OrderEvents.CatalogAttributeEnrichmentChanged#payload.catalog_attribute_enrichment@internal?contract_ref=internal://events/ecommerce/catalog_attribute_enrichment_changed"
+        "event:CommerceGateway.UiCatalogAttributeEnrichmentObserved#payload.catalog_attribute_enrichment@internal?contract_ref=internal://events/ecommerce/catalog_attribute_enrichment_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetCatalogAttributeEnrichment#response.catalog_attribute_enrichment@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r06\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.CatalogAttributeEnrichmentChanged#payload.catalog_attribute_enrichment@internal?contract_ref=internal://events/ecommerce/catalog_attribute_enrichment_changed\u0026upstream_system=OrderEvents:stream-service"
       ],
-      "flow": "from @CommerceCore normalized @self",
+      "flow": "from @CommerceCore:api-service normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/catalog_attribute_enrichment"
     }
   },
@@ -273,7 +281,7 @@
     "annotation": {
       "field_id": "response_ecommerce_promotion_eligibility_resolution",
       "field": "response.ecommerce.promotion_eligibility_resolution",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.07",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -286,11 +294,13 @@
       "contract_test_id": "ci://contracts/ecommerce/promotion_eligibility_resolution",
       "introduced_at": "2026-02-21",
       "sources": [
-        "api:CommerceCore.GetPromotionEligibilityResolution#response.promotion_eligibility_resolution@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r07",
-        "event:OrderEvents.PromotionEligibilityResolutionChanged#payload.promotion_eligibility_resolution@internal?contract_ref=internal://events/ecommerce/promotion_eligibility_resolution_changed",
-        "api:Shopify.GetPromotionEligibilityResolution#response.promotion_eligibility_resolution@external!2026-02-16?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/promotion_eligibility_resolution"
+        "event:CommerceGateway.UiPromotionEligibilityResolutionObserved#payload.promotion_eligibility_resolution@internal?contract_ref=internal://events/ecommerce/promotion_eligibility_resolution_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetPromotionEligibilityResolution#response.promotion_eligibility_resolution@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r07\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.PromotionEligibilityResolutionChanged#payload.promotion_eligibility_resolution@internal?contract_ref=internal://events/ecommerce/promotion_eligibility_resolution_changed\u0026upstream_system=OrderEvents:stream-service",
+        "event:CommerceGateway.TracePromotionEligibilityResolutionCaptured#payload.promotion_eligibility_resolution_trace@internal?contract_ref=internal://events/ecommerce/promotion_eligibility_resolution_trace_captured\u0026upstream_system=CommerceGateway:logging-sidecar",
+        "api:Shopify.GetPromotionEligibilityResolution#response.promotion_eligibility_resolution@external!2026-02-16?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/promotion_eligibility_resolution\u0026upstream_system=shopify:api-service"
       ],
-      "flow": "from @CommerceCore mapped @self",
+      "flow": "from @CommerceCore:api-service mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/promotion_eligibility_resolution"
     }
   },
@@ -315,7 +325,7 @@
     "annotation": {
       "field_id": "response_ecommerce_loyalty_balance_reconciliation",
       "field": "response.ecommerce.loyalty_balance_reconciliation",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.08",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -328,10 +338,11 @@
       "contract_test_id": "ci://contracts/ecommerce/loyalty_balance_reconciliation",
       "introduced_at": "2026-02-22",
       "sources": [
-        "api:CommerceCore.GetLoyaltyBalanceReconciliation#response.loyalty_balance_reconciliation@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r08",
-        "event:OrderEvents.LoyaltyBalanceReconciliationChanged#payload.loyalty_balance_reconciliation@internal?contract_ref=internal://events/ecommerce/loyalty_balance_reconciliation_changed"
+        "event:CommerceGateway.UiLoyaltyBalanceReconciliationObserved#payload.loyalty_balance_reconciliation@internal?contract_ref=internal://events/ecommerce/loyalty_balance_reconciliation_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetLoyaltyBalanceReconciliation#response.loyalty_balance_reconciliation@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r08\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.LoyaltyBalanceReconciliationChanged#payload.loyalty_balance_reconciliation@internal?contract_ref=internal://events/ecommerce/loyalty_balance_reconciliation_changed\u0026upstream_system=OrderEvents:stream-service"
       ],
-      "flow": "from @CommerceCore normalized @self",
+      "flow": "from @CommerceCore:api-service normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/loyalty_balance_reconciliation"
     }
   },
@@ -357,7 +368,7 @@
     "annotation": {
       "field_id": "response_ecommerce_seller_policy_attestation",
       "field": "response.ecommerce.seller_policy_attestation",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.09",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -370,11 +381,12 @@
       "contract_test_id": "ci://contracts/ecommerce/seller_policy_attestation",
       "introduced_at": "2026-02-23",
       "sources": [
-        "api:CommerceCore.GetSellerPolicyAttestation#response.seller_policy_attestation@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r09",
-        "event:OrderEvents.SellerPolicyAttestationChanged#payload.seller_policy_attestation@internal?contract_ref=internal://events/ecommerce/seller_policy_attestation_changed",
-        "api:Shopify.GetSellerPolicyAttestation#response.seller_policy_attestation@external!2026-02-18?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/seller_policy_attestation"
+        "event:CommerceGateway.UiSellerPolicyAttestationObserved#payload.seller_policy_attestation@internal?contract_ref=internal://events/ecommerce/seller_policy_attestation_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetSellerPolicyAttestation#response.seller_policy_attestation@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r09\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.SellerPolicyAttestationChanged#payload.seller_policy_attestation@internal?contract_ref=internal://events/ecommerce/seller_policy_attestation_changed\u0026upstream_system=OrderEvents:stream-service",
+        "api:Shopify.GetSellerPolicyAttestation#response.seller_policy_attestation@external!2026-02-18?provider_id=shopify\u0026contract_ref=https://api.shopify.example.com/seller_policy_attestation\u0026upstream_system=shopify:api-service"
       ],
-      "flow": "from @CommerceCore mapped @self",
+      "flow": "from @CommerceCore:api-service mapped @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/seller_policy_attestation"
     }
   },
@@ -399,7 +411,7 @@
     "annotation": {
       "field_id": "response_ecommerce_tax_estimate_trace",
       "field": "response.ecommerce.tax_estimate_trace",
-      "source_system": "CommerceGateway",
+      "source_system": "CommerceGateway:api-service",
       "source_version": "v2026.10",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -412,10 +424,12 @@
       "contract_test_id": "ci://contracts/ecommerce/tax_estimate_trace",
       "introduced_at": "2026-02-24",
       "sources": [
-        "api:CommerceCore.GetTaxEstimateTrace#response.tax_estimate_trace@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r10",
-        "event:OrderEvents.TaxEstimateTraceChanged#payload.tax_estimate_trace@internal?contract_ref=internal://events/ecommerce/tax_estimate_trace_changed"
+        "event:CommerceGateway.UiTaxEstimateTraceObserved#payload.tax_estimate_trace@internal?contract_ref=internal://events/ecommerce/tax_estimate_trace_ui_observed\u0026upstream_system=CommerceGateway:ui-service",
+        "api:CommerceCore.GetTaxEstimateTrace#response.tax_estimate_trace@cross_repo?contract_ref=git+https://github.com/acme/ecommerce-core//openapi.yaml@r10\u0026upstream_system=CommerceCore:api-service",
+        "event:OrderEvents.TaxEstimateTraceChanged#payload.tax_estimate_trace@internal?contract_ref=internal://events/ecommerce/tax_estimate_trace_changed\u0026upstream_system=OrderEvents:stream-service",
+        "event:CommerceGateway.TraceTaxEstimateTraceCaptured#payload.tax_estimate_trace_trace@internal?contract_ref=internal://events/ecommerce/tax_estimate_trace_trace_captured\u0026upstream_system=CommerceGateway:logging-sidecar"
       ],
-      "flow": "from @CommerceCore normalized @self",
+      "flow": "from @CommerceCore:api-service normalized @self",
       "note": "Combines ecommerce flow inputs with governed schema checks; reference=https://specs.example.com/ecommerce/tax_estimate_trace"
     }
   },
@@ -441,7 +455,7 @@
     "annotation": {
       "field_id": "response_fintech_payment_authorization_decision",
       "field": "response.fintech.payment_authorization_decision",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.01",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -454,11 +468,13 @@
       "contract_test_id": "ci://contracts/fintech/payment_authorization_decision",
       "introduced_at": "2026-01-22",
       "sources": [
-        "api:LedgerCore.GetPaymentAuthorizationDecision#response.payment_authorization_decision@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r01",
-        "event:RiskEvents.PaymentAuthorizationDecisionChanged#payload.payment_authorization_decision@internal?contract_ref=internal://events/fintech/payment_authorization_decision_changed",
-        "api:Stripe.GetPaymentAuthorizationDecision#response.payment_authorization_decision@external!2026-02-10?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/payment_authorization_decision"
+        "event:FintechGateway.UiPaymentAuthorizationDecisionObserved#payload.payment_authorization_decision@internal?contract_ref=internal://events/fintech/payment_authorization_decision_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetPaymentAuthorizationDecision#response.payment_authorization_decision@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r01\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.PaymentAuthorizationDecisionChanged#payload.payment_authorization_decision@internal?contract_ref=internal://events/fintech/payment_authorization_decision_changed\u0026upstream_system=RiskEvents:stream-service",
+        "event:FintechGateway.TracePaymentAuthorizationDecisionCaptured#payload.payment_authorization_decision_trace@internal?contract_ref=internal://events/fintech/payment_authorization_decision_trace_captured\u0026upstream_system=FintechGateway:logging-sidecar",
+        "api:Stripe.GetPaymentAuthorizationDecision#response.payment_authorization_decision@external!2026-02-10?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/payment_authorization_decision\u0026upstream_system=stripe:api-service"
       ],
-      "flow": "from @LedgerCore mapped @self",
+      "flow": "from @LedgerCore:api-service mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/payment_authorization_decision"
     }
   },
@@ -483,7 +499,7 @@
     "annotation": {
       "field_id": "response_fintech_fraud_score_explanation",
       "field": "response.fintech.fraud_score_explanation",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.02",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -496,10 +512,11 @@
       "contract_test_id": "ci://contracts/fintech/fraud_score_explanation",
       "introduced_at": "2026-01-23",
       "sources": [
-        "api:LedgerCore.GetFraudScoreExplanation#response.fraud_score_explanation@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r02",
-        "event:RiskEvents.FraudScoreExplanationChanged#payload.fraud_score_explanation@internal?contract_ref=internal://events/fintech/fraud_score_explanation_changed"
+        "event:FintechGateway.UiFraudScoreExplanationObserved#payload.fraud_score_explanation@internal?contract_ref=internal://events/fintech/fraud_score_explanation_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetFraudScoreExplanation#response.fraud_score_explanation@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r02\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.FraudScoreExplanationChanged#payload.fraud_score_explanation@internal?contract_ref=internal://events/fintech/fraud_score_explanation_changed\u0026upstream_system=RiskEvents:stream-service"
       ],
-      "flow": "from @LedgerCore normalized @self",
+      "flow": "from @LedgerCore:api-service normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/fraud_score_explanation"
     }
   },
@@ -525,7 +542,7 @@
     "annotation": {
       "field_id": "response_fintech_settlement_reconciliation",
       "field": "response.fintech.settlement_reconciliation",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.03",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -538,11 +555,12 @@
       "contract_test_id": "ci://contracts/fintech/settlement_reconciliation",
       "introduced_at": "2026-01-24",
       "sources": [
-        "api:LedgerCore.GetSettlementReconciliation#response.settlement_reconciliation@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r03",
-        "event:RiskEvents.SettlementReconciliationChanged#payload.settlement_reconciliation@internal?contract_ref=internal://events/fintech/settlement_reconciliation_changed",
-        "api:Stripe.GetSettlementReconciliation#response.settlement_reconciliation@external!2026-02-12?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/settlement_reconciliation"
+        "event:FintechGateway.UiSettlementReconciliationObserved#payload.settlement_reconciliation@internal?contract_ref=internal://events/fintech/settlement_reconciliation_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetSettlementReconciliation#response.settlement_reconciliation@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r03\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.SettlementReconciliationChanged#payload.settlement_reconciliation@internal?contract_ref=internal://events/fintech/settlement_reconciliation_changed\u0026upstream_system=RiskEvents:stream-service",
+        "api:Stripe.GetSettlementReconciliation#response.settlement_reconciliation@external!2026-02-12?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/settlement_reconciliation\u0026upstream_system=stripe:api-service"
       ],
-      "flow": "from @LedgerCore mapped @self",
+      "flow": "from @LedgerCore:api-service mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/settlement_reconciliation"
     }
   },
@@ -567,7 +585,7 @@
     "annotation": {
       "field_id": "response_fintech_chargeback_case_resolution",
       "field": "response.fintech.chargeback_case_resolution",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.04",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -580,10 +598,12 @@
       "contract_test_id": "ci://contracts/fintech/chargeback_case_resolution",
       "introduced_at": "2026-01-25",
       "sources": [
-        "api:LedgerCore.GetChargebackCaseResolution#response.chargeback_case_resolution@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r04",
-        "event:RiskEvents.ChargebackCaseResolutionChanged#payload.chargeback_case_resolution@internal?contract_ref=internal://events/fintech/chargeback_case_resolution_changed"
+        "event:FintechGateway.UiChargebackCaseResolutionObserved#payload.chargeback_case_resolution@internal?contract_ref=internal://events/fintech/chargeback_case_resolution_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetChargebackCaseResolution#response.chargeback_case_resolution@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r04\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.ChargebackCaseResolutionChanged#payload.chargeback_case_resolution@internal?contract_ref=internal://events/fintech/chargeback_case_resolution_changed\u0026upstream_system=RiskEvents:stream-service",
+        "event:FintechGateway.TraceChargebackCaseResolutionCaptured#payload.chargeback_case_resolution_trace@internal?contract_ref=internal://events/fintech/chargeback_case_resolution_trace_captured\u0026upstream_system=FintechGateway:logging-sidecar"
       ],
-      "flow": "from @LedgerCore normalized @self",
+      "flow": "from @LedgerCore:api-service normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/chargeback_case_resolution"
     }
   },
@@ -609,7 +629,7 @@
     "annotation": {
       "field_id": "response_fintech_sanctions_screening_signal",
       "field": "response.fintech.sanctions_screening_signal",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.05",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -622,11 +642,12 @@
       "contract_test_id": "ci://contracts/fintech/sanctions_screening_signal",
       "introduced_at": "2026-01-26",
       "sources": [
-        "api:LedgerCore.GetSanctionsScreeningSignal#response.sanctions_screening_signal@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r05",
-        "event:RiskEvents.SanctionsScreeningSignalChanged#payload.sanctions_screening_signal@internal?contract_ref=internal://events/fintech/sanctions_screening_signal_changed",
-        "api:Stripe.GetSanctionsScreeningSignal#response.sanctions_screening_signal@external!2026-02-14?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/sanctions_screening_signal"
+        "event:FintechGateway.UiSanctionsScreeningSignalObserved#payload.sanctions_screening_signal@internal?contract_ref=internal://events/fintech/sanctions_screening_signal_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetSanctionsScreeningSignal#response.sanctions_screening_signal@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r05\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.SanctionsScreeningSignalChanged#payload.sanctions_screening_signal@internal?contract_ref=internal://events/fintech/sanctions_screening_signal_changed\u0026upstream_system=RiskEvents:stream-service",
+        "api:Stripe.GetSanctionsScreeningSignal#response.sanctions_screening_signal@external!2026-02-14?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/sanctions_screening_signal\u0026upstream_system=stripe:api-service"
       ],
-      "flow": "from @LedgerCore mapped @self",
+      "flow": "from @LedgerCore:api-service mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/sanctions_screening_signal"
     }
   },
@@ -651,7 +672,7 @@
     "annotation": {
       "field_id": "response_fintech_liquidity_buffer_projection",
       "field": "response.fintech.liquidity_buffer_projection",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.06",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -664,10 +685,11 @@
       "contract_test_id": "ci://contracts/fintech/liquidity_buffer_projection",
       "introduced_at": "2026-01-27",
       "sources": [
-        "api:LedgerCore.GetLiquidityBufferProjection#response.liquidity_buffer_projection@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r06",
-        "event:RiskEvents.LiquidityBufferProjectionChanged#payload.liquidity_buffer_projection@internal?contract_ref=internal://events/fintech/liquidity_buffer_projection_changed"
+        "event:FintechGateway.UiLiquidityBufferProjectionObserved#payload.liquidity_buffer_projection@internal?contract_ref=internal://events/fintech/liquidity_buffer_projection_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetLiquidityBufferProjection#response.liquidity_buffer_projection@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r06\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.LiquidityBufferProjectionChanged#payload.liquidity_buffer_projection@internal?contract_ref=internal://events/fintech/liquidity_buffer_projection_changed\u0026upstream_system=RiskEvents:stream-service"
       ],
-      "flow": "from @LedgerCore normalized @self",
+      "flow": "from @LedgerCore:api-service normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/liquidity_buffer_projection"
     }
   },
@@ -693,7 +715,7 @@
     "annotation": {
       "field_id": "response_fintech_kyc_profile_consistency",
       "field": "response.fintech.kyc_profile_consistency",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.07",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -706,11 +728,13 @@
       "contract_test_id": "ci://contracts/fintech/kyc_profile_consistency",
       "introduced_at": "2026-01-28",
       "sources": [
-        "api:LedgerCore.GetKycProfileConsistency#response.kyc_profile_consistency@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r07",
-        "event:RiskEvents.KycProfileConsistencyChanged#payload.kyc_profile_consistency@internal?contract_ref=internal://events/fintech/kyc_profile_consistency_changed",
-        "api:Stripe.GetKycProfileConsistency#response.kyc_profile_consistency@external!2026-02-16?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/kyc_profile_consistency"
+        "event:FintechGateway.UiKycProfileConsistencyObserved#payload.kyc_profile_consistency@internal?contract_ref=internal://events/fintech/kyc_profile_consistency_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetKycProfileConsistency#response.kyc_profile_consistency@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r07\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.KycProfileConsistencyChanged#payload.kyc_profile_consistency@internal?contract_ref=internal://events/fintech/kyc_profile_consistency_changed\u0026upstream_system=RiskEvents:stream-service",
+        "event:FintechGateway.TraceKycProfileConsistencyCaptured#payload.kyc_profile_consistency_trace@internal?contract_ref=internal://events/fintech/kyc_profile_consistency_trace_captured\u0026upstream_system=FintechGateway:logging-sidecar",
+        "api:Stripe.GetKycProfileConsistency#response.kyc_profile_consistency@external!2026-02-16?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/kyc_profile_consistency\u0026upstream_system=stripe:api-service"
       ],
-      "flow": "from @LedgerCore mapped @self",
+      "flow": "from @LedgerCore:api-service mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/kyc_profile_consistency"
     }
   },
@@ -735,7 +759,7 @@
     "annotation": {
       "field_id": "response_fintech_invoice_factoring_eligibility",
       "field": "response.fintech.invoice_factoring_eligibility",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.08",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -748,10 +772,11 @@
       "contract_test_id": "ci://contracts/fintech/invoice_factoring_eligibility",
       "introduced_at": "2026-01-29",
       "sources": [
-        "api:LedgerCore.GetInvoiceFactoringEligibility#response.invoice_factoring_eligibility@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r08",
-        "event:RiskEvents.InvoiceFactoringEligibilityChanged#payload.invoice_factoring_eligibility@internal?contract_ref=internal://events/fintech/invoice_factoring_eligibility_changed"
+        "event:FintechGateway.UiInvoiceFactoringEligibilityObserved#payload.invoice_factoring_eligibility@internal?contract_ref=internal://events/fintech/invoice_factoring_eligibility_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetInvoiceFactoringEligibility#response.invoice_factoring_eligibility@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r08\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.InvoiceFactoringEligibilityChanged#payload.invoice_factoring_eligibility@internal?contract_ref=internal://events/fintech/invoice_factoring_eligibility_changed\u0026upstream_system=RiskEvents:stream-service"
       ],
-      "flow": "from @LedgerCore normalized @self",
+      "flow": "from @LedgerCore:api-service normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/invoice_factoring_eligibility"
     }
   },
@@ -777,7 +802,7 @@
     "annotation": {
       "field_id": "response_fintech_treasury_exposure_rollup",
       "field": "response.fintech.treasury_exposure_rollup",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.09",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -790,11 +815,12 @@
       "contract_test_id": "ci://contracts/fintech/treasury_exposure_rollup",
       "introduced_at": "2026-01-30",
       "sources": [
-        "api:LedgerCore.GetTreasuryExposureRollup#response.treasury_exposure_rollup@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r09",
-        "event:RiskEvents.TreasuryExposureRollupChanged#payload.treasury_exposure_rollup@internal?contract_ref=internal://events/fintech/treasury_exposure_rollup_changed",
-        "api:Stripe.GetTreasuryExposureRollup#response.treasury_exposure_rollup@external!2026-02-18?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/treasury_exposure_rollup"
+        "event:FintechGateway.UiTreasuryExposureRollupObserved#payload.treasury_exposure_rollup@internal?contract_ref=internal://events/fintech/treasury_exposure_rollup_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetTreasuryExposureRollup#response.treasury_exposure_rollup@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r09\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.TreasuryExposureRollupChanged#payload.treasury_exposure_rollup@internal?contract_ref=internal://events/fintech/treasury_exposure_rollup_changed\u0026upstream_system=RiskEvents:stream-service",
+        "api:Stripe.GetTreasuryExposureRollup#response.treasury_exposure_rollup@external!2026-02-18?provider_id=stripe\u0026contract_ref=https://api.stripe.example.com/treasury_exposure_rollup\u0026upstream_system=stripe:api-service"
       ],
-      "flow": "from @LedgerCore mapped @self",
+      "flow": "from @LedgerCore:api-service mapped @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/treasury_exposure_rollup"
     }
   },
@@ -819,7 +845,7 @@
     "annotation": {
       "field_id": "response_fintech_card_token_lifecycle",
       "field": "response.fintech.card_token_lifecycle",
-      "source_system": "FintechGateway",
+      "source_system": "FintechGateway:api-service",
       "source_version": "v2026.10",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -832,10 +858,12 @@
       "contract_test_id": "ci://contracts/fintech/card_token_lifecycle",
       "introduced_at": "2026-01-31",
       "sources": [
-        "api:LedgerCore.GetCardTokenLifecycle#response.card_token_lifecycle@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r10",
-        "event:RiskEvents.CardTokenLifecycleChanged#payload.card_token_lifecycle@internal?contract_ref=internal://events/fintech/card_token_lifecycle_changed"
+        "event:FintechGateway.UiCardTokenLifecycleObserved#payload.card_token_lifecycle@internal?contract_ref=internal://events/fintech/card_token_lifecycle_ui_observed\u0026upstream_system=FintechGateway:ui-service",
+        "api:LedgerCore.GetCardTokenLifecycle#response.card_token_lifecycle@cross_repo?contract_ref=git+https://github.com/acme/fintech-core//openapi.yaml@r10\u0026upstream_system=LedgerCore:api-service",
+        "event:RiskEvents.CardTokenLifecycleChanged#payload.card_token_lifecycle@internal?contract_ref=internal://events/fintech/card_token_lifecycle_changed\u0026upstream_system=RiskEvents:stream-service",
+        "event:FintechGateway.TraceCardTokenLifecycleCaptured#payload.card_token_lifecycle_trace@internal?contract_ref=internal://events/fintech/card_token_lifecycle_trace_captured\u0026upstream_system=FintechGateway:logging-sidecar"
       ],
-      "flow": "from @LedgerCore normalized @self",
+      "flow": "from @LedgerCore:api-service normalized @self",
       "note": "Combines fintech flow inputs with governed schema checks; reference=https://specs.example.com/fintech/card_token_lifecycle"
     }
   },
@@ -861,7 +889,7 @@
     "annotation": {
       "field_id": "response_governance_board_vote_tally",
       "field": "response.governance.board_vote_tally",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.01",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -874,11 +902,13 @@
       "contract_test_id": "ci://contracts/governance/board_vote_tally",
       "introduced_at": "2026-02-27",
       "sources": [
-        "api:GovernanceCore.GetBoardVoteTally#response.board_vote_tally@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r01",
-        "event:AuditEvents.BoardVoteTallyChanged#payload.board_vote_tally@internal?contract_ref=internal://events/governance/board_vote_tally_changed",
-        "api:Sec.GetBoardVoteTally#response.board_vote_tally@external!2026-02-10?provider_id=sec\u0026contract_ref=https://api.sec.example.com/board_vote_tally"
+        "event:GovernanceHub.UiBoardVoteTallyObserved#payload.board_vote_tally@internal?contract_ref=internal://events/governance/board_vote_tally_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetBoardVoteTally#response.board_vote_tally@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r01\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.BoardVoteTallyChanged#payload.board_vote_tally@internal?contract_ref=internal://events/governance/board_vote_tally_changed\u0026upstream_system=AuditEvents:stream-service",
+        "event:GovernanceHub.TraceBoardVoteTallyCaptured#payload.board_vote_tally_trace@internal?contract_ref=internal://events/governance/board_vote_tally_trace_captured\u0026upstream_system=GovernanceHub:logging-sidecar",
+        "api:Sec.GetBoardVoteTally#response.board_vote_tally@external!2026-02-10?provider_id=sec\u0026contract_ref=https://api.sec.example.com/board_vote_tally\u0026upstream_system=sec:api-service"
       ],
-      "flow": "from @GovernanceCore mapped @self",
+      "flow": "from @GovernanceCore:api-service mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/board_vote_tally"
     }
   },
@@ -903,7 +933,7 @@
     "annotation": {
       "field_id": "response_governance_policy_acknowledgement_state",
       "field": "response.governance.policy_acknowledgement_state",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.02",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -916,10 +946,11 @@
       "contract_test_id": "ci://contracts/governance/policy_acknowledgement_state",
       "introduced_at": "2026-02-28",
       "sources": [
-        "api:GovernanceCore.GetPolicyAcknowledgementState#response.policy_acknowledgement_state@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r02",
-        "event:AuditEvents.PolicyAcknowledgementStateChanged#payload.policy_acknowledgement_state@internal?contract_ref=internal://events/governance/policy_acknowledgement_state_changed"
+        "event:GovernanceHub.UiPolicyAcknowledgementStateObserved#payload.policy_acknowledgement_state@internal?contract_ref=internal://events/governance/policy_acknowledgement_state_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetPolicyAcknowledgementState#response.policy_acknowledgement_state@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r02\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.PolicyAcknowledgementStateChanged#payload.policy_acknowledgement_state@internal?contract_ref=internal://events/governance/policy_acknowledgement_state_changed\u0026upstream_system=AuditEvents:stream-service"
       ],
-      "flow": "from @GovernanceCore normalized @self",
+      "flow": "from @GovernanceCore:api-service normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/policy_acknowledgement_state"
     }
   },
@@ -945,7 +976,7 @@
     "annotation": {
       "field_id": "response_governance_control_attestation_snapshot",
       "field": "response.governance.control_attestation_snapshot",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.03",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -958,11 +989,12 @@
       "contract_test_id": "ci://contracts/governance/control_attestation_snapshot",
       "introduced_at": "2026-03-01",
       "sources": [
-        "api:GovernanceCore.GetControlAttestationSnapshot#response.control_attestation_snapshot@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r03",
-        "event:AuditEvents.ControlAttestationSnapshotChanged#payload.control_attestation_snapshot@internal?contract_ref=internal://events/governance/control_attestation_snapshot_changed",
-        "api:Sec.GetControlAttestationSnapshot#response.control_attestation_snapshot@external!2026-02-12?provider_id=sec\u0026contract_ref=https://api.sec.example.com/control_attestation_snapshot"
+        "event:GovernanceHub.UiControlAttestationSnapshotObserved#payload.control_attestation_snapshot@internal?contract_ref=internal://events/governance/control_attestation_snapshot_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetControlAttestationSnapshot#response.control_attestation_snapshot@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r03\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.ControlAttestationSnapshotChanged#payload.control_attestation_snapshot@internal?contract_ref=internal://events/governance/control_attestation_snapshot_changed\u0026upstream_system=AuditEvents:stream-service",
+        "api:Sec.GetControlAttestationSnapshot#response.control_attestation_snapshot@external!2026-02-12?provider_id=sec\u0026contract_ref=https://api.sec.example.com/control_attestation_snapshot\u0026upstream_system=sec:api-service"
       ],
-      "flow": "from @GovernanceCore mapped @self",
+      "flow": "from @GovernanceCore:api-service mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/control_attestation_snapshot"
     }
   },
@@ -987,7 +1019,7 @@
     "annotation": {
       "field_id": "response_governance_audit_finding_status",
       "field": "response.governance.audit_finding_status",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.04",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -1000,10 +1032,12 @@
       "contract_test_id": "ci://contracts/governance/audit_finding_status",
       "introduced_at": "2026-03-02",
       "sources": [
-        "api:GovernanceCore.GetAuditFindingStatus#response.audit_finding_status@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r04",
-        "event:AuditEvents.AuditFindingStatusChanged#payload.audit_finding_status@internal?contract_ref=internal://events/governance/audit_finding_status_changed"
+        "event:GovernanceHub.UiAuditFindingStatusObserved#payload.audit_finding_status@internal?contract_ref=internal://events/governance/audit_finding_status_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetAuditFindingStatus#response.audit_finding_status@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r04\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.AuditFindingStatusChanged#payload.audit_finding_status@internal?contract_ref=internal://events/governance/audit_finding_status_changed\u0026upstream_system=AuditEvents:stream-service",
+        "event:GovernanceHub.TraceAuditFindingStatusCaptured#payload.audit_finding_status_trace@internal?contract_ref=internal://events/governance/audit_finding_status_trace_captured\u0026upstream_system=GovernanceHub:logging-sidecar"
       ],
-      "flow": "from @GovernanceCore normalized @self",
+      "flow": "from @GovernanceCore:api-service normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/audit_finding_status"
     }
   },
@@ -1029,7 +1063,7 @@
     "annotation": {
       "field_id": "response_governance_risk_register_residual_score",
       "field": "response.governance.risk_register_residual_score",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.05",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -1042,11 +1076,12 @@
       "contract_test_id": "ci://contracts/governance/risk_register_residual_score",
       "introduced_at": "2026-03-03",
       "sources": [
-        "api:GovernanceCore.GetRiskRegisterResidualScore#response.risk_register_residual_score@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r05",
-        "event:AuditEvents.RiskRegisterResidualScoreChanged#payload.risk_register_residual_score@internal?contract_ref=internal://events/governance/risk_register_residual_score_changed",
-        "api:Sec.GetRiskRegisterResidualScore#response.risk_register_residual_score@external!2026-02-14?provider_id=sec\u0026contract_ref=https://api.sec.example.com/risk_register_residual_score"
+        "event:GovernanceHub.UiRiskRegisterResidualScoreObserved#payload.risk_register_residual_score@internal?contract_ref=internal://events/governance/risk_register_residual_score_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetRiskRegisterResidualScore#response.risk_register_residual_score@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r05\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.RiskRegisterResidualScoreChanged#payload.risk_register_residual_score@internal?contract_ref=internal://events/governance/risk_register_residual_score_changed\u0026upstream_system=AuditEvents:stream-service",
+        "api:Sec.GetRiskRegisterResidualScore#response.risk_register_residual_score@external!2026-02-14?provider_id=sec\u0026contract_ref=https://api.sec.example.com/risk_register_residual_score\u0026upstream_system=sec:api-service"
       ],
-      "flow": "from @GovernanceCore mapped @self",
+      "flow": "from @GovernanceCore:api-service mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/risk_register_residual_score"
     }
   },
@@ -1071,7 +1106,7 @@
     "annotation": {
       "field_id": "response_governance_procurement_approval_chain",
       "field": "response.governance.procurement_approval_chain",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.06",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -1084,10 +1119,11 @@
       "contract_test_id": "ci://contracts/governance/procurement_approval_chain",
       "introduced_at": "2026-03-04",
       "sources": [
-        "api:GovernanceCore.GetProcurementApprovalChain#response.procurement_approval_chain@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r06",
-        "event:AuditEvents.ProcurementApprovalChainChanged#payload.procurement_approval_chain@internal?contract_ref=internal://events/governance/procurement_approval_chain_changed"
+        "event:GovernanceHub.UiProcurementApprovalChainObserved#payload.procurement_approval_chain@internal?contract_ref=internal://events/governance/procurement_approval_chain_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetProcurementApprovalChain#response.procurement_approval_chain@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r06\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.ProcurementApprovalChainChanged#payload.procurement_approval_chain@internal?contract_ref=internal://events/governance/procurement_approval_chain_changed\u0026upstream_system=AuditEvents:stream-service"
       ],
-      "flow": "from @GovernanceCore normalized @self",
+      "flow": "from @GovernanceCore:api-service normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/procurement_approval_chain"
     }
   },
@@ -1113,7 +1149,7 @@
     "annotation": {
       "field_id": "response_governance_insider_window_enforcement",
       "field": "response.governance.insider_window_enforcement",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.07",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -1126,11 +1162,13 @@
       "contract_test_id": "ci://contracts/governance/insider_window_enforcement",
       "introduced_at": "2026-03-05",
       "sources": [
-        "api:GovernanceCore.GetInsiderWindowEnforcement#response.insider_window_enforcement@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r07",
-        "event:AuditEvents.InsiderWindowEnforcementChanged#payload.insider_window_enforcement@internal?contract_ref=internal://events/governance/insider_window_enforcement_changed",
-        "api:Sec.GetInsiderWindowEnforcement#response.insider_window_enforcement@external!2026-02-16?provider_id=sec\u0026contract_ref=https://api.sec.example.com/insider_window_enforcement"
+        "event:GovernanceHub.UiInsiderWindowEnforcementObserved#payload.insider_window_enforcement@internal?contract_ref=internal://events/governance/insider_window_enforcement_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetInsiderWindowEnforcement#response.insider_window_enforcement@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r07\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.InsiderWindowEnforcementChanged#payload.insider_window_enforcement@internal?contract_ref=internal://events/governance/insider_window_enforcement_changed\u0026upstream_system=AuditEvents:stream-service",
+        "event:GovernanceHub.TraceInsiderWindowEnforcementCaptured#payload.insider_window_enforcement_trace@internal?contract_ref=internal://events/governance/insider_window_enforcement_trace_captured\u0026upstream_system=GovernanceHub:logging-sidecar",
+        "api:Sec.GetInsiderWindowEnforcement#response.insider_window_enforcement@external!2026-02-16?provider_id=sec\u0026contract_ref=https://api.sec.example.com/insider_window_enforcement\u0026upstream_system=sec:api-service"
       ],
-      "flow": "from @GovernanceCore mapped @self",
+      "flow": "from @GovernanceCore:api-service mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/insider_window_enforcement"
     }
   },
@@ -1155,7 +1193,7 @@
     "annotation": {
       "field_id": "response_governance_entity_hierarchy_alignment",
       "field": "response.governance.entity_hierarchy_alignment",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.08",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -1168,10 +1206,11 @@
       "contract_test_id": "ci://contracts/governance/entity_hierarchy_alignment",
       "introduced_at": "2026-03-06",
       "sources": [
-        "api:GovernanceCore.GetEntityHierarchyAlignment#response.entity_hierarchy_alignment@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r08",
-        "event:AuditEvents.EntityHierarchyAlignmentChanged#payload.entity_hierarchy_alignment@internal?contract_ref=internal://events/governance/entity_hierarchy_alignment_changed"
+        "event:GovernanceHub.UiEntityHierarchyAlignmentObserved#payload.entity_hierarchy_alignment@internal?contract_ref=internal://events/governance/entity_hierarchy_alignment_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetEntityHierarchyAlignment#response.entity_hierarchy_alignment@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r08\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.EntityHierarchyAlignmentChanged#payload.entity_hierarchy_alignment@internal?contract_ref=internal://events/governance/entity_hierarchy_alignment_changed\u0026upstream_system=AuditEvents:stream-service"
       ],
-      "flow": "from @GovernanceCore normalized @self",
+      "flow": "from @GovernanceCore:api-service normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/entity_hierarchy_alignment"
     }
   },
@@ -1197,7 +1236,7 @@
     "annotation": {
       "field_id": "response_governance_disclosure_readiness_signal",
       "field": "response.governance.disclosure_readiness_signal",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.09",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -1210,11 +1249,12 @@
       "contract_test_id": "ci://contracts/governance/disclosure_readiness_signal",
       "introduced_at": "2026-03-07",
       "sources": [
-        "api:GovernanceCore.GetDisclosureReadinessSignal#response.disclosure_readiness_signal@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r09",
-        "event:AuditEvents.DisclosureReadinessSignalChanged#payload.disclosure_readiness_signal@internal?contract_ref=internal://events/governance/disclosure_readiness_signal_changed",
-        "api:Sec.GetDisclosureReadinessSignal#response.disclosure_readiness_signal@external!2026-02-18?provider_id=sec\u0026contract_ref=https://api.sec.example.com/disclosure_readiness_signal"
+        "event:GovernanceHub.UiDisclosureReadinessSignalObserved#payload.disclosure_readiness_signal@internal?contract_ref=internal://events/governance/disclosure_readiness_signal_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetDisclosureReadinessSignal#response.disclosure_readiness_signal@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r09\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.DisclosureReadinessSignalChanged#payload.disclosure_readiness_signal@internal?contract_ref=internal://events/governance/disclosure_readiness_signal_changed\u0026upstream_system=AuditEvents:stream-service",
+        "api:Sec.GetDisclosureReadinessSignal#response.disclosure_readiness_signal@external!2026-02-18?provider_id=sec\u0026contract_ref=https://api.sec.example.com/disclosure_readiness_signal\u0026upstream_system=sec:api-service"
       ],
-      "flow": "from @GovernanceCore mapped @self",
+      "flow": "from @GovernanceCore:api-service mapped @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/disclosure_readiness_signal"
     }
   },
@@ -1239,7 +1279,7 @@
     "annotation": {
       "field_id": "response_governance_whistleblower_case_tracking",
       "field": "response.governance.whistleblower_case_tracking",
-      "source_system": "GovernanceHub",
+      "source_system": "GovernanceHub:api-service",
       "source_version": "v2026.10",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -1252,10 +1292,12 @@
       "contract_test_id": "ci://contracts/governance/whistleblower_case_tracking",
       "introduced_at": "2026-03-08",
       "sources": [
-        "api:GovernanceCore.GetWhistleblowerCaseTracking#response.whistleblower_case_tracking@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r10",
-        "event:AuditEvents.WhistleblowerCaseTrackingChanged#payload.whistleblower_case_tracking@internal?contract_ref=internal://events/governance/whistleblower_case_tracking_changed"
+        "event:GovernanceHub.UiWhistleblowerCaseTrackingObserved#payload.whistleblower_case_tracking@internal?contract_ref=internal://events/governance/whistleblower_case_tracking_ui_observed\u0026upstream_system=GovernanceHub:ui-service",
+        "api:GovernanceCore.GetWhistleblowerCaseTracking#response.whistleblower_case_tracking@cross_repo?contract_ref=git+https://github.com/acme/governance-core//openapi.yaml@r10\u0026upstream_system=GovernanceCore:api-service",
+        "event:AuditEvents.WhistleblowerCaseTrackingChanged#payload.whistleblower_case_tracking@internal?contract_ref=internal://events/governance/whistleblower_case_tracking_changed\u0026upstream_system=AuditEvents:stream-service",
+        "event:GovernanceHub.TraceWhistleblowerCaseTrackingCaptured#payload.whistleblower_case_tracking_trace@internal?contract_ref=internal://events/governance/whistleblower_case_tracking_trace_captured\u0026upstream_system=GovernanceHub:logging-sidecar"
       ],
-      "flow": "from @GovernanceCore normalized @self",
+      "flow": "from @GovernanceCore:api-service normalized @self",
       "note": "Combines governance flow inputs with governed schema checks; reference=https://specs.example.com/governance/whistleblower_case_tracking"
     }
   },
@@ -1281,7 +1323,7 @@
     "annotation": {
       "field_id": "response_logistics_shipment_eta_projection",
       "field": "response.logistics.shipment_eta_projection",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.01",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -1294,11 +1336,13 @@
       "contract_test_id": "ci://contracts/logistics/shipment_eta_projection",
       "introduced_at": "2026-01-10",
       "sources": [
-        "api:LogisticsCore.GetShipmentEtaProjection#response.shipment_eta_projection@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r01",
-        "event:LogisticsEvents.ShipmentEtaProjectionChanged#payload.shipment_eta_projection@internal?contract_ref=internal://events/logistics/shipment_eta_projection_changed",
-        "api:Fedex.GetShipmentEtaProjection#response.shipment_eta_projection@external!2026-02-10?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/shipment_eta_projection"
+        "event:LogisticsGateway.UiShipmentEtaProjectionObserved#payload.shipment_eta_projection@internal?contract_ref=internal://events/logistics/shipment_eta_projection_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetShipmentEtaProjection#response.shipment_eta_projection@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r01\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.ShipmentEtaProjectionChanged#payload.shipment_eta_projection@internal?contract_ref=internal://events/logistics/shipment_eta_projection_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "event:LogisticsGateway.TraceShipmentEtaProjectionCaptured#payload.shipment_eta_projection_trace@internal?contract_ref=internal://events/logistics/shipment_eta_projection_trace_captured\u0026upstream_system=LogisticsGateway:logging-sidecar",
+        "api:Fedex.GetShipmentEtaProjection#response.shipment_eta_projection@external!2026-02-10?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/shipment_eta_projection\u0026upstream_system=fedex:api-service"
       ],
-      "flow": "from @LogisticsCore mapped @self",
+      "flow": "from @LogisticsCore:api-service mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/shipment_eta_projection"
     }
   },
@@ -1323,7 +1367,7 @@
     "annotation": {
       "field_id": "response_logistics_route_risk_assessment",
       "field": "response.logistics.route_risk_assessment",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.02",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -1336,10 +1380,11 @@
       "contract_test_id": "ci://contracts/logistics/route_risk_assessment",
       "introduced_at": "2026-01-11",
       "sources": [
-        "api:LogisticsCore.GetRouteRiskAssessment#response.route_risk_assessment@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r02",
-        "event:LogisticsEvents.RouteRiskAssessmentChanged#payload.route_risk_assessment@internal?contract_ref=internal://events/logistics/route_risk_assessment_changed"
+        "event:LogisticsGateway.UiRouteRiskAssessmentObserved#payload.route_risk_assessment@internal?contract_ref=internal://events/logistics/route_risk_assessment_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetRouteRiskAssessment#response.route_risk_assessment@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r02\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.RouteRiskAssessmentChanged#payload.route_risk_assessment@internal?contract_ref=internal://events/logistics/route_risk_assessment_changed\u0026upstream_system=LogisticsEvents:stream-service"
       ],
-      "flow": "from @LogisticsCore normalized @self",
+      "flow": "from @LogisticsCore:api-service normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/route_risk_assessment"
     }
   },
@@ -1365,7 +1410,7 @@
     "annotation": {
       "field_id": "response_logistics_customs_clearance_status",
       "field": "response.logistics.customs_clearance_status",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.03",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -1378,11 +1423,12 @@
       "contract_test_id": "ci://contracts/logistics/customs_clearance_status",
       "introduced_at": "2026-01-12",
       "sources": [
-        "api:LogisticsCore.GetCustomsClearanceStatus#response.customs_clearance_status@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r03",
-        "event:LogisticsEvents.CustomsClearanceStatusChanged#payload.customs_clearance_status@internal?contract_ref=internal://events/logistics/customs_clearance_status_changed",
-        "api:Fedex.GetCustomsClearanceStatus#response.customs_clearance_status@external!2026-02-12?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/customs_clearance_status"
+        "event:LogisticsGateway.UiCustomsClearanceStatusObserved#payload.customs_clearance_status@internal?contract_ref=internal://events/logistics/customs_clearance_status_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetCustomsClearanceStatus#response.customs_clearance_status@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r03\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.CustomsClearanceStatusChanged#payload.customs_clearance_status@internal?contract_ref=internal://events/logistics/customs_clearance_status_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "api:Fedex.GetCustomsClearanceStatus#response.customs_clearance_status@external!2026-02-12?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/customs_clearance_status\u0026upstream_system=fedex:api-service"
       ],
-      "flow": "from @LogisticsCore mapped @self",
+      "flow": "from @LogisticsCore:api-service mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/customs_clearance_status"
     }
   },
@@ -1407,7 +1453,7 @@
     "annotation": {
       "field_id": "response_logistics_delivery_exception_triage",
       "field": "response.logistics.delivery_exception_triage",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.04",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -1420,10 +1466,12 @@
       "contract_test_id": "ci://contracts/logistics/delivery_exception_triage",
       "introduced_at": "2026-01-13",
       "sources": [
-        "api:LogisticsCore.GetDeliveryExceptionTriage#response.delivery_exception_triage@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r04",
-        "event:LogisticsEvents.DeliveryExceptionTriageChanged#payload.delivery_exception_triage@internal?contract_ref=internal://events/logistics/delivery_exception_triage_changed"
+        "event:LogisticsGateway.UiDeliveryExceptionTriageObserved#payload.delivery_exception_triage@internal?contract_ref=internal://events/logistics/delivery_exception_triage_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetDeliveryExceptionTriage#response.delivery_exception_triage@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r04\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.DeliveryExceptionTriageChanged#payload.delivery_exception_triage@internal?contract_ref=internal://events/logistics/delivery_exception_triage_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "event:LogisticsGateway.TraceDeliveryExceptionTriageCaptured#payload.delivery_exception_triage_trace@internal?contract_ref=internal://events/logistics/delivery_exception_triage_trace_captured\u0026upstream_system=LogisticsGateway:logging-sidecar"
       ],
-      "flow": "from @LogisticsCore normalized @self",
+      "flow": "from @LogisticsCore:api-service normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/delivery_exception_triage"
     }
   },
@@ -1449,7 +1497,7 @@
     "annotation": {
       "field_id": "response_logistics_carrier_capacity_balancing",
       "field": "response.logistics.carrier_capacity_balancing",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.05",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -1462,11 +1510,12 @@
       "contract_test_id": "ci://contracts/logistics/carrier_capacity_balancing",
       "introduced_at": "2026-01-14",
       "sources": [
-        "api:LogisticsCore.GetCarrierCapacityBalancing#response.carrier_capacity_balancing@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r05",
-        "event:LogisticsEvents.CarrierCapacityBalancingChanged#payload.carrier_capacity_balancing@internal?contract_ref=internal://events/logistics/carrier_capacity_balancing_changed",
-        "api:Fedex.GetCarrierCapacityBalancing#response.carrier_capacity_balancing@external!2026-02-14?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/carrier_capacity_balancing"
+        "event:LogisticsGateway.UiCarrierCapacityBalancingObserved#payload.carrier_capacity_balancing@internal?contract_ref=internal://events/logistics/carrier_capacity_balancing_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetCarrierCapacityBalancing#response.carrier_capacity_balancing@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r05\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.CarrierCapacityBalancingChanged#payload.carrier_capacity_balancing@internal?contract_ref=internal://events/logistics/carrier_capacity_balancing_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "api:Fedex.GetCarrierCapacityBalancing#response.carrier_capacity_balancing@external!2026-02-14?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/carrier_capacity_balancing\u0026upstream_system=fedex:api-service"
       ],
-      "flow": "from @LogisticsCore mapped @self",
+      "flow": "from @LogisticsCore:api-service mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/carrier_capacity_balancing"
     }
   },
@@ -1491,7 +1540,7 @@
     "annotation": {
       "field_id": "response_logistics_warehouse_slot_optimization",
       "field": "response.logistics.warehouse_slot_optimization",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.06",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -1504,10 +1553,11 @@
       "contract_test_id": "ci://contracts/logistics/warehouse_slot_optimization",
       "introduced_at": "2026-01-15",
       "sources": [
-        "api:LogisticsCore.GetWarehouseSlotOptimization#response.warehouse_slot_optimization@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r06",
-        "event:LogisticsEvents.WarehouseSlotOptimizationChanged#payload.warehouse_slot_optimization@internal?contract_ref=internal://events/logistics/warehouse_slot_optimization_changed"
+        "event:LogisticsGateway.UiWarehouseSlotOptimizationObserved#payload.warehouse_slot_optimization@internal?contract_ref=internal://events/logistics/warehouse_slot_optimization_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetWarehouseSlotOptimization#response.warehouse_slot_optimization@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r06\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.WarehouseSlotOptimizationChanged#payload.warehouse_slot_optimization@internal?contract_ref=internal://events/logistics/warehouse_slot_optimization_changed\u0026upstream_system=LogisticsEvents:stream-service"
       ],
-      "flow": "from @LogisticsCore normalized @self",
+      "flow": "from @LogisticsCore:api-service normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/warehouse_slot_optimization"
     }
   },
@@ -1533,7 +1583,7 @@
     "annotation": {
       "field_id": "response_logistics_cold_chain_compliance",
       "field": "response.logistics.cold_chain_compliance",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.07",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -1546,11 +1596,13 @@
       "contract_test_id": "ci://contracts/logistics/cold_chain_compliance",
       "introduced_at": "2026-01-16",
       "sources": [
-        "api:LogisticsCore.GetColdChainCompliance#response.cold_chain_compliance@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r07",
-        "event:LogisticsEvents.ColdChainComplianceChanged#payload.cold_chain_compliance@internal?contract_ref=internal://events/logistics/cold_chain_compliance_changed",
-        "api:Fedex.GetColdChainCompliance#response.cold_chain_compliance@external!2026-02-16?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/cold_chain_compliance"
+        "event:LogisticsGateway.UiColdChainComplianceObserved#payload.cold_chain_compliance@internal?contract_ref=internal://events/logistics/cold_chain_compliance_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetColdChainCompliance#response.cold_chain_compliance@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r07\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.ColdChainComplianceChanged#payload.cold_chain_compliance@internal?contract_ref=internal://events/logistics/cold_chain_compliance_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "event:LogisticsGateway.TraceColdChainComplianceCaptured#payload.cold_chain_compliance_trace@internal?contract_ref=internal://events/logistics/cold_chain_compliance_trace_captured\u0026upstream_system=LogisticsGateway:logging-sidecar",
+        "api:Fedex.GetColdChainCompliance#response.cold_chain_compliance@external!2026-02-16?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/cold_chain_compliance\u0026upstream_system=fedex:api-service"
       ],
-      "flow": "from @LogisticsCore mapped @self",
+      "flow": "from @LogisticsCore:api-service mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/cold_chain_compliance"
     }
   },
@@ -1575,7 +1627,7 @@
     "annotation": {
       "field_id": "response_logistics_proof_of_delivery_digest",
       "field": "response.logistics.proof_of_delivery_digest",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.08",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -1588,10 +1640,11 @@
       "contract_test_id": "ci://contracts/logistics/proof_of_delivery_digest",
       "introduced_at": "2026-01-17",
       "sources": [
-        "api:LogisticsCore.GetProofOfDeliveryDigest#response.proof_of_delivery_digest@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r08",
-        "event:LogisticsEvents.ProofOfDeliveryDigestChanged#payload.proof_of_delivery_digest@internal?contract_ref=internal://events/logistics/proof_of_delivery_digest_changed"
+        "event:LogisticsGateway.UiProofOfDeliveryDigestObserved#payload.proof_of_delivery_digest@internal?contract_ref=internal://events/logistics/proof_of_delivery_digest_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetProofOfDeliveryDigest#response.proof_of_delivery_digest@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r08\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.ProofOfDeliveryDigestChanged#payload.proof_of_delivery_digest@internal?contract_ref=internal://events/logistics/proof_of_delivery_digest_changed\u0026upstream_system=LogisticsEvents:stream-service"
       ],
-      "flow": "from @LogisticsCore normalized @self",
+      "flow": "from @LogisticsCore:api-service normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/proof_of_delivery_digest"
     }
   },
@@ -1617,7 +1670,7 @@
     "annotation": {
       "field_id": "response_logistics_reverse_logistics_refund",
       "field": "response.logistics.reverse_logistics_refund",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.09",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -1630,11 +1683,12 @@
       "contract_test_id": "ci://contracts/logistics/reverse_logistics_refund",
       "introduced_at": "2026-01-18",
       "sources": [
-        "api:LogisticsCore.GetReverseLogisticsRefund#response.reverse_logistics_refund@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r09",
-        "event:LogisticsEvents.ReverseLogisticsRefundChanged#payload.reverse_logistics_refund@internal?contract_ref=internal://events/logistics/reverse_logistics_refund_changed",
-        "api:Fedex.GetReverseLogisticsRefund#response.reverse_logistics_refund@external!2026-02-18?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/reverse_logistics_refund"
+        "event:LogisticsGateway.UiReverseLogisticsRefundObserved#payload.reverse_logistics_refund@internal?contract_ref=internal://events/logistics/reverse_logistics_refund_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetReverseLogisticsRefund#response.reverse_logistics_refund@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r09\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.ReverseLogisticsRefundChanged#payload.reverse_logistics_refund@internal?contract_ref=internal://events/logistics/reverse_logistics_refund_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "api:Fedex.GetReverseLogisticsRefund#response.reverse_logistics_refund@external!2026-02-18?provider_id=fedex\u0026contract_ref=https://api.fedex.example.com/reverse_logistics_refund\u0026upstream_system=fedex:api-service"
       ],
-      "flow": "from @LogisticsCore mapped @self",
+      "flow": "from @LogisticsCore:api-service mapped @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/reverse_logistics_refund"
     }
   },
@@ -1659,7 +1713,7 @@
     "annotation": {
       "field_id": "response_logistics_fleet_maintenance_window",
       "field": "response.logistics.fleet_maintenance_window",
-      "source_system": "LogisticsGateway",
+      "source_system": "LogisticsGateway:api-service",
       "source_version": "v2026.10",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -1672,10 +1726,12 @@
       "contract_test_id": "ci://contracts/logistics/fleet_maintenance_window",
       "introduced_at": "2026-01-19",
       "sources": [
-        "api:LogisticsCore.GetFleetMaintenanceWindow#response.fleet_maintenance_window@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r10",
-        "event:LogisticsEvents.FleetMaintenanceWindowChanged#payload.fleet_maintenance_window@internal?contract_ref=internal://events/logistics/fleet_maintenance_window_changed"
+        "event:LogisticsGateway.UiFleetMaintenanceWindowObserved#payload.fleet_maintenance_window@internal?contract_ref=internal://events/logistics/fleet_maintenance_window_ui_observed\u0026upstream_system=LogisticsGateway:ui-service",
+        "api:LogisticsCore.GetFleetMaintenanceWindow#response.fleet_maintenance_window@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@r10\u0026upstream_system=LogisticsCore:api-service",
+        "event:LogisticsEvents.FleetMaintenanceWindowChanged#payload.fleet_maintenance_window@internal?contract_ref=internal://events/logistics/fleet_maintenance_window_changed\u0026upstream_system=LogisticsEvents:stream-service",
+        "event:LogisticsGateway.TraceFleetMaintenanceWindowCaptured#payload.fleet_maintenance_window_trace@internal?contract_ref=internal://events/logistics/fleet_maintenance_window_trace_captured\u0026upstream_system=LogisticsGateway:logging-sidecar"
       ],
-      "flow": "from @LogisticsCore normalized @self",
+      "flow": "from @LogisticsCore:api-service normalized @self",
       "note": "Combines logistics flow inputs with governed schema checks; reference=https://specs.example.com/logistics/fleet_maintenance_window"
     }
   },
@@ -1701,7 +1757,7 @@
     "annotation": {
       "field_id": "response_media_track_metadata_unification",
       "field": "response.media.track_metadata_unification",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.01",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -1714,11 +1770,13 @@
       "contract_test_id": "ci://contracts/media/track_metadata_unification",
       "introduced_at": "2026-02-03",
       "sources": [
-        "api:MediaCore.GetTrackMetadataUnification#response.track_metadata_unification@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r01",
-        "event:AudienceEvents.TrackMetadataUnificationChanged#payload.track_metadata_unification@internal?contract_ref=internal://events/media/track_metadata_unification_changed",
-        "api:Spotify.GetTrackMetadataUnification#response.track_metadata_unification@external!2026-02-10?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/track_metadata_unification"
+        "event:MediaGateway.UiTrackMetadataUnificationObserved#payload.track_metadata_unification@internal?contract_ref=internal://events/media/track_metadata_unification_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetTrackMetadataUnification#response.track_metadata_unification@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r01\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.TrackMetadataUnificationChanged#payload.track_metadata_unification@internal?contract_ref=internal://events/media/track_metadata_unification_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "event:MediaGateway.TraceTrackMetadataUnificationCaptured#payload.track_metadata_unification_trace@internal?contract_ref=internal://events/media/track_metadata_unification_trace_captured\u0026upstream_system=MediaGateway:logging-sidecar",
+        "api:Spotify.GetTrackMetadataUnification#response.track_metadata_unification@external!2026-02-10?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/track_metadata_unification\u0026upstream_system=spotify:api-service"
       ],
-      "flow": "from @MediaCore mapped @self",
+      "flow": "from @MediaCore:api-service mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/track_metadata_unification"
     }
   },
@@ -1743,7 +1801,7 @@
     "annotation": {
       "field_id": "response_media_stream_quality_signal",
       "field": "response.media.stream_quality_signal",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.02",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -1756,10 +1814,11 @@
       "contract_test_id": "ci://contracts/media/stream_quality_signal",
       "introduced_at": "2026-02-04",
       "sources": [
-        "api:MediaCore.GetStreamQualitySignal#response.stream_quality_signal@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r02",
-        "event:AudienceEvents.StreamQualitySignalChanged#payload.stream_quality_signal@internal?contract_ref=internal://events/media/stream_quality_signal_changed"
+        "event:MediaGateway.UiStreamQualitySignalObserved#payload.stream_quality_signal@internal?contract_ref=internal://events/media/stream_quality_signal_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetStreamQualitySignal#response.stream_quality_signal@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r02\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.StreamQualitySignalChanged#payload.stream_quality_signal@internal?contract_ref=internal://events/media/stream_quality_signal_changed\u0026upstream_system=AudienceEvents:stream-service"
       ],
-      "flow": "from @MediaCore normalized @self",
+      "flow": "from @MediaCore:api-service normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/stream_quality_signal"
     }
   },
@@ -1785,7 +1844,7 @@
     "annotation": {
       "field_id": "response_media_ad_break_targeting",
       "field": "response.media.ad_break_targeting",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.03",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -1798,11 +1857,12 @@
       "contract_test_id": "ci://contracts/media/ad_break_targeting",
       "introduced_at": "2026-02-05",
       "sources": [
-        "api:MediaCore.GetAdBreakTargeting#response.ad_break_targeting@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r03",
-        "event:AudienceEvents.AdBreakTargetingChanged#payload.ad_break_targeting@internal?contract_ref=internal://events/media/ad_break_targeting_changed",
-        "api:Spotify.GetAdBreakTargeting#response.ad_break_targeting@external!2026-02-12?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/ad_break_targeting"
+        "event:MediaGateway.UiAdBreakTargetingObserved#payload.ad_break_targeting@internal?contract_ref=internal://events/media/ad_break_targeting_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetAdBreakTargeting#response.ad_break_targeting@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r03\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.AdBreakTargetingChanged#payload.ad_break_targeting@internal?contract_ref=internal://events/media/ad_break_targeting_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "api:Spotify.GetAdBreakTargeting#response.ad_break_targeting@external!2026-02-12?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/ad_break_targeting\u0026upstream_system=spotify:api-service"
       ],
-      "flow": "from @MediaCore mapped @self",
+      "flow": "from @MediaCore:api-service mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/ad_break_targeting"
     }
   },
@@ -1827,7 +1887,7 @@
     "annotation": {
       "field_id": "response_media_royalty_statement_projection",
       "field": "response.media.royalty_statement_projection",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.04",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -1840,10 +1900,12 @@
       "contract_test_id": "ci://contracts/media/royalty_statement_projection",
       "introduced_at": "2026-02-06",
       "sources": [
-        "api:MediaCore.GetRoyaltyStatementProjection#response.royalty_statement_projection@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r04",
-        "event:AudienceEvents.RoyaltyStatementProjectionChanged#payload.royalty_statement_projection@internal?contract_ref=internal://events/media/royalty_statement_projection_changed"
+        "event:MediaGateway.UiRoyaltyStatementProjectionObserved#payload.royalty_statement_projection@internal?contract_ref=internal://events/media/royalty_statement_projection_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetRoyaltyStatementProjection#response.royalty_statement_projection@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r04\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.RoyaltyStatementProjectionChanged#payload.royalty_statement_projection@internal?contract_ref=internal://events/media/royalty_statement_projection_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "event:MediaGateway.TraceRoyaltyStatementProjectionCaptured#payload.royalty_statement_projection_trace@internal?contract_ref=internal://events/media/royalty_statement_projection_trace_captured\u0026upstream_system=MediaGateway:logging-sidecar"
       ],
-      "flow": "from @MediaCore normalized @self",
+      "flow": "from @MediaCore:api-service normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/royalty_statement_projection"
     }
   },
@@ -1869,7 +1931,7 @@
     "annotation": {
       "field_id": "response_media_creator_payout_rollup",
       "field": "response.media.creator_payout_rollup",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.05",
       "min_supported_source_version": "v2026.01",
       "transform_type": "normalize",
@@ -1882,11 +1944,12 @@
       "contract_test_id": "ci://contracts/media/creator_payout_rollup",
       "introduced_at": "2026-02-07",
       "sources": [
-        "api:MediaCore.GetCreatorPayoutRollup#response.creator_payout_rollup@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r05",
-        "event:AudienceEvents.CreatorPayoutRollupChanged#payload.creator_payout_rollup@internal?contract_ref=internal://events/media/creator_payout_rollup_changed",
-        "api:Spotify.GetCreatorPayoutRollup#response.creator_payout_rollup@external!2026-02-14?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/creator_payout_rollup"
+        "event:MediaGateway.UiCreatorPayoutRollupObserved#payload.creator_payout_rollup@internal?contract_ref=internal://events/media/creator_payout_rollup_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetCreatorPayoutRollup#response.creator_payout_rollup@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r05\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.CreatorPayoutRollupChanged#payload.creator_payout_rollup@internal?contract_ref=internal://events/media/creator_payout_rollup_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "api:Spotify.GetCreatorPayoutRollup#response.creator_payout_rollup@external!2026-02-14?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/creator_payout_rollup\u0026upstream_system=spotify:api-service"
       ],
-      "flow": "from @MediaCore mapped @self",
+      "flow": "from @MediaCore:api-service mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/creator_payout_rollup"
     }
   },
@@ -1911,7 +1974,7 @@
     "annotation": {
       "field_id": "response_media_rights_window_enforcement",
       "field": "response.media.rights_window_enforcement",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.06",
       "min_supported_source_version": "v2026.01",
       "transform_type": "derive",
@@ -1924,10 +1987,11 @@
       "contract_test_id": "ci://contracts/media/rights_window_enforcement",
       "introduced_at": "2026-02-08",
       "sources": [
-        "api:MediaCore.GetRightsWindowEnforcement#response.rights_window_enforcement@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r06",
-        "event:AudienceEvents.RightsWindowEnforcementChanged#payload.rights_window_enforcement@internal?contract_ref=internal://events/media/rights_window_enforcement_changed"
+        "event:MediaGateway.UiRightsWindowEnforcementObserved#payload.rights_window_enforcement@internal?contract_ref=internal://events/media/rights_window_enforcement_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetRightsWindowEnforcement#response.rights_window_enforcement@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r06\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.RightsWindowEnforcementChanged#payload.rights_window_enforcement@internal?contract_ref=internal://events/media/rights_window_enforcement_changed\u0026upstream_system=AudienceEvents:stream-service"
       ],
-      "flow": "from @MediaCore normalized @self",
+      "flow": "from @MediaCore:api-service normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/rights_window_enforcement"
     }
   },
@@ -1953,7 +2017,7 @@
     "annotation": {
       "field_id": "response_media_audience_segment_refresh",
       "field": "response.media.audience_segment_refresh",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.07",
       "min_supported_source_version": "v2026.01",
       "transform_type": "aggregate",
@@ -1966,11 +2030,13 @@
       "contract_test_id": "ci://contracts/media/audience_segment_refresh",
       "introduced_at": "2026-02-09",
       "sources": [
-        "api:MediaCore.GetAudienceSegmentRefresh#response.audience_segment_refresh@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r07",
-        "event:AudienceEvents.AudienceSegmentRefreshChanged#payload.audience_segment_refresh@internal?contract_ref=internal://events/media/audience_segment_refresh_changed",
-        "api:Spotify.GetAudienceSegmentRefresh#response.audience_segment_refresh@external!2026-02-16?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/audience_segment_refresh"
+        "event:MediaGateway.UiAudienceSegmentRefreshObserved#payload.audience_segment_refresh@internal?contract_ref=internal://events/media/audience_segment_refresh_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetAudienceSegmentRefresh#response.audience_segment_refresh@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r07\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.AudienceSegmentRefreshChanged#payload.audience_segment_refresh@internal?contract_ref=internal://events/media/audience_segment_refresh_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "event:MediaGateway.TraceAudienceSegmentRefreshCaptured#payload.audience_segment_refresh_trace@internal?contract_ref=internal://events/media/audience_segment_refresh_trace_captured\u0026upstream_system=MediaGateway:logging-sidecar",
+        "api:Spotify.GetAudienceSegmentRefresh#response.audience_segment_refresh@external!2026-02-16?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/audience_segment_refresh\u0026upstream_system=spotify:api-service"
       ],
-      "flow": "from @MediaCore mapped @self",
+      "flow": "from @MediaCore:api-service mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/audience_segment_refresh"
     }
   },
@@ -1995,7 +2061,7 @@
     "annotation": {
       "field_id": "response_media_recommendation_ranking_trace",
       "field": "response.media.recommendation_ranking_trace",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.08",
       "min_supported_source_version": "v2026.01",
       "transform_type": "join",
@@ -2008,10 +2074,11 @@
       "contract_test_id": "ci://contracts/media/recommendation_ranking_trace",
       "introduced_at": "2026-02-10",
       "sources": [
-        "api:MediaCore.GetRecommendationRankingTrace#response.recommendation_ranking_trace@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r08",
-        "event:AudienceEvents.RecommendationRankingTraceChanged#payload.recommendation_ranking_trace@internal?contract_ref=internal://events/media/recommendation_ranking_trace_changed"
+        "event:MediaGateway.UiRecommendationRankingTraceObserved#payload.recommendation_ranking_trace@internal?contract_ref=internal://events/media/recommendation_ranking_trace_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetRecommendationRankingTrace#response.recommendation_ranking_trace@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r08\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.RecommendationRankingTraceChanged#payload.recommendation_ranking_trace@internal?contract_ref=internal://events/media/recommendation_ranking_trace_changed\u0026upstream_system=AudienceEvents:stream-service"
       ],
-      "flow": "from @MediaCore normalized @self",
+      "flow": "from @MediaCore:api-service normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/recommendation_ranking_trace"
     }
   },
@@ -2037,7 +2104,7 @@
     "annotation": {
       "field_id": "response_media_moderation_flag_resolution",
       "field": "response.media.moderation_flag_resolution",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.09",
       "min_supported_source_version": "v2026.01",
       "transform_type": "passthrough",
@@ -2050,11 +2117,12 @@
       "contract_test_id": "ci://contracts/media/moderation_flag_resolution",
       "introduced_at": "2026-02-11",
       "sources": [
-        "api:MediaCore.GetModerationFlagResolution#response.moderation_flag_resolution@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r09",
-        "event:AudienceEvents.ModerationFlagResolutionChanged#payload.moderation_flag_resolution@internal?contract_ref=internal://events/media/moderation_flag_resolution_changed",
-        "api:Spotify.GetModerationFlagResolution#response.moderation_flag_resolution@external!2026-02-18?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/moderation_flag_resolution"
+        "event:MediaGateway.UiModerationFlagResolutionObserved#payload.moderation_flag_resolution@internal?contract_ref=internal://events/media/moderation_flag_resolution_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetModerationFlagResolution#response.moderation_flag_resolution@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r09\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.ModerationFlagResolutionChanged#payload.moderation_flag_resolution@internal?contract_ref=internal://events/media/moderation_flag_resolution_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "api:Spotify.GetModerationFlagResolution#response.moderation_flag_resolution@external!2026-02-18?provider_id=spotify\u0026contract_ref=https://api.spotify.example.com/moderation_flag_resolution\u0026upstream_system=spotify:api-service"
       ],
-      "flow": "from @MediaCore mapped @self",
+      "flow": "from @MediaCore:api-service mapped @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/moderation_flag_resolution"
     }
   },
@@ -2079,7 +2147,7 @@
     "annotation": {
       "field_id": "response_media_partner_feed_alignment",
       "field": "response.media.partner_feed_alignment",
-      "source_system": "MediaGateway",
+      "source_system": "MediaGateway:api-service",
       "source_version": "v2026.10",
       "min_supported_source_version": "v2026.01",
       "transform_type": "mask",
@@ -2092,10 +2160,12 @@
       "contract_test_id": "ci://contracts/media/partner_feed_alignment",
       "introduced_at": "2026-02-12",
       "sources": [
-        "api:MediaCore.GetPartnerFeedAlignment#response.partner_feed_alignment@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r10",
-        "event:AudienceEvents.PartnerFeedAlignmentChanged#payload.partner_feed_alignment@internal?contract_ref=internal://events/media/partner_feed_alignment_changed"
+        "event:MediaGateway.UiPartnerFeedAlignmentObserved#payload.partner_feed_alignment@internal?contract_ref=internal://events/media/partner_feed_alignment_ui_observed\u0026upstream_system=MediaGateway:ui-service",
+        "api:MediaCore.GetPartnerFeedAlignment#response.partner_feed_alignment@cross_repo?contract_ref=git+https://github.com/acme/media-core//openapi.yaml@r10\u0026upstream_system=MediaCore:api-service",
+        "event:AudienceEvents.PartnerFeedAlignmentChanged#payload.partner_feed_alignment@internal?contract_ref=internal://events/media/partner_feed_alignment_changed\u0026upstream_system=AudienceEvents:stream-service",
+        "event:MediaGateway.TracePartnerFeedAlignmentCaptured#payload.partner_feed_alignment_trace@internal?contract_ref=internal://events/media/partner_feed_alignment_trace_captured\u0026upstream_system=MediaGateway:logging-sidecar"
       ],
-      "flow": "from @MediaCore normalized @self",
+      "flow": "from @MediaCore:api-service normalized @self",
       "note": "Combines media flow inputs with governed schema checks; reference=https://specs.example.com/media/partner_feed_alignment"
     }
   }
