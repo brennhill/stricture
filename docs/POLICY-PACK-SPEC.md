@@ -43,7 +43,7 @@ Recommended location:
 Recommended identity handle:
 
 ```text
-policy_id: strict:policy
+policy_id: production_standard # org-provided string; can be any useful value
 ```
 
 `strict:policy` is a reference handle (not a parser token in source code).
@@ -52,7 +52,7 @@ policy_id: strict:policy
 
 ```yaml
 schema_version: 1
-policy_id: strict:policy
+policy_id: production_standard # org-provided string; can be any useful value
 extends: []
 
 lineage:
@@ -277,7 +277,7 @@ See CLI command contract: `docs/POLICY-CLI-CONTRACT.md`.
 
 ```yaml
 schema_version: 1
-policy_id: strict:policy
+policy_id: production_standard # org-provided string; can be any useful value
 
 lineage:
   require:

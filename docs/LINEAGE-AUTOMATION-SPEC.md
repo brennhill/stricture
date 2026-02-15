@@ -109,7 +109,7 @@ Example draft shape:
 
 ```yaml
 schema_version: 1
-policy_id: strict:policy
+policy_id: production_standard # org-provided string; can be any useful value
 
 lineage:
   require:
