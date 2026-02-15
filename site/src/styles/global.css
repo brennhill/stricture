@@ -1269,6 +1269,14 @@ select {
   color: var(--ink-soft);
 }
 
+.demo-embed-frame {
+  width: 100%;
+  min-height: 1120px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
 .how-it-works {
   width: min(1200px, 96vw);
   margin: 1.4rem auto 2rem;

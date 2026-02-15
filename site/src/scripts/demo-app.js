@@ -1042,7 +1042,47 @@ async function bootstrap() {
   state.topologyMode = "ecosystem";
   const created = await request("/api/session", "POST", {});
   state.sessionId = created.sessionId;
+  applyInitialTopologyViewFromUrl(created.snapshot);
   render(created.snapshot);
+}
+
+function applyInitialTopologyViewFromUrl(snapshot) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const requestedView = String(params.get("view") || "").toLowerCase();
+  if (!requestedView) {
+    return;
+  }
+
+  const ecosystem = buildEcosystemView(snapshot);
+  const requestedService = String(params.get("service") || "");
+  let root = topologyRootId(requestedService);
+  if (!root && requestedService) {
+    root = topologyRootId(resolveServiceId(snapshot, requestedService));
+  }
+  const serviceEnabled = !!root && ecosystem.internalRoots.has(root);
+
+  if (requestedView === "service" && serviceEnabled) {
+    state.topologyRoot = root;
+    state.topologyMode = "service";
+    return;
+  }
+  if (requestedView === "field") {
+    const fieldID = currentFieldContext(snapshot);
+    if (fieldID) {
+      if (serviceEnabled) {
+        state.topologyRoot = root;
+      }
+      state.topologyMode = "field";
+      return;
+    }
+  }
+  if (serviceEnabled) {
+    state.topologyRoot = root;
+  }
+  state.topologyMode = "ecosystem";
 }
 
 async function run() {

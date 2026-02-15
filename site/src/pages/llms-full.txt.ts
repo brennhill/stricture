@@ -11,6 +11,7 @@ const coreRoutes = [
   "/open-standard/",
   "/architecture-invariants/",
   "/walkthrough/",
+  "/service-internals-demo/",
   "/what-is-stricture/",
   "/with-ai/",
   "/when-to-use-stricture/"

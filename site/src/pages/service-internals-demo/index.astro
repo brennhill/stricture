@@ -1,0 +1,32 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+
+export const prerender = true;
+---
+
+<MainLayout title="Service Internals Demo | Stricture" description="Focused demo page for service-level internal topology using Stricture.">
+  <section class="card">
+    <p class="kicker">Focused Demo</p>
+    <h1>Service Internals Example</h1>
+    <p class="lead">
+      This page loads the live demo directly into <strong>Service Internals</strong> view for a service with mapped subsystems.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/demo?view=service&service=logisticsgateway">Open In Full Demo</a>
+      <a class="button button-secondary" href="/demo">Back To Full Demo Controls</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Live Service Internals View</h2>
+    <p class="muted">
+      Preloaded service: <code>logisticsgateway</code>. You can still use the normal controls in the embedded demo.
+    </p>
+    <iframe
+      title="Stricture service internals demo"
+      src="/demo?view=service&service=logisticsgateway"
+      class="demo-embed-frame"
+      loading="lazy"
+    ></iframe>
+  </section>
+</MainLayout>

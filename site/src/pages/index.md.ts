@@ -38,7 +38,7 @@ function renderList(items: string[]): string {
 }
 
 export const GET: APIRoute = () => {
-  const body = `# ${meta.title}\n\n${meta.tagline}\n\n## Highlights\n${renderList(heroPoints)}\n\n## Core Capabilities\n${renderList(coreCapabilities)}\n\n## How It Works\n${workflow.map((step, idx) => `${idx + 1}. ${step}`).join("\n")}\n\n## Explore More\n- /demo/\n- /open-standard/\n- /architecture-invariants/\n- /annotations/\n- /walkthrough/\n- /what-is-stricture/\n- /with-ai/\n- /when-to-use-stricture/\n`;
+  const body = `# ${meta.title}\n\n${meta.tagline}\n\n## Highlights\n${renderList(heroPoints)}\n\n## Core Capabilities\n${renderList(coreCapabilities)}\n\n## How It Works\n${workflow.map((step, idx) => `${idx + 1}. ${step}`).join("\n")}\n\n## Explore More\n- /demo/\n- /service-internals-demo/\n- /open-standard/\n- /architecture-invariants/\n- /annotations/\n- /walkthrough/\n- /what-is-stricture/\n- /with-ai/\n- /when-to-use-stricture/\n`;
 
   return new Response(body, {
     headers: {
