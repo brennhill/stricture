@@ -37,6 +37,7 @@ Scope:
 3. Fill defaults and suggest owner/escalation plus optional runbook/docs links from registry.
 4. Emit patch-ready comments (dry-run + apply modes).
 5. Produce confidence labels and "needs human review" markers.
+6. Use traces to suggest missing service edges and candidate `sources` (optional enrichment).
 
 Planned phases:
 
