@@ -1,4 +1,4 @@
-# Stricture Helper Spec (Draft)
+# Stricture Helper Spec
 
 Last updated: 2026-02-15
 Status: Draft v0
@@ -6,170 +6,330 @@ Status: Draft v0
 ## Purpose
 
 `stricture-helper` reduces manual annotation work by generating, updating, and
-quality-checking `stricture-source` blocks from code + contract context.
+quality-checking lineage annotations from code + contract context.
 
 Primary objective: make lineage adoption realistic in fast-moving repos with AI
-agents and frequent API changes.
+agents and frequent API changes. Developers should never have to learn the
+annotation grammar. The helper writes annotations; developers review and approve.
 
-## What We Learned (Captured From Demo + UX Iteration)
-
-1. Raw annotations became too long and noisy for day-to-day authoring.
-2. Humans (and agents) will not reliably maintain `source_version` by hand.
-3. Findings are harder to act on when metadata does not clearly map to:
-   - cause
-   - blast radius
-   - owner/runbook/docs/escalation
-4. Teams want to reuse existing metadata from OpenAPI/OpenTelemetry/OpenLineage
-   instead of retyping context.
-5. Local-first workflows matter: developers may run many agents locally and
-   still need CI-grade deterministic outputs.
-
-## v0 Goals
-
-1. Generate compact annotation blocks with deterministic defaults.
-2. Auto-populate fields that should not be manually curated every PR.
-3. Produce patch-ready edits (dry-run + apply).
-4. Emit confidence + quality signals so uncertain output is reviewable.
-5. Integrate with `.stricture-history/` so versioning/deltas are automatic.
-
-High-priority automation targets:
-
-1. `source_version`: derive from contract ref revision/commit where available.
-2. `sources`: infer from AST + contract artifacts, then normalize refs.
-3. external `provider_id` + `as_of`: derive from provider map + run context.
-4. `contract_ref`: reuse existing OpenAPI/AsyncAPI/proto pointers.
-5. service registry `id`: bootstrap from repo/service identity and optionally
-   register to `strict:server_url` (including optional hierarchical IDs like
-   `location-tracking-service:tracking-api`).
-6. service flow memberships (`systems[].flows`): infer from known topology,
-   path usage, and org registry defaults (with review hints when uncertain).
-7. field/source keys marked defaulted in spec: emit compact source comments and
-   rely on deterministic normalization for expanded artifacts.
-
-## Non-Goals (v0)
-
-1. Full autonomous merge of low-confidence inferred annotations.
-2. IDE plugin ecosystem (separate track).
-3. Cross-repo orchestration (belongs in `stricture-server` track).
-
-## User Personas
-
-1. **Local dev with AI agents:** needs quick, safe annotation scaffolding.
-2. **CI maintainer:** needs deterministic, non-flaky outputs.
-3. **Service owner:** needs readable ownership/escalation context with runbook/docs links when available.
-4. **Responder:** needs direct runbook/docs links in addition to owner/on-call.
-
-## Authoring Model
-
-`stricture-helper` works in two layers:
-
-1. **Compact authoring view** (minimal keys in source comments).
-2. **Expanded normalized artifact** (full explicit fields in export output).
-
-This keeps source code terse while preserving deterministic policy checks.
-
-Reference handles in helper output/report UX SHOULD use `strict:*` names (for
-example `strict:source`, `strict:systems[]`) while preserving parser-compatible
-source comment syntax (`stricture-source`).
-
-## Automation Tiers
-
-1. **Auto:** deterministic and safe.
-2. **Auto+Policy:** deterministic with org config.
-3. **Suggest:** inferred, confidence-scored.
-4. **Manual:** explicit human intent required.
-
-Reference matrix: `docs/LINEAGE-AUTOMATION-SPEC.md`.
-
-## Proposed CLI Surface
+## CLI Surface
 
 ```bash
-stricture helper scan [paths...]
-stricture helper suggest [paths...]
-stricture helper apply [paths...]
-stricture helper quality [paths...]
+# Discovery and generation
+strict scan [paths...]              # Discover candidate fields
+strict suggest [paths...]           # Generate annotation proposals
+strict apply [paths...]             # Write annotations to source
+
+# Quality and validation
+strict quality [paths...]           # Score existing annotations
+strict validate [paths...]          # Check annotation validity
+strict validate --strict [paths...] # Strict mode (CI gate)
+strict coverage [paths...]          # Lineage coverage report
+
+# Bootstrap and import
+strict init-lineage [paths...]          # Bootstrap sidecar file
+strict import-openapi <spec> [paths...] # Import from OpenAPI
+strict import-asyncapi <spec> [paths...] # Import from AsyncAPI
+strict import-proto <spec> [paths...]    # Import from protobuf
+
+# Migration and maintenance
+strict migrate-rename <old> <new>   # Update annotations after rename
 ```
 
-### Command Semantics
+## Command Specifications
 
-1. `scan`: discover candidate source fields/functions.
-2. `suggest`: build annotation proposals + confidence + rationale.
-3. `apply`: write patch-ready annotation updates.
-4. `quality`: score existing annotations and flag ambiguity/gaps.
+### `strict scan`
+
+Discover candidate source fields/functions that should have lineage annotations.
+
+### `strict suggest`
+
+Build annotation proposals with confidence scores and rationale.
+
+```bash
+strict suggest internal/handler/
+```
+
+Outputs v2 format annotations. When a sidecar exists, produces minimal `from`
+shorthand. When no sidecar exists, generates inline multi-line blocks.
+
+### `strict apply`
+
+Write patch-ready annotation updates to source files.
+
+```bash
+# Apply to sidecar file (preferred)
+strict apply --output sidecar internal/handler/
+
+# Apply as inline annotations (fallback)
+strict apply --output inline internal/handler/
+```
+
+### `strict quality`
+
+Score existing annotations 0-100 with weighted checks:
+
+| Check | Points |
+|-------|--------|
+| Sidecar file exists with upstream definitions | +20 |
+| All inline annotations use minimal `from` format | +10 |
+| Coverage above 80% | +15 |
+| All `TODO` placeholders resolved | +10 |
+| Contract references are versioned (not bare URLs) | +10 |
+| Service registry has owner and escalation for all systems | +15 |
+| No expired overrides | +15 |
+
+### `strict init-lineage`
+
+Bootstrap a `stricture-lineage.yml` sidecar file for a package or project.
+
+**What it does:**
+
+1. Scans source files for API response structs, handler return types, and
+   exported types with JSON tags.
+2. Identifies upstream service dependencies from imports, HTTP client calls,
+   gRPC stubs, and database query patterns.
+3. Generates a skeleton `stricture-lineage.yml` with:
+   - `service` derived from `go.mod` module name, `package.json` name, or
+     directory name.
+   - `upstream` entries with `TODO` placeholders for contract URLs.
+   - `fields` entries for every detected output field, with `from: TODO`.
+4. Outputs a quality report showing confidence levels for each inference.
+
+**Example output:**
+
+```yaml
+# stricture-lineage.yml (generated by strict init-lineage)
+# Review TODOs and fill in contract references.
+service: user-service  # inferred from go.mod
+version: v0.1.0        # TODO: set current version
+
+upstream:
+  # Detected from: import "github.com/acme/identity/client"
+  Identity:
+    contract: TODO  # e.g., git+https://github.com/acme/identity//openapi.yaml
+    scope: cross_repo
+
+fields:
+  # Detected in: internal/handler/user.go, type UserResponse struct
+  response.user_id:
+    from: Identity  # confidence: high (identity client called in handler)
+  response.user_name:
+    from: Identity  # confidence: high
+  response.created_at:
+    from: TODO      # confidence: low (no clear upstream detected)
+```
+
+**Flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--output` | `stricture-lineage.yml` | Output file path |
+| `--dry-run` | false | Print to stdout without writing |
+| `--confidence` | `all` | Filter: `all`, `high`, `medium` |
+
+### `strict import-openapi`
+
+Generate lineage annotations from an existing OpenAPI specification.
+
+**What it does:**
+
+1. Parses the OpenAPI spec (YAML or JSON, OpenAPI 3.0+).
+2. For each response schema, extracts field names, types, and descriptions.
+3. Matches response fields to struct fields in the codebase using:
+   - JSON tag matching (`json:"field_name"` matches OpenAPI property name)
+   - Name similarity matching (camelCase to snake_case normalization)
+   - Type compatibility checking
+4. Generates `stricture-source` annotations (inline or sidecar) with
+   the contract reference pointing to the OpenAPI spec.
+5. Reports unmatched fields (exist in spec but not in code, or vice versa).
+
+**Example:**
+
+```bash
+strict import-openapi \
+  --spec https://raw.githubusercontent.com/acme/identity/main/openapi.yaml \
+  --system Identity \
+  --output sidecar \
+  internal/handler/
+```
+
+**Flags:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--spec` | Yes | Path or URL to OpenAPI spec |
+| `--system` | Yes | Source system name for annotations |
+| `--output` | No | `sidecar` (default) or `inline` |
+| `--match-threshold` | No | Minimum match confidence 0-100 (default: 70) |
+| `--dry-run` | No | Print proposals without writing |
+
+### `strict validate`
+
+Check that all annotations are syntactically valid and semantically consistent.
+
+**What it checks:**
+
+| Check | Default | Strict |
+|-------|---------|--------|
+| Annotation syntax parses | Error | Error |
+| `from` references match sidecar upstream or registry | Warning | Error |
+| `field` references exist in actual struct fields | Warning | Error |
+| No duplicate field definitions (sidecar + inline) | Error | Error |
+| `contract` URLs are well-formed | Warning | Error |
+| `contract` URLs are reachable | Skip | Warning |
+| Override `expires` dates have not passed | Warning | Error |
+| All output fields have lineage annotations | Skip | Warning |
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| 0 | All checks pass |
+| 1 | Warnings found (strict mode only) |
+| 2 | Errors found |
+
+**CI usage:**
+
+```yaml
+- name: Validate lineage annotations
+  run: strict validate --strict .
+```
+
+### `strict coverage`
+
+Report lineage annotation coverage across the codebase.
+
+**Example output:**
+
+```
+Lineage Coverage Report
+=======================
+
+Overall: 47/62 fields (75.8%)
+
+internal/handler/user.go
+  UserResponse: 8/8 fields (100.0%)
+
+internal/handler/order.go
+  OrderResponse: 12/15 fields (80.0%)
+    Missing: shipping_method, discount_code, tax_amount
+
+internal/handler/search.go
+  SearchResponse: 0/12 fields (0.0%)  <- no annotations
+```
+
+**Flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--format` | `text` | Output: `text`, `json`, `markdown` |
+| `--min-coverage` | 0 | Fail if overall coverage below threshold (CI gate) |
+| `--output` | stdout | Write report to file |
+
+### `strict migrate-rename`
+
+Update annotations when struct fields or files are renamed.
+
+```bash
+# Field renamed
+strict migrate-rename response.userId response.user_id
+
+# System renamed
+strict migrate-rename --type system OldService NewService
+```
 
 ## Inputs
 
 1. Source code AST (Go/TS/JS first; others as adapters mature).
-2. Existing `stricture-source` blocks.
-3. Optional contract sources (OpenAPI, AsyncAPI, protobuf, etc.).
-4. Optional service registry (owner/escalation/runbook/docs defaults).
+2. Existing `stricture-source` annotations and sidecar files.
+3. Optional contract sources (OpenAPI, AsyncAPI, protobuf).
+4. Optional service registry (owner/escalation/runbook defaults).
 5. `.stricture-history/` baseline/current/diff for version automation.
 
 ## Outputs
 
 1. Proposed annotation edits (unified patch + JSON report).
-2. Annotation quality report:
-   - completeness
-   - confidence
-   - ambiguity reasons
-   - required human review fields
-3. Delta summary oriented to findings UX:
-   - cause
-   - blast radius
-   - owner
-   - runbook/docs links
-   - recommended remediation
+2. Annotation quality report (completeness, confidence, ambiguity, review flags).
+3. Delta summary (cause, blast radius, owner, runbook/docs links, remediation).
 
-## Quality Heuristics (v0)
-
-Score each annotation 0-100 with weighted checks:
-
-1. field/source traceability confidence
-2. ownership/escalation presence
-3. service runbook/docs link presence (when policy requires)
-4. contract reference quality
-5. flow/source clarity
-6. stale-version risk markers
-
-Low score gates can run in warn mode first, then promote to block mode.
-
-## CI Workflow (v0)
-
-1. `stricture helper suggest` (non-destructive).
-2. `stricture helper quality` (artifact + score thresholds).
-3. `stricture history record/diff/summarize`.
-4. optional `stricture helper apply` in bot PR mode.
-
-## Configuration (Proposed)
+## Configuration
 
 `stricture-helper.yml`:
 
-1. default field values and policy packs
-2. ownership/escalation mappings
-3. service runbook/doc-root templates
-4. contract import sources
-5. confidence thresholds + block/warn behavior
-6. patch application rules (safe paths only, review-required zones)
-7. optional flow-tier defaults and membership hints from policy/server catalogs
+```yaml
+helper:
+  # Default output target for apply/suggest
+  output_target: sidecar         # sidecar | inline
 
-## Risks + Mitigations
+  # Confidence thresholds
+  confidence:
+    auto_apply: 90               # Apply without review above this score
+    suggest: 50                   # Show suggestions above this score
+    skip: 20                      # Skip below this score
 
-1. **False confidence from inference**
-   - Mitigation: explicit confidence labels + review-required tags.
-2. **Noisy repeated edits**
-   - Mitigation: stable formatting + deterministic key ordering.
-3. **Policy drift across repos**
-   - Mitigation: policy pack versioning + centralized templates.
+  # Contract import sources
+  contracts:
+    - name: Identity
+      type: openapi
+      url: https://raw.githubusercontent.com/acme/identity/main/openapi.yaml
+    - name: Payments
+      type: openapi
+      url: https://raw.githubusercontent.com/acme/payments/main/openapi.yaml
+
+  # Field inference rules
+  inference:
+    import_to_system:
+      "github.com/acme/identity": Identity
+      "github.com/acme/payments": PaymentsCore
+    db_to_system:
+      "profiles.*": ProfileDB
+      "orders.*": OrderDB
+
+  # CI behavior
+  ci:
+    validate_mode: strict         # strict | warn
+    min_coverage: 0               # 0-100, fail if below
+    block_expired_overrides: true
+```
+
+## Workflow Examples
+
+### New Project Onboarding (5 minutes)
+
+```bash
+# 1. Generate sidecar skeleton
+strict init-lineage .
+
+# 2. Fill in contract URLs (manual, one-time)
+$EDITOR stricture-lineage.yml
+
+# 3. Import from OpenAPI specs
+strict import-openapi --spec openapi.yaml --system MyAPI .
+
+# 4. Review coverage
+strict coverage .
+
+# 5. Add to CI
+echo "strict validate --strict ." >> .github/workflows/ci.yml
+```
+
+### Daily Development
+
+```bash
+# After adding a new API field:
+# 1. Add the field to your struct
+# 2. Run helper to suggest annotation
+strict suggest internal/handler/user.go
+
+# 3. Review and apply
+strict apply internal/handler/user.go
+```
 
 ## Milestones
 
-1. **v0-a:** scan + suggest minimal compact blocks.
+1. **v0-a:** scan + suggest minimal annotations.
 2. **v0-b:** apply mode + deterministic formatting.
 3. **v0-c:** quality scoring + CI summary contract.
 4. **v1:** stronger contract ingestion + richer source-path inference.
-
-## Open Questions
-
-1. Should helper patch apply be defaulted to PR-bot only in CI?
-2. What is the minimum quality score allowed for block-mode rollout?
-3. Which contract format import should be prioritized first (OpenAPI vs others)?
+5. **v2:** org policy packs, approval workflows, CI bot mode.
