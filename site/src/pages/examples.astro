@@ -317,13 +317,23 @@ const examples = [
     <p class="muted">
       Repo layout convention: keep shared files under <code>.stricture/</code> (for example <code>.stricture/strict-lineage-systems.yaml</code>) and keep repo-level settings in <code>.stricture.yml</code>.
     </p>
+    <p class="example-links">
+      <a href="#service-registry">Service registry</a>
+      <span class="link-dot">·</span>
+      <a href="#industry-examples">Industry examples</a>
+      <span class="link-dot">·</span>
+      <a href="#language-examples">Language examples</a>
+      <span class="link-dot">·</span>
+      <a href="#policy-example">Policy example</a>
+    </p>
   </section>
 
-  <section class="card">
+  <section id="service-registry" class="card">
     <h2>Service-level annotations (registry)</h2>
     <p class="muted">
       This is where ownership, escalation, runbooks/docs, and flow tiers live. It is a shared registry file (for example <code>.stricture/strict-lineage-systems.yaml</code>), not inline code comments.
     </p>
+    <p class="muted"><strong>What you’ll learn:</strong> how services declare ownership, flow tiers, and risk.</p>
     <p class="example-links">
       <a href="/annotations">Annotation Guide</a>
       <span class="link-dot">·</span>
@@ -345,11 +355,12 @@ const examples = [
     </div>
   </section>
 
-  <section class="card">
+  <section id="industry-examples" class="card">
     <h2>Industry examples</h2>
     <p class="muted">
       Same schema, different risks. Flow tiers and service ownership keep drift findings aligned with real business impact.
     </p>
+    <p class="muted"><strong>What you’ll learn:</strong> how flows map to real business risks in different industries.</p>
     <div class="panel-grid">
       <div class="panel">
         <h3>Aviation + Shipping</h3>
@@ -375,9 +386,10 @@ const examples = [
     </div>
   </section>
 
-  <section class="card">
+  <section id="industry-language-examples" class="card">
     <h2>Industry language examples</h2>
     <p class="muted">Same industries, now shown as annotated code in realistic stacks.</p>
+    <p class="muted"><strong>What you’ll learn:</strong> how `stricture-source` looks in Go, Java, and Python.</p>
     <div class="panel-grid">
       <div class="panel">
         <h3>Aviation + Shipping (Go)</h3>
@@ -403,11 +415,12 @@ const examples = [
     </div>
   </section>
 
-  <section class="card">
+  <section id="language-examples" class="card">
     <h2>Language examples (tabbed)</h2>
     <p class="muted">
       Same topology, different stack: API is Java (<code>CheckoutGateway:API</code>) and web UI is Node.js (<code>CheckoutGateway:web-ui</code>).
     </p>
+    <p class="muted"><strong>What you’ll learn:</strong> how to reuse OpenAPI, OTel, and Buf metadata with Stricture.</p>
     <div class="example-tabs" role="tablist" aria-label="Language examples">
       {examples.map((example, idx) => (
         <button
@@ -445,12 +458,13 @@ const examples = [
     ))}
   </section>
 
-  <section class="card">
+  <section id="policy-example" class="card">
     <h2><a href="/policy">Policy example (flow-tier gating)</a></h2>
     <p class="muted">
       Repo-level pointers go in <code>.stricture.yml</code>; policy content can live in <code>.stricture/strict-policy.yaml</code> (or remote URL).
       See the <a href="/policy">Policy Guide</a> for required/optional fields and best practices.
     </p>
+    <p class="muted"><strong>What you’ll learn:</strong> how flow tiers turn drift findings into CI gates.</p>
     <div class="code-shell">
       <Code code={policyBindingSnippet} lang="yaml" />
     </div>

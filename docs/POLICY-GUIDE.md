@@ -1,10 +1,18 @@
 # Stricture Policy Guide
 
+**What it is:** a practical guide to policy packs (fields, defaults, and best use cases).  
+**What it isn’t:** the machine schema (see `docs/schemas/lineage-policy-pack.schema.json`).  
+**Who it’s for:** platform teams and CI owners defining enforcement rules.
+
 This guide explains policy packs: required vs optional fields, what each block does, and when to use it.
 
 ## File format
 
 Policy packs are YAML files validated by `lineage-policy-pack.schema.json`.
+
+Naming convention:
+- Local file: `.stricture/strict-policy.yaml`
+- Remote URL: `https://.../strict-policy.yaml`
 
 Minimal policy:
 

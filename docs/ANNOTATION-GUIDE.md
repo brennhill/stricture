@@ -1,5 +1,9 @@
 # Annotation Quality Guide
 
+**What it is:** guidance for writing compact, high-signal annotations that make findings readable.  
+**What it isn’t:** a full schema reference (see `docs/data-lineage-annotations.md`).  
+**Who it’s for:** engineers and reviewers writing `stricture-source` comments or registry metadata.
+
 Clear annotations make Stricture findings readable and actionable. Use this checklist when tagging fields.
 
 For CI/build automation and `.stricture-history` design, see

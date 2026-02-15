@@ -447,6 +447,12 @@ main > * + * {
   border-color: color-mix(in srgb, var(--accent) 75%, var(--line));
 }
 
+.hero-hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+
 .hero-nav {
   border: 1px solid var(--line);
   background: #ffffff;
