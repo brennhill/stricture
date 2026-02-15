@@ -216,6 +216,27 @@ const industrialSnippet = String.raw`'strict:flows':
     business_risk: scrap_cost
 `;
 
+const aviationShippingCode = String.raw`// Cargo Telemetry (Go)
+// stricture-source field=response.cargo.eta_minutes source_system=CargoTelemetry
+// source_version=v2026.03
+// sources=api:FlightOpsGateway.TrackCargo#response.eta_minutes@cross_repo?contract_ref=openapi://flight-ops/track
+func (h *Handler) TrackCargo(w http.ResponseWriter, r *http.Request) {
+  resp := TrackCargoResponse{EtaMinutes: 42}
+  json.NewEncoder(w).Encode(resp)
+}`;
+
+const administrationCode = String.raw`// Permit Gateway (Java)
+// stricture-source field=response.permit.status source_system=PermitGateway
+// source_version=v2026.02
+// sources=api:TreasuryAPI.SubmitPermit#response.permit.status@cross_repo?contract_ref=openapi://treasury/permit
+return Response.ok(new PermitResponse("APPROVED")).build();`;
+
+const industrialCode = String.raw`# PLC Gateway (Python)
+# stricture-source field=response.plant.temperature_c source_system=PLCGateway
+# source_version=v2026.04
+# sources=api:BatchQAService.ReportMetrics#response.temperature_c@cross_repo?contract_ref=openapi://qa/metrics
+return {"temperature_c": 412.3}`;
+
 const examples = [
   {
     id: "java",
@@ -349,6 +370,34 @@ const examples = [
         <p class="muted">Plant control and QA flows capture safety shutdown and scrap-cost risk.</p>
         <div class="code-shell">
           <Code code={industrialSnippet} lang="yaml" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Industry language examples</h2>
+    <p class="muted">Same industries, now shown as annotated code in realistic stacks.</p>
+    <div class="panel-grid">
+      <div class="panel">
+        <h3>Aviation + Shipping (Go)</h3>
+        <p class="muted">Cargo telemetry emitted from a Go handler.</p>
+        <div class="code-shell">
+          <Code code={aviationShippingCode} lang="go" />
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Administration (Java)</h3>
+        <p class="muted">Permit status emitted from a Java gateway.</p>
+        <div class="code-shell">
+          <Code code={administrationCode} lang="java" />
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Industrial Manufacturing (Python)</h3>
+        <p class="muted">Plant control metrics emitted from a Python service.</p>
+        <div class="code-shell">
+          <Code code={industrialCode} lang="python" />
         </div>
       </div>
     </div>
