@@ -77,6 +77,43 @@ Rollout object (optional):
 - `status` (in_progress, completed, rolled_back)
 - `started_at`, `updated_at`, `completed_at`
 
+## Kubernetes Integration (Guidance)
+
+Stricture does not manage deploys; it records them. Kubernetes remains the
+control plane.
+
+Recommended ingress (simplest):
+
+1. CI/CD posts a deployment event after `kubectl apply` / Helm release.
+2. Optional: a K8s controller or rollout tool posts updates during rollout.
+
+Suggested mapping:
+
+| Kubernetes signal | Ledger field |
+| --- | --- |
+| Deployment name / service | `service_id` |
+| Namespace or cluster | `environment` / `region` |
+| Image tag / chart version | `version` |
+| Git SHA annotation | `commit` |
+| Rollout strategy | `rollout.strategy` |
+| Rollout % | `rollout.percent` |
+| Rollout status | `rollout.status` |
+
+Example POST (CI/CD):
+
+```json
+{
+  "service_id": "commercegateway:api-service",
+  "environment": "prod",
+  "deployed_at": "2026-02-15T20:04:12Z",
+  "version": "v2026.02.15",
+  "commit": "a1b2c3d4",
+  "flow_ids": ["checkout"],
+  "region": ["us-east-1"],
+  "rollout": { "strategy": "canary", "percent": 25, "status": "in_progress" }
+}
+```
+
 ## Finding vs Change Event Contract (Default)
 
 Server ingest stores the full diff model. Downstream consumers apply this
