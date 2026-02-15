@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-02-15T09:09:55Z",
+  "generated_at": "2026-02-15T15:26:43Z",
   "truth": {
     "supportedFlows": 50,
     "annotatedFlows": 50,
@@ -7,6 +7,44 @@
     "truthVersion": "1",
     "lineageChecksum": "sha256:58456a9b22128a73bcb908c4d50c45a11efe6d41c24ba4e775352af79cd1a891"
   },
+  "flows": [
+    {
+      "id": "checkout",
+      "name": "Checkout",
+      "level": 1,
+      "owner": "team.ecommerce"
+    },
+    {
+      "id": "payments",
+      "name": "Payments",
+      "level": 1,
+      "owner": "team.fintech"
+    },
+    {
+      "id": "delivery",
+      "name": "Delivery",
+      "level": 2,
+      "owner": "team.logistics"
+    },
+    {
+      "id": "streaming",
+      "name": "Streaming",
+      "level": 2,
+      "owner": "team.media"
+    },
+    {
+      "id": "compliance",
+      "name": "Compliance",
+      "level": 1,
+      "owner": "team.governance"
+    },
+    {
+      "id": "platform",
+      "name": "Platform",
+      "level": 3,
+      "owner": "team.platform"
+    }
+  ],
   "services": [
     {
       "id": "audienceevents",
@@ -15,7 +53,10 @@
       "kind": "internal",
       "owner": "team.media-events",
       "escalation": "slack:#media-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "audienceevents:stream-service",
@@ -24,7 +65,10 @@
       "kind": "internal",
       "owner": "team.media-events",
       "escalation": "slack:#media-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "auditevents",
@@ -33,7 +77,10 @@
       "kind": "internal",
       "owner": "team.governance-events",
       "escalation": "slack:#governance-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "auditevents:stream-service",
@@ -42,7 +89,10 @@
       "kind": "internal",
       "owner": "team.governance-events",
       "escalation": "slack:#governance-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "commercecore",
@@ -51,7 +101,10 @@
       "kind": "internal",
       "owner": "team.ecommerce-core",
       "escalation": "pagerduty:ecommerce-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "commercecore:api-service",
@@ -60,7 +113,10 @@
       "kind": "internal",
       "owner": "team.ecommerce-core",
       "escalation": "pagerduty:ecommerce-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "commercegateway",
@@ -68,8 +124,11 @@
       "domain": "ecommerce",
       "kind": "internal",
       "owner": "team.ecommerce",
-      "escalation": "pagerduty:ecommerce-oncall",
-      "flowCount": 10
+      "escalation": "slack:#ecommerce-ui-oncall",
+      "flowCount": 10,
+      "flows": [
+        "checkout"
+      ]
     },
     {
       "id": "commercegateway:api-service",
@@ -78,7 +137,10 @@
       "kind": "internal",
       "owner": "team.ecommerce",
       "escalation": "pagerduty:ecommerce-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "checkout"
+      ]
     },
     {
       "id": "commercegateway:logging-sidecar",
@@ -87,7 +149,10 @@
       "kind": "internal",
       "owner": "team.ecommerce",
       "escalation": "slack:#ecommerce-observability",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "commercegateway:ui-service",
@@ -96,7 +161,10 @@
       "kind": "internal",
       "owner": "team.ecommerce",
       "escalation": "slack:#ecommerce-ui-oncall",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "fedex",
@@ -122,8 +190,11 @@
       "domain": "fintech",
       "kind": "internal",
       "owner": "team.fintech",
-      "escalation": "slack:#fintech-ui-oncall",
-      "flowCount": 10
+      "escalation": "slack:#fintech-observability",
+      "flowCount": 10,
+      "flows": [
+        "payments"
+      ]
     },
     {
       "id": "fintechgateway:api-service",
@@ -132,7 +203,10 @@
       "kind": "internal",
       "owner": "team.fintech",
       "escalation": "pagerduty:fintech-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "payments"
+      ]
     },
     {
       "id": "fintechgateway:logging-sidecar",
@@ -141,7 +215,10 @@
       "kind": "internal",
       "owner": "team.fintech",
       "escalation": "slack:#fintech-observability",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "fintechgateway:ui-service",
@@ -150,7 +227,10 @@
       "kind": "internal",
       "owner": "team.fintech",
       "escalation": "slack:#fintech-ui-oncall",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "governancecore",
@@ -159,7 +239,10 @@
       "kind": "internal",
       "owner": "team.governance-core",
       "escalation": "pagerduty:governance-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "governancecore:api-service",
@@ -168,7 +251,10 @@
       "kind": "internal",
       "owner": "team.governance-core",
       "escalation": "pagerduty:governance-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "governancehub",
@@ -176,8 +262,11 @@
       "domain": "governance",
       "kind": "internal",
       "owner": "team.governance",
-      "escalation": "slack:#governance-ui-oncall",
-      "flowCount": 10
+      "escalation": "pagerduty:governance-oncall",
+      "flowCount": 10,
+      "flows": [
+        "compliance"
+      ]
     },
     {
       "id": "governancehub:api-service",
@@ -186,7 +275,10 @@
       "kind": "internal",
       "owner": "team.governance",
       "escalation": "pagerduty:governance-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "compliance"
+      ]
     },
     {
       "id": "governancehub:logging-sidecar",
@@ -195,7 +287,10 @@
       "kind": "internal",
       "owner": "team.governance",
       "escalation": "slack:#governance-observability",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "governancehub:ui-service",
@@ -204,7 +299,10 @@
       "kind": "internal",
       "owner": "team.governance",
       "escalation": "slack:#governance-ui-oncall",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "ledgercore",
@@ -213,7 +311,10 @@
       "kind": "internal",
       "owner": "team.fintech-core",
       "escalation": "pagerduty:fintech-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "ledgercore:api-service",
@@ -222,7 +323,10 @@
       "kind": "internal",
       "owner": "team.fintech-core",
       "escalation": "pagerduty:fintech-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "logisticscore",
@@ -231,7 +335,10 @@
       "kind": "internal",
       "owner": "team.logistics-core",
       "escalation": "pagerduty:logistics-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "logisticscore:api-service",
@@ -240,7 +347,10 @@
       "kind": "internal",
       "owner": "team.logistics-core",
       "escalation": "pagerduty:logistics-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "logisticsevents",
@@ -249,7 +359,10 @@
       "kind": "internal",
       "owner": "team.logistics-events",
       "escalation": "slack:#logistics-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "logisticsevents:stream-service",
@@ -258,7 +371,10 @@
       "kind": "internal",
       "owner": "team.logistics-events",
       "escalation": "slack:#logistics-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "logisticsgateway",
@@ -267,7 +383,10 @@
       "kind": "internal",
       "owner": "team.logistics",
       "escalation": "pagerduty:logistics-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "delivery"
+      ]
     },
     {
       "id": "logisticsgateway:api-service",
@@ -276,7 +395,10 @@
       "kind": "internal",
       "owner": "team.logistics",
       "escalation": "pagerduty:logistics-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "delivery"
+      ]
     },
     {
       "id": "logisticsgateway:ingestion",
@@ -285,7 +407,10 @@
       "kind": "internal",
       "owner": "team.logistics-ingest",
       "escalation": "pagerduty:logistics-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "delivery"
+      ]
     },
     {
       "id": "logisticsgateway:logging-sidecar",
@@ -294,7 +419,10 @@
       "kind": "internal",
       "owner": "team.logistics",
       "escalation": "slack:#logistics-observability",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "logisticsgateway:notification",
@@ -303,7 +431,10 @@
       "kind": "internal",
       "owner": "team.logistics-notify",
       "escalation": "pagerduty:logistics-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "delivery"
+      ]
     },
     {
       "id": "logisticsgateway:routing",
@@ -312,7 +443,10 @@
       "kind": "internal",
       "owner": "team.logistics-routing",
       "escalation": "pagerduty:logistics-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "delivery"
+      ]
     },
     {
       "id": "logisticsgateway:tracking-api",
@@ -321,7 +455,10 @@
       "kind": "internal",
       "owner": "team.logistics-tracking",
       "escalation": "pagerduty:logistics-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "delivery"
+      ]
     },
     {
       "id": "logisticsgateway:ui-service",
@@ -330,7 +467,10 @@
       "kind": "internal",
       "owner": "team.logistics",
       "escalation": "slack:#logistics-ui-oncall",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "mediacore",
@@ -339,7 +479,10 @@
       "kind": "internal",
       "owner": "team.media-core",
       "escalation": "pagerduty:media-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "mediacore:api-service",
@@ -348,7 +491,10 @@
       "kind": "internal",
       "owner": "team.media-core",
       "escalation": "pagerduty:media-core-api",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "mediagateway",
@@ -357,7 +503,10 @@
       "kind": "internal",
       "owner": "team.media",
       "escalation": "slack:#media-ui-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "streaming"
+      ]
     },
     {
       "id": "mediagateway:api-service",
@@ -366,7 +515,10 @@
       "kind": "internal",
       "owner": "team.media",
       "escalation": "pagerduty:media-oncall",
-      "flowCount": 10
+      "flowCount": 10,
+      "flows": [
+        "streaming"
+      ]
     },
     {
       "id": "mediagateway:logging-sidecar",
@@ -375,7 +527,10 @@
       "kind": "internal",
       "owner": "team.media",
       "escalation": "slack:#media-observability",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "mediagateway:ui-service",
@@ -384,7 +539,10 @@
       "kind": "internal",
       "owner": "team.media",
       "escalation": "slack:#media-ui-oncall",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "orderevents",
@@ -393,7 +551,10 @@
       "kind": "internal",
       "owner": "team.ecommerce-events",
       "escalation": "slack:#ecommerce-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "orderevents:stream-service",
@@ -402,7 +563,10 @@
       "kind": "internal",
       "owner": "team.ecommerce-events",
       "escalation": "slack:#ecommerce-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "promotionsapp",
@@ -411,7 +575,10 @@
       "kind": "internal",
       "owner": "team.promotions-app",
       "escalation": "pagerduty:promotions-app-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "checkout"
+      ]
     },
     {
       "id": "promotionsapp:api-service",
@@ -420,7 +587,10 @@
       "kind": "internal",
       "owner": "team.promotions-app",
       "escalation": "pagerduty:promotions-app-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "checkout"
+      ]
     },
     {
       "id": "promotionsconfig",
@@ -429,7 +599,10 @@
       "kind": "internal",
       "owner": "team.promotions-config",
       "escalation": "pagerduty:promotions-config-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "checkout"
+      ]
     },
     {
       "id": "promotionsconfig:api-service",
@@ -438,7 +611,10 @@
       "kind": "internal",
       "owner": "team.promotions-config",
       "escalation": "pagerduty:promotions-config-oncall",
-      "flowCount": 1
+      "flowCount": 1,
+      "flows": [
+        "checkout"
+      ]
     },
     {
       "id": "riskevents",
@@ -447,7 +623,10 @@
       "kind": "internal",
       "owner": "team.fintech-events",
       "escalation": "slack:#fintech-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "riskevents:stream-service",
@@ -456,7 +635,10 @@
       "kind": "internal",
       "owner": "team.fintech-events",
       "escalation": "slack:#fintech-stream",
-      "flowCount": 0
+      "flowCount": 0,
+      "flows": [
+        "platform"
+      ]
     },
     {
       "id": "sec",

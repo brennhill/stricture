@@ -19,6 +19,7 @@ import (
 type demoPack struct {
 	GeneratedAt        string                              `json:"generated_at"`
 	Truth              demoTruth                           `json:"truth"`
+	Flows              []demoFlow                          `json:"flows"`
 	Services           []demoService                       `json:"services"`
 	Edges              []demoEdge                          `json:"edges"`
 	FieldMetadata      map[string]demoFieldMetadata        `json:"field_metadata"`
@@ -47,6 +48,14 @@ type demoService struct {
 	RunbookURL string `json:"runbookURL,omitempty"`
 	DocRoot    string `json:"docRoot,omitempty"`
 	FlowCount  int    `json:"flowCount"`
+	Flows      []string `json:"flows,omitempty"`
+}
+
+type demoFlow struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Level int    `json:"level"`
+	Owner string `json:"owner"`
 }
 
 type demoEdge struct {
@@ -77,6 +86,7 @@ type nodeMeta struct {
 	RunbookURL string
 	DocRoot    string
 	FlowCount  int
+	Flows      []string
 }
 
 type mutationType string
@@ -89,6 +99,36 @@ const (
 	mutationExternalAsOf     mutationType = "external_as_of_stale"
 	mutationAnnotationMissed mutationType = "annotation_missing"
 )
+
+func defaultFlows() []demoFlow {
+	return []demoFlow{
+		{ID: "checkout", Name: "Checkout", Level: 1, Owner: "team.ecommerce"},
+		{ID: "payments", Name: "Payments", Level: 1, Owner: "team.fintech"},
+		{ID: "delivery", Name: "Delivery", Level: 2, Owner: "team.logistics"},
+		{ID: "streaming", Name: "Streaming", Level: 2, Owner: "team.media"},
+		{ID: "compliance", Name: "Compliance", Level: 1, Owner: "team.governance"},
+		{ID: "platform", Name: "Platform", Level: 3, Owner: "team.platform"},
+	}
+}
+
+func flowForDomain(domain string) []string {
+	switch strings.ToLower(domain) {
+	case "ecommerce":
+		return []string{"checkout"}
+	case "fintech":
+		return []string{"payments"}
+	case "logistics":
+		return []string{"delivery"}
+	case "media":
+		return []string{"streaming"}
+	case "governance", "corporate":
+		return []string{"compliance"}
+	case "shared":
+		return []string{"platform"}
+	default:
+		return nil
+	}
+}
 
 func main() {
 	artifactPath := flag.String("artifact", "tests/lineage/usecases/current.json", "Path to lineage artifact JSON")
@@ -225,6 +265,9 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 		node.Escalation = fallbackString(node.Escalation, "slack:#unknown-oncall")
 		node.Kind = fallbackString(node.Kind, "internal")
 		node.Domain = fallbackString(node.Domain, "shared")
+		if len(node.Flows) == 0 {
+			node.Flows = flowForDomain(node.Domain)
+		}
 	}
 
 	services := make([]demoService, 0, len(nodes))
@@ -239,6 +282,7 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 			RunbookURL: node.RunbookURL,
 			DocRoot:    node.DocRoot,
 			FlowCount:  node.FlowCount,
+			Flows:      node.Flows,
 		})
 	}
 	sort.Slice(services, func(i, j int) bool { return services[i].ID < services[j].ID })
@@ -320,6 +364,7 @@ func buildDemoPack(artifact lineage.Artifact, registry lineage.SystemRegistry) (
 			TruthVersion:          artifact.SchemaVersion,
 			LineageChecksum:       "sha256:" + hex.EncodeToString(artifactDigest[:]),
 		},
+		Flows:              defaultFlows(),
 		Services:           services,
 		Edges:              edgeList,
 		FieldMetadata:      fieldMeta,
@@ -445,6 +490,9 @@ func ensureDemoService(pack *demoPack, service demoService) {
 		if existing.ID == service.ID {
 			return
 		}
+	}
+	if len(service.Flows) == 0 {
+		service.Flows = flowForDomain(service.Domain)
 	}
 	pack.Services = append(pack.Services, service)
 	sort.Slice(pack.Services, func(i, j int) bool { return pack.Services[i].ID < pack.Services[j].ID })

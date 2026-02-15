@@ -27,6 +27,14 @@ interface ServiceNode {
   runbookURL?: string;
   docRoot?: string;
   flowCount: number;
+  flows?: string[];
+}
+
+interface FlowDefinition {
+  id: string;
+  name: string;
+  level: number;
+  owner?: string;
 }
 
 interface EdgeLink {
@@ -91,9 +99,24 @@ interface Override {
 interface Policy {
   mode: GateMode;
   failOn: Severity;
-  hardBlockPromotionsDrift: boolean;
-  criticalServiceId: string;
-  hardBlockReason: string;
+  pack: {
+    schema_version: number;
+    policy_id: string;
+    lineage: {
+      findings: {
+        require_downstream_impact: boolean;
+        flow_criticality: {
+          enabled: boolean;
+          critical_flow_ids: string[];
+          critical_flow_block_reason: string;
+        };
+      };
+    };
+  };
+  coverage: {
+    implementedFields: string[];
+    supportedFields: string[];
+  };
 }
 
 interface RunSummary {
@@ -109,6 +132,7 @@ interface RunSummary {
 
 interface DemoSnapshot {
   services: ServiceNode[];
+  flows: FlowDefinition[];
   edges: EdgeLink[];
   findings: Finding[];
   mutations: Mutation[];
@@ -137,6 +161,7 @@ interface EscalationStep {
 }
 
 interface DemoPackShape {
+  flows: FlowDefinition[];
   services: ServiceNode[];
   edges: Array<Omit<EdgeLink, "status">>;
   truth: DemoSnapshot["truth"];
@@ -249,6 +274,7 @@ function edgesWithHealthyStatus(): EdgeLink[] {
 function defaultSnapshot(): DemoSnapshot {
   return {
     services: PACK.services,
+    flows: PACK.flows || [],
     edges: edgesWithHealthyStatus(),
     findings: [],
     mutations: [],
@@ -256,9 +282,37 @@ function defaultSnapshot(): DemoSnapshot {
     policy: {
       mode: "warn",
       failOn: "high",
-      hardBlockPromotionsDrift: true,
-      criticalServiceId: "fintechgateway",
-      hardBlockReason: "Risk of order loss",
+      pack: {
+        schema_version: 1,
+        policy_id: "production_standard",
+        lineage: {
+          findings: {
+            require_downstream_impact: true,
+            flow_criticality: {
+              enabled: true,
+              critical_flow_ids: ["checkout"],
+              critical_flow_block_reason: "Risk of order loss",
+            },
+          },
+        },
+      },
+      coverage: {
+        implementedFields: [
+          "lineage.findings.require_downstream_impact",
+          "lineage.findings.flow_criticality.enabled",
+          "lineage.findings.flow_criticality.critical_flow_ids",
+          "lineage.findings.flow_criticality.critical_flow_block_reason",
+        ],
+        supportedFields: [
+          "lineage.require.*",
+          "lineage.defaults.*",
+          "lineage.severity_overrides.*",
+          "lineage.findings.require_downstream_impact",
+          "lineage.findings.unknown_impact_severity",
+          "lineage.findings.self_only.*",
+          "lineage.findings.flow_criticality.*",
+        ],
+      },
     },
     runSummary: {
       runCount: 0,
@@ -286,26 +340,29 @@ function remediationFor(changeType: string): string {
   return remediationByChangeType[changeType] || "Inspect diff details and update source annotations/contracts.";
 }
 
-function policyRationaleForFinding(finding: Finding, policy: Policy): string | undefined {
-  if (!policy.hardBlockPromotionsDrift) {
+function serviceFlows(snapshot: DemoSnapshot, serviceId: string): string[] {
+  if (!serviceId) return [];
+  const service = snapshot.services.find((row) => row.id === serviceId);
+  return Array.isArray(service?.flows) ? service.flows : [];
+}
+
+function policyRationaleForFinding(snapshot: DemoSnapshot, finding: Finding): string | undefined {
+  const policy = snapshot.policy;
+  const flowPolicy = policy.pack.lineage.findings.flow_criticality;
+  if (!flowPolicy.enabled) {
     return undefined;
   }
   if (finding.changeType !== "enum_changed") {
     return undefined;
   }
-
-  const sourceID = normalizeID(finding.source?.serviceId || finding.source?.service || "");
-  if (sourceID !== "promotionsconfig") {
+  const impactedID = finding.impact?.serviceId || finding.serviceId || "";
+  const impactedFlows = serviceFlows(snapshot, impactedID).map(normalizeID);
+  const criticalFlows = (flowPolicy.critical_flow_ids || []).map(normalizeID);
+  const isCritical = impactedFlows.some((flow) => criticalFlows.includes(flow));
+  if (!isCritical) {
     return undefined;
   }
-
-  const impactedID = normalizeID(finding.impact?.serviceId || finding.serviceId || "");
-  const criticalID = normalizeID(policy.criticalServiceId);
-  if (criticalID && impactedID && impactedID !== criticalID) {
-    return undefined;
-  }
-
-  return policy.hardBlockReason || "Risk of order loss";
+  return flowPolicy.critical_flow_block_reason || "Risk of order loss";
 }
 
 function computeFindings(snapshot: DemoSnapshot): Finding[] {
@@ -419,14 +476,15 @@ function findingHasDownstreamImpact(snapshot: DemoSnapshot, finding: Finding): b
 function runEngine(snapshot: DemoSnapshot): DemoSnapshot {
   const now = new Date();
   const allFindings = computeFindings(snapshot);
+  const requireImpact = snapshot.policy.pack.lineage.findings.require_downstream_impact;
   const activeFindings = allFindings.filter((finding) => {
     if (snapshot.overrides.some((override) => isOverrideActive(override, finding, now))) {
       return false;
     }
-    return findingHasDownstreamImpact(snapshot, finding);
+    return requireImpact ? findingHasDownstreamImpact(snapshot, finding) : true;
   });
   const findingsWithPolicy = activeFindings.map((finding) => {
-    const rationale = policyRationaleForFinding(finding, snapshot.policy);
+    const rationale = policyRationaleForFinding(snapshot, finding);
     if (!rationale) {
       return finding;
     }
@@ -583,25 +641,40 @@ export class DemoSession {
       const body = await parseJSON(request);
       const mode = String(body.mode || "") as GateMode;
       const failOn = String(body.failOn || "") as Severity;
-      const hardBlockPromotionsDrift = Boolean(body.hardBlockPromotionsDrift);
-      const criticalServiceId = normalizeID(String(body.criticalServiceId || ""));
+      const requireImpact = Boolean(body.requireDownstreamImpact);
+      const flowHardBlock = Boolean(body.flowHardBlock);
+      const criticalFlowId = normalizeID(String(body.criticalFlowId || ""));
       const hardBlockReason = String(body.hardBlockReason || "").trim();
 
       if ((mode !== "warn" && mode !== "block") || !(failOn in severityRank)) {
         return textResponse("policy requires valid mode and failOn", 400);
       }
-      if (!snapshot.services.some((service) => service.id === criticalServiceId)) {
-        return textResponse("policy requires valid criticalServiceId", 400);
+      if (!snapshot.flows.some((flow) => normalizeID(flow.id) === criticalFlowId)) {
+        return textResponse("policy requires valid criticalFlowId", 400);
       }
 
       const updated = {
         ...snapshot,
         policy: {
+          ...snapshot.policy,
           mode,
           failOn,
-          hardBlockPromotionsDrift,
-          criticalServiceId,
-          hardBlockReason: hardBlockReason || "Risk of order loss",
+          pack: {
+            ...snapshot.policy.pack,
+            lineage: {
+              ...snapshot.policy.pack.lineage,
+              findings: {
+                ...snapshot.policy.pack.lineage.findings,
+                require_downstream_impact: requireImpact,
+                flow_criticality: {
+                  ...snapshot.policy.pack.lineage.findings.flow_criticality,
+                  enabled: flowHardBlock,
+                  critical_flow_ids: [criticalFlowId],
+                  critical_flow_block_reason: hardBlockReason || "Risk of order loss",
+                },
+              },
+            },
+          },
         },
       };
       const next = runEngine(updated);

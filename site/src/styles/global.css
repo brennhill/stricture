@@ -795,6 +795,22 @@ select {
   max-width: 72ch;
 }
 
+.code-shell {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  margin-top: 0.6rem;
+}
+
+.code-shell pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 .muted {
   margin: 0.3rem 0 0.6rem;
   color: var(--ink-soft);

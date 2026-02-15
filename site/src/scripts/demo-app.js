@@ -32,9 +32,12 @@ const selectors = {
   mutationField: query("#mutation-field"),
   policyMode: query("#policy-mode"),
   policyFailOn: query("#policy-fail-on"),
-  policyCriticalService: query("#policy-critical-service"),
-  policyPromotionsHardBlock: query("#policy-promotions-hard-block"),
+  policyCriticalFlow: query("#policy-critical-flow"),
+  policyRequireImpact: query("#policy-require-impact"),
+  policyFlowHardBlock: query("#policy-flow-hard-block"),
   policyHardBlockReason: query("#policy-hard-block-reason"),
+  policyCoverage: query("#policy-coverage"),
+  policyPackPreview: query("#policy-pack-preview"),
   applyMutation: query("#apply-mutation"),
   updatePolicy: query("#update-policy"),
   runStricture: query("#run-stricture"),
@@ -418,6 +421,38 @@ function updatePolicyControls(snapshot) {
   selectors.updatePolicy.title = enabled
     ? "Apply current policy settings to staged changes."
     : "Stage at least one change before applying policy.";
+}
+
+function policyPackYaml(pack) {
+  if (!pack) {
+    return "";
+  }
+  const findings = pack.lineage?.findings || {};
+  const flow = findings.flow_criticality || {};
+  const criticalFlows = Array.isArray(flow.critical_flow_ids) ? flow.critical_flow_ids : [];
+  return [
+    "schema_version: 1",
+    `policy_id: ${pack.policy_id || "production_standard"}`,
+    "",
+    "lineage:",
+    "  findings:",
+    `    require_downstream_impact: ${Boolean(findings.require_downstream_impact)}`,
+    "    flow_criticality:",
+    `      enabled: ${Boolean(flow.enabled)}`,
+    `      critical_flow_ids: [${criticalFlows.join(", ")}]`,
+    `      critical_flow_block_reason: \"${flow.critical_flow_block_reason || "Risk of order loss"}\"`,
+  ].join("\n");
+}
+
+function updatePolicyPreview(snapshot) {
+  if (selectors.policyPackPreview) {
+    selectors.policyPackPreview.textContent = policyPackYaml(snapshot.policy?.pack);
+  }
+  if (selectors.policyCoverage) {
+    const implemented = snapshot.policy?.coverage?.implementedFields?.length || 0;
+    const supported = snapshot.policy?.coverage?.supportedFields?.length || 0;
+    selectors.policyCoverage.textContent = `Policy pack support: ${implemented}/${supported} fields (demo mode).`;
+  }
 }
 
 function worstStatus(current, next) {
@@ -1006,8 +1041,10 @@ function renderRunSummary(snapshot) {
   const delta = parseFindingDelta(top);
   const { sourceName, impactName } = findingCauseImpact(snapshot, top, mutation);
   const gateText = summary.gate === "BLOCK" ? "Deploy blocked." : "Deploy allowed.";
-  const policyConfig = snapshot.policy?.hardBlockPromotionsDrift
-    ? `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+ with promotions hard-block on ${serviceName(snapshot, snapshot.policy.criticalServiceId)}.`
+  const flowPolicy = snapshot.policy?.pack?.lineage?.findings?.flow_criticality;
+  const criticalFlow = flowPolicy?.critical_flow_ids?.[0] || "n/a";
+  const policyConfig = flowPolicy?.enabled
+    ? `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+ with flow hard-block on ${criticalFlow}.`
     : `Policy: ${snapshot.policy.mode}/${snapshot.policy.failOn}+.`;
   const stagedText = ` Staged changes: ${snapshot.mutations?.length || 0}.`;
   const policyText = summary.policyRationale ? ` ${summary.policyRationale}` : "";
@@ -1170,20 +1207,31 @@ function render(snapshot) {
   if (selectors.policyFailOn) {
     selectors.policyFailOn.value = snapshot.policy.failOn;
   }
-  if (selectors.policyCriticalService) {
-    const serviceIDs = [...new Set((snapshot.services || []).map((service) => topologyRootId(service.id)).filter(Boolean))]
-      .sort((left, right) => left.localeCompare(right));
-    setOptions(selectors.policyCriticalService, serviceIDs, (id) => serviceName(snapshot, id));
-    if (serviceIDs.includes(snapshot.policy.criticalServiceId)) {
-      selectors.policyCriticalService.value = snapshot.policy.criticalServiceId;
+  if (selectors.policyCriticalFlow) {
+    const flowIDs = [...new Set((snapshot.flows || []).map((flow) => flow.id).filter(Boolean))];
+    if (flowIDs.length === 0) {
+      flowIDs.push("checkout");
+    }
+    flowIDs.sort((left, right) => left.localeCompare(right));
+    setOptions(selectors.policyCriticalFlow, flowIDs, (id) => {
+      const flow = (snapshot.flows || []).find((row) => row.id === id);
+      return flow?.name ? `${flow.name} (${id})` : id;
+    });
+    const activeFlow = snapshot.policy?.pack?.lineage?.findings?.flow_criticality?.critical_flow_ids?.[0];
+    if (activeFlow && flowIDs.includes(activeFlow)) {
+      selectors.policyCriticalFlow.value = activeFlow;
     }
   }
-  if (selectors.policyPromotionsHardBlock) {
-    selectors.policyPromotionsHardBlock.checked = !!snapshot.policy.hardBlockPromotionsDrift;
+  if (selectors.policyRequireImpact) {
+    selectors.policyRequireImpact.checked = !!snapshot.policy?.pack?.lineage?.findings?.require_downstream_impact;
+  }
+  if (selectors.policyFlowHardBlock) {
+    selectors.policyFlowHardBlock.checked = !!snapshot.policy?.pack?.lineage?.findings?.flow_criticality?.enabled;
   }
   if (selectors.policyHardBlockReason) {
-    selectors.policyHardBlockReason.value = snapshot.policy.hardBlockReason || "";
+    selectors.policyHardBlockReason.value = snapshot.policy?.pack?.lineage?.findings?.flow_criticality?.critical_flow_block_reason || "";
   }
+  updatePolicyPreview(snapshot);
 }
 
 async function bootstrap() {
@@ -1282,8 +1330,9 @@ async function updatePolicy() {
   const payload = {
     mode: selectors.policyMode?.value,
     failOn: selectors.policyFailOn?.value,
-    criticalServiceId: selectors.policyCriticalService?.value,
-    hardBlockPromotionsDrift: selectors.policyPromotionsHardBlock?.checked,
+    criticalFlowId: selectors.policyCriticalFlow?.value,
+    requireDownstreamImpact: selectors.policyRequireImpact?.checked,
+    flowHardBlock: selectors.policyFlowHardBlock?.checked,
     hardBlockReason: selectors.policyHardBlockReason?.value.trim(),
   };
   const response = await request(`/api/session/${state.sessionId}/policy`, "POST", payload);

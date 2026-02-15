@@ -72,19 +72,27 @@ export const prerender = true;
           </select>
         </label>
         <label>
-          Critical impacted service
-          <select id="policy-critical-service"></select>
+          Critical flow
+          <select id="policy-critical-flow"></select>
         </label>
         <label>
-          <input id="policy-promotions-hard-block" type="checkbox" />
-          Hard-block promotion enum drift for this service
+          <input id="policy-require-impact" type="checkbox" />
+          Require downstream impact
+        </label>
+        <label>
+          <input id="policy-flow-hard-block" type="checkbox" />
+          Flow criticality hard block
         </label>
         <label>
           Hard-block reason shown in findings
           <input id="policy-hard-block-reason" type="text" value="Risk of order loss" />
         </label>
+        <p class="hint" id="policy-coverage"></p>
         <p class="hint" id="policy-impact-tip" title="Policy only affects staged changes in this session. Stage a mutation first, or clear staged changes to return to baseline.">Policy only affects staged changes in this session. Stage a change first.</p>
         <button id="update-policy" class="button button-primary">Apply policy</button>
+        <div class="code-shell">
+          <pre id="policy-pack-preview"></pre>
+        </div>
 
         <div class="control-actions">
           <button id="run-stricture" class="button button-primary">Rerun Stricture</button>
