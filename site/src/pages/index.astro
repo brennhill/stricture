@@ -6,25 +6,25 @@ export const prerender = true;
 const heroSlides = [
   {
     title: "Build safe with AI.",
-    lead: "AI-generated code can silently drift APIs and contracts without warning, creating massive risk across service boundaries. Stricture catches that drift, enforces the contract, and blocks unsafe deploys before incidents hit customers.",
+    lead: "AI-generated code can drift APIs without warning. Stricture catches the drift, shows impact, and blocks unsafe deploys before customers feel it.",
     visualTitle: "Agent change introduces contract drift",
     visualBody: "A generated PR widens a core field type. Stricture traces downstream consumers, highlights the impacted path, and blocks the deploy until contracts are fixed."
   },
   {
     title: "Keep AI-generated changes inside enforceable guardrails.",
-    lead: "Define acceptable changes with annotations, ownership, service-level flow tiers, and policy gates so teams can move fast while still protecting production contracts.",
+    lead: "Define acceptable changes with annotations, ownership, flow tiers, and policy gates so teams move fast without breaking contracts.",
     visualTitle: "Policy mode protects release flow",
     visualBody: "Teams run in warn mode first, then promote rules to block mode and flow-tier hard blocks once confidence is high and owners are assigned."
   },
   {
     title: "Detect API drift before it becomes an incident.",
-    lead: "Stricture compares current lineage and contract state against a known-good baseline and surfaces exactly what changed, why it matters, and who is affected.",
+    lead: "Compare lineage against a known-good baseline to see what changed, why it matters, and who is affected.",
     visualTitle: "Baseline diff catches risky changes",
     visualBody: "Findings include the source change, blast radius, and escalation chain so responders can act before customers are impacted."
   },
   {
     title: "Ship faster without losing contract integrity.",
-    lead: "Use AI where it helps most, then let Stricture validate service boundaries, data contracts, and architecture invariants before release.",
+    lead: "Use AI where it helps, then let Stricture validate service boundaries, contracts, and architecture invariants before release.",
     visualTitle: "Velocity with reliable boundaries",
     visualBody: "Developers keep delivery speed while CI blocks only the changes that create real downstream risk."
   }

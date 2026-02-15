@@ -309,13 +309,13 @@ const examples = [
     <p class="kicker">Examples</p>
     <h1>Strict annotations in real stacks</h1>
     <p class="lead">
-      Use your existing framework metadata (OpenAPI, OpenTelemetry, protobuf/buf), then add strict lineage comments where fields are emitted or transformed.
+      Reuse OpenAPI, OpenTelemetry, and protobuf/buf, then add strict lineage comments where fields are emitted or transformed.
     </p>
     <p class="muted">
-      Pattern: keep service-level metadata in <code>strict:systems[]</code>, and API/field-level provenance in <code>stricture-source</code> comments.
+      Pattern: service metadata lives in <code>strict:systems[]</code>; API/field provenance lives in <code>stricture-source</code> comments.
     </p>
     <p class="muted">
-      Repo layout convention: keep shared files under <code>.stricture/</code> (for example <code>.stricture/strict-lineage-systems.yaml</code>) and keep repo-level settings in <code>.stricture.yml</code>.
+      Repo convention: shared files in <code>.stricture/</code> (for example <code>.stricture/strict-lineage-systems.yaml</code>), repo-level settings in <code>.stricture.yml</code>.
     </p>
     <p class="example-links">
       <a href="#service-registry">Service registry</a>
