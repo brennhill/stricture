@@ -9,7 +9,7 @@ jobs:
   verify-policy-binding:
     runs-on: ubuntu-latest
     env:
-      STRICTURE_POLICY_URL: https://policies.example.com/stricture/prod.yml
+      STRICTURE_POLICY_URL: https://policies.example.com/stricture/strict-policy.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@v4

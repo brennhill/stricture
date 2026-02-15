@@ -184,8 +184,10 @@ Policy must be consumable by:
 Canonical repository binding is a single policy URL reference:
 
 ```yaml
-'strict:policy_url': https://policies.example.com/stricture/prod.yml
+'strict:policy_url': https://policies.example.com/stricture/strict-policy.yaml
 ```
+
+Recommended naming: keep the policy file named `strict-policy.yaml` whether it is stored locally or served remotely, so the URL and the repo-local filename match.
 
 Supported URL targets:
 

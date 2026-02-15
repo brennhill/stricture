@@ -322,7 +322,7 @@ const modeMeta = {
     <p class="muted">
       Teams can keep base annotations lightweight, then enforce stricter org rules through a single policy URL. Repo binding:
     </p>
-    <pre><code>{`'strict:policy_url': https://policies.example.com/stricture/prod.yml
+    <pre><code>{`'strict:policy_url': https://policies.example.com/stricture/strict-policy.yaml
 'strict:policy_sha256': <optional_sha256_pin>`}</code></pre>
     <p class="muted">CI/CD enforcement pattern:</p>
     <pre><code>{`stricture policy verify-ref \

@@ -143,7 +143,7 @@ app.get("/v1/checkout/authorize/:cartId", (req, res) => {
 `;
 
 const policyBindingSnippet = String.raw`# .stricture.yml
-'strict:policy_url': https://policies.example.com/stricture/prod.yaml
+'strict:policy_url': https://policies.example.com/stricture/strict-policy.yaml
 'strict:policy_sha256': <optional_sha256_pin>
 'strict:server_url': https://stricture.example.com
 `;
