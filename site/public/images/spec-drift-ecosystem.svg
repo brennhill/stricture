@@ -65,9 +65,9 @@
 
   <!-- Drift highlight -->
   <g>
-    <circle cx="190" cy="185" r="10" fill="#dc2626"/>
-    <circle cx="600" cy="155" r="10" fill="#f59e0b"/>
-    <circle cx="1010" cy="215" r="10" fill="#f59e0b"/>
+    <circle cx="260" cy="185" r="10" fill="#dc2626"/>
+    <circle cx="680" cy="155" r="10" fill="#f59e0b"/>
+    <circle cx="1080" cy="215" r="10" fill="#f59e0b"/>
   </g>
 
   <!-- Legend -->
