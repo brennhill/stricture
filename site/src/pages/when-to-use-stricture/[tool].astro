@@ -1,0 +1,159 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import { comparisons, type ComparisonEntry } from "../../data/comparisons";
+
+export function getStaticPaths() {
+  return comparisons.map((entry) => ({
+    params: { tool: entry.slug },
+    props: { entry }
+  }));
+}
+
+interface Props {
+  entry: ComparisonEntry;
+}
+
+const { entry } = Astro.props;
+---
+
+<MainLayout title={`When To Use Stricture With ${entry.tool} | Comparison`}>
+  <section class="hero compare-hero">
+    <p class="kicker">When To Use Stricture + {entry.tool}</p>
+    <h1>{entry.oneLineDifference}</h1>
+    <p class="lead">{entry.overlapSummary}</p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/when-to-use-stricture">All Comparisons</a>
+      <a class="button button-secondary" href="/walkthrough">See Live Walkthrough</a>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>At a glance</h2>
+    <div class="compare-glance-grid">
+      <article class="compare-pill-card">
+        <h3>Tool</h3>
+        <p>{entry.tool}</p>
+      </article>
+      <article class="compare-pill-card">
+        <h3>Category</h3>
+        <p>{entry.category}</p>
+      </article>
+      <article class="compare-pill-card">
+        <h3>Overlap</h3>
+        <p>{entry.overlapScore}/100</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>What {entry.shortName} is excellent at</h2>
+    <ul>
+      {entry.bestAt.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Where overlap with Stricture exists</h2>
+    <ul>
+      {entry.overlapAreas.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="card compare-section">
+    <h2>What Stricture adds beyond {entry.shortName}</h2>
+    <ul>
+      {entry.strictureAdds.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="card compare-section">
+    <h2>What {entry.shortName} adds beyond Stricture</h2>
+    <ul>
+      {entry.toolAdds.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section id="when-to-use-both" class="card compare-section compare-both-section">
+    <h2>When To Use Both</h2>
+    <p class="lead">
+      In most real environments, teams should run both layers. Stricture is designed to overlay with {entry.shortName}
+      so metadata can be authored once and reused across profiles.
+    </p>
+    <ul>
+      {entry.whenUseBoth.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="card compare-section">
+    <h2>When to use only {entry.shortName}</h2>
+    <ul>
+      {entry.whenUseToolOnly.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Overlay-first adoption path</h2>
+    <ol>
+      {entry.adoptionSteps.map((item) => <li>{item}</li>)}
+    </ol>
+    <pre class="code-view compare-code"><code>{entry.overlaySnippet}</code></pre>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Compare matrix</h2>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Criterion</th>
+            <th>Stricture</th>
+            <th>{entry.shortName}</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            entry.matrix.map((row) => (
+              <tr>
+                <td>{row.criterion}</td>
+                <td><span class={`support support-${row.stricture.toLowerCase()}`}>{row.stricture}</span></td>
+                <td><span class={`support support-${row.tool.toLowerCase()}`}>{row.tool}</span></td>
+                <td>{row.note}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Diagram blueprint pack</h2>
+    <div class="diagram-grid">
+      {
+        entry.diagrams.map((item) => (
+          <article class="diagram-card">
+            <h3>{item.title}</h3>
+            <div class="diagram-placeholder">
+              <p>Placeholder: {item.description}</p>
+            </div>
+            <p class="muted">Use this slot for an animated SVG or architecture graphic.</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="card compare-section ref-section">
+    <h2>References</h2>
+    <ul>
+      {
+        entry.references.map((ref) => (
+          <li>
+            <a href={ref.href} target="_blank" rel="noopener noreferrer">{ref.label}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</MainLayout>

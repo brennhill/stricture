@@ -13,11 +13,11 @@ const coreRoutes = [
   "/walkthrough/",
   "/what-is-stricture/",
   "/with-ai/",
-  "/why-not/"
+  "/when-to-use-stricture/"
 ];
 
 function markdownUrls(): string[] {
-  const comparisonRoutes = comparisons.map((entry) => `/why-not/${entry.slug}/`);
+  const comparisonRoutes = comparisons.map((entry) => `/when-to-use-stricture/${entry.slug}/`);
   const routes = [...coreRoutes, ...comparisonRoutes];
 
   return routes.map((route) => {
