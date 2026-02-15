@@ -814,7 +814,10 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
   const secondaryCards = groups.secondary.map((serviceId) => toCard(serviceId, "Secondary escalation")).join("");
   const secondarySection = secondaryCards
     ? `<aside class="finding-escalation-section finding-escalation-secondary">
-         <p class="item-meta finding-escalation-title">Secondary escalations (services potentially involved):</p>
+         <p class="item-meta finding-escalation-title">
+           Secondary escalations (services potentially involved):
+           <span class="finding-escalation-help" title="Secondary escalations are related services that share field flow context but are not on the direct source -> impact path for this specific finding.">?</span>
+         </p>
          <div class="finding-escalation-grid">${secondaryCards}</div>
        </aside>`
     : "";
@@ -822,7 +825,10 @@ async function renderFindingEscalation(snapshot, findingId, button, container) {
   container.innerHTML = `
     <div class="finding-escalation-layout">
       <section class="finding-escalation-section finding-escalation-primary">
-        <p class="item-meta finding-escalation-title">Primary escalations (services on direct cause -> impact path):</p>
+        <p class="item-meta finding-escalation-title">
+          Primary escalations (services on direct cause -> impact path):
+          <span class="finding-escalation-help" title="Primary escalations are services on the shortest direct path from the change source to the impacted service for this finding.">?</span>
+        </p>
         <div class="finding-escalation-grid">${primaryCards}</div>
       </section>
       ${secondarySection}
