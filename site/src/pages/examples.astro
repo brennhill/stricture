@@ -168,6 +168,54 @@ lineage:
       - doc_root
 `;
 
+const aviationShippingSnippet = String.raw`'strict:flows':
+  - id: cargo-tracking
+    level: 1
+    owner: ops-logistics
+  - id: flight-ops
+    level: 1
+    owner: ops-flight
+'strict:systems':
+  - id: CargoTelemetry
+    flows: [cargo-tracking]
+    business_risk: safety_delay
+  - id: FlightOpsGateway
+    flows: [flight-ops]
+    business_risk: incident_response
+`;
+
+const administrationSnippet = String.raw`'strict:flows':
+  - id: licensing
+    level: 1
+    owner: admin-services
+  - id: payments
+    level: 2
+    owner: finance-ops
+'strict:systems':
+  - id: PermitGateway
+    flows: [licensing]
+    business_risk: compliance_delay
+  - id: TreasuryAPI
+    flows: [payments]
+    business_risk: revenue_delay
+`;
+
+const industrialSnippet = String.raw`'strict:flows':
+  - id: plant-control
+    level: 1
+    owner: manufacturing-ops
+  - id: quality-inspection
+    level: 2
+    owner: qa-ops
+'strict:systems':
+  - id: PLCGateway
+    flows: [plant-control]
+    business_risk: safety_shutdown
+  - id: BatchQAService
+    flows: [quality-inspection]
+    business_risk: scrap_cost
+`;
+
 const examples = [
   {
     id: "java",
@@ -273,6 +321,36 @@ const examples = [
     </p>
     <div class="code-shell">
       <Code code={serviceRegistrySnippet} lang="yaml" />
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Industry examples</h2>
+    <p class="muted">
+      Same schema, different risks. Flow tiers and service ownership keep drift findings aligned with real business impact.
+    </p>
+    <div class="panel-grid">
+      <div class="panel">
+        <h3>Aviation + Shipping</h3>
+        <p class="muted">Cargo tracking and flight operations are tier-1 flows with safety or delay risk.</p>
+        <div class="code-shell">
+          <Code code={aviationShippingSnippet} lang="yaml" />
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Administration</h3>
+        <p class="muted">Licensing and treasury flows emphasize compliance and revenue continuity.</p>
+        <div class="code-shell">
+          <Code code={administrationSnippet} lang="yaml" />
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Industrial Manufacturing</h3>
+        <p class="muted">Plant control and QA flows capture safety shutdown and scrap-cost risk.</p>
+        <div class="code-shell">
+          <Code code={industrialSnippet} lang="yaml" />
+        </div>
+      </div>
     </div>
   </section>
 
