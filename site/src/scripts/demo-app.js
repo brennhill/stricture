@@ -3,6 +3,7 @@ const state = {
   snapshot: null,
   mutationPending: false,
   topologyRoot: "",
+  topologyMode: "ecosystem",
 };
 
 const selectors = {
@@ -10,7 +11,10 @@ const selectors = {
   topology: document.querySelector("#topology"),
   topologyGraph: document.querySelector("#topology-graph"),
   topologyViewState: document.querySelector("#topology-view-state"),
-  topologyBack: document.querySelector("#topology-back"),
+  topologyViewGuidance: document.querySelector("#topology-view-guidance"),
+  topologyTabEcosystem: document.querySelector("#topology-tab-ecosystem"),
+  topologyTabService: document.querySelector("#topology-tab-service"),
+  topologyTabField: document.querySelector("#topology-tab-field"),
   edgeList: document.querySelector("#edge-list"),
   flowPathSummary: document.querySelector("#flow-path-summary"),
   findings: document.querySelector("#findings"),
@@ -26,17 +30,12 @@ const selectors = {
   policyCriticalService: document.querySelector("#policy-critical-service"),
   policyPromotionsHardBlock: document.querySelector("#policy-promotions-hard-block"),
   policyHardBlockReason: document.querySelector("#policy-hard-block-reason"),
-  overrideTarget: document.querySelector("#override-target"),
-  overrideReason: document.querySelector("#override-reason"),
   applyMutation: document.querySelector("#apply-mutation"),
   updatePolicy: document.querySelector("#update-policy"),
-  addOverride: document.querySelector("#add-override"),
   runStricture: document.querySelector("#run-stricture"),
   resetSession: document.querySelector("#reset-session"),
   toggleEdges: document.querySelector("#toggle-edges"),
 };
-
-const OVERRIDE_DAYS = 7;
 
 const humanChange = {
   annotation_missing: "annotation missing",
@@ -360,34 +359,6 @@ function updateControlStats(snapshot) {
   selectors.controlStats.textContent = `${serviceLabel} • ${serviceFieldCount} fields • ${fieldTypeCount} available changes for selected field • ${stagedCount} staged change${stagedCount === 1 ? "" : "s"}`;
 }
 
-function currentTopFinding(snapshot) {
-  if (!snapshot?.findings?.length) {
-    return null;
-  }
-  return snapshot.findings[0];
-}
-
-function datePlusDays(days) {
-  const next = new Date();
-  next.setDate(next.getDate() + days);
-  return next.toISOString().slice(0, 10);
-}
-
-function updateOverrideControls(snapshot) {
-  const top = currentTopFinding(snapshot);
-  if (selectors.overrideTarget) {
-    if (!top) {
-      selectors.overrideTarget.textContent = "No active finding to suppress yet. Run Stricture after a change.";
-    } else {
-      const change = humanChange[top.changeType] || top.changeType;
-      selectors.overrideTarget.textContent = `Will suppress: ${change} on ${fieldLabel(top.fieldId)} for ${OVERRIDE_DAYS} days.`;
-    }
-  }
-  if (selectors.addOverride) {
-    selectors.addOverride.disabled = !top;
-  }
-}
-
 function updatePolicyControls(snapshot) {
   if (!selectors.updatePolicy) {
     return;
@@ -569,14 +540,68 @@ function buildServiceView(snapshot, root) {
   };
 }
 
+function currentFieldContext(snapshot) {
+  const topFinding = (snapshot.findings || [])[0];
+  if (topFinding?.fieldId) {
+    return topFinding.fieldId;
+  }
+  const lastMutation = latestMutation(snapshot);
+  return lastMutation?.fieldId || "";
+}
+
+function buildFieldView(snapshot, fieldId) {
+  const edges = (snapshot.edges || []).filter((edge) => edge.fieldId === fieldId);
+  const nodeIDs = new Set();
+  edges.forEach((edge) => {
+    nodeIDs.add(edge.from);
+    nodeIDs.add(edge.to);
+  });
+  (snapshot.findings || []).forEach((finding) => {
+    if (finding.fieldId !== fieldId) return;
+    if (finding.serviceId) nodeIDs.add(finding.serviceId);
+    if (finding.source?.serviceId) nodeIDs.add(finding.source.serviceId);
+    if (finding.impact?.serviceId) nodeIDs.add(finding.impact.serviceId);
+  });
+  const services = (snapshot.services || []).filter((service) => nodeIDs.has(service.id));
+  const findings = (snapshot.findings || []).filter((finding) => finding.fieldId === fieldId);
+  const mutations = (snapshot.mutations || []).filter((mutation) => mutation.fieldId === fieldId);
+  return {
+    mode: "field",
+    root: state.topologyRoot,
+    fieldId,
+    snapshot: {
+      ...snapshot,
+      services,
+      edges,
+      findings,
+      mutations,
+    },
+    internalRoots: new Set(),
+  };
+}
+
 function activeTopologyView(snapshot) {
   const ecosystem = buildEcosystemView(snapshot);
   const root = state.topologyRoot;
-  if (!root || !ecosystem.internalRoots.has(root)) {
-    state.topologyRoot = "";
-    return ecosystem;
+  if (state.topologyMode === "ecosystem") {
+    return { ...ecosystem, serviceEnabled: !!root && ecosystem.internalRoots.has(root), fieldEnabled: !!currentFieldContext(snapshot) };
   }
-  return buildServiceView(snapshot, root);
+
+  const serviceEnabled = !!root && ecosystem.internalRoots.has(root);
+  const fieldID = currentFieldContext(snapshot);
+  const fieldEnabled = !!fieldID;
+
+  if (state.topologyMode === "service" && serviceEnabled) {
+    return { ...buildServiceView(snapshot, root), serviceEnabled, fieldEnabled };
+  }
+  if (state.topologyMode === "field" && fieldEnabled) {
+    return { ...buildFieldView(ecosystem.snapshot, fieldID), serviceEnabled, fieldEnabled };
+  }
+  if (!serviceEnabled) {
+    state.topologyRoot = "";
+  }
+  state.topologyMode = "ecosystem";
+  return { ...ecosystem, serviceEnabled: !!root && ecosystem.internalRoots.has(root), fieldEnabled: !!fieldID };
 }
 
 function updateTopologyViewState(view, originalSnapshot) {
@@ -586,18 +611,47 @@ function updateTopologyViewState(view, originalSnapshot) {
   if (view.mode === "service" && view.root) {
     const label = serviceName(originalSnapshot, view.root);
     selectors.topologyViewState.textContent = `Service view: ${label}. Showing internal subsystem flows only.`;
-    if (selectors.topologyBack) {
-      selectors.topologyBack.disabled = false;
-      selectors.topologyBack.textContent = "Back to ecosystem";
-      selectors.topologyBack.title = "Return to top-level ecosystem topology.";
-    }
-    return;
+  } else if (view.mode === "field" && view.fieldId) {
+    selectors.topologyViewState.textContent = `Field Path view: ${fieldLabel(view.fieldId)} across the affected flow.`;
+  } else {
+    selectors.topologyViewState.textContent = "Ecosystem view. Click a service node to inspect internals.";
   }
-  selectors.topologyViewState.textContent = "Ecosystem view. Click a service node to inspect internals.";
-  if (selectors.topologyBack) {
-    selectors.topologyBack.disabled = true;
-    selectors.topologyBack.textContent = "Back to ecosystem";
-    selectors.topologyBack.title = "Already in ecosystem view.";
+
+  const setTabState = (button, active, disabled, title) => {
+    if (!button) return;
+    button.disabled = !!disabled;
+    button.title = title || "";
+    button.classList.toggle("is-active", !!active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  };
+
+  setTabState(
+    selectors.topologyTabEcosystem,
+    view.mode === "ecosystem",
+    false,
+    "Top-level service topology.",
+  );
+  setTabState(
+    selectors.topologyTabService,
+    view.mode === "service",
+    !view.serviceEnabled,
+    view.serviceEnabled ? "Inspect internals of selected service." : "Select a service node in Ecosystem first.",
+  );
+  setTabState(
+    selectors.topologyTabField,
+    view.mode === "field",
+    !view.fieldEnabled,
+    view.fieldEnabled ? "Inspect the selected field flow path." : "Stage a change or load a preset to select a field.",
+  );
+
+  if (selectors.topologyViewGuidance) {
+    if (!view.serviceEnabled) {
+      selectors.topologyViewGuidance.textContent = "Service Internals is disabled until you click a service node with mapped internals in Ecosystem.";
+    } else if (!view.fieldEnabled) {
+      selectors.topologyViewGuidance.textContent = "Field Path is disabled until you stage a change or load a preset.";
+    } else {
+      selectors.topologyViewGuidance.textContent = "All topology levels are available.";
+    }
   }
 }
 
@@ -933,7 +987,6 @@ function render(snapshot) {
   syncMutationControls(snapshot);
   updateControlStats(snapshot);
   updatePolicyControls(snapshot);
-  updateOverrideControls(snapshot);
   bindFindingEscalationButtons(snapshot);
   buildPresets(snapshot);
   updateNarrativeFromSnapshot(snapshot);
@@ -962,6 +1015,7 @@ function render(snapshot) {
 
 async function bootstrap() {
   state.topologyRoot = "";
+  state.topologyMode = "ecosystem";
   const created = await request("/api/session", "POST", {});
   state.sessionId = created.sessionId;
   render(created.snapshot);
@@ -1023,28 +1077,6 @@ async function updatePolicy() {
   render(response.snapshot);
 }
 
-async function addOverride() {
-  if (!state.sessionId) {
-    return;
-  }
-  const top = currentTopFinding(state.snapshot);
-  if (!top) {
-    throw new Error("No active finding available to suppress.");
-  }
-  const reasonInput = selectors.overrideReason?.value.trim() || "temporary mitigation window";
-  const payload = {
-    fieldId: top.fieldId,
-    changeType: top.changeType,
-    expires: datePlusDays(OVERRIDE_DAYS),
-    reason: reasonInput,
-  };
-  const response = await request(`/api/session/${state.sessionId}/override`, "POST", payload);
-  if (selectors.overrideReason) {
-    selectors.overrideReason.value = "";
-  }
-  render(response.snapshot);
-}
-
 function contactsToText(contacts) {
   if (!Array.isArray(contacts) || contacts.length === 0) {
     return "n/a";
@@ -1058,11 +1090,28 @@ function contactsToText(contacts) {
 function bindEvents() {
   selectors.applyMutation?.addEventListener("click", () => mutate().catch(showError));
   selectors.updatePolicy?.addEventListener("click", () => updatePolicy().catch(showError));
-  selectors.addOverride?.addEventListener("click", () => addOverride().catch(showError));
   selectors.runStricture?.addEventListener("click", () => run().catch(showError));
   selectors.resetSession?.addEventListener("click", () => bootstrap().catch(showError));
-  selectors.topologyBack?.addEventListener("click", () => {
-    state.topologyRoot = "";
+  selectors.topologyTabEcosystem?.addEventListener("click", () => {
+    state.topologyMode = "ecosystem";
+    if (state.snapshot) {
+      render(state.snapshot);
+    }
+  });
+  selectors.topologyTabService?.addEventListener("click", () => {
+    if (selectors.topologyTabService?.disabled) {
+      return;
+    }
+    state.topologyMode = "service";
+    if (state.snapshot) {
+      render(state.snapshot);
+    }
+  });
+  selectors.topologyTabField?.addEventListener("click", () => {
+    if (selectors.topologyTabField?.disabled) {
+      return;
+    }
+    state.topologyMode = "field";
     if (state.snapshot) {
       render(state.snapshot);
     }
@@ -1584,6 +1633,7 @@ function addGraphInteractions(svg, view, originalSnapshot) {
         return;
       }
       state.topologyRoot = root;
+      state.topologyMode = "service";
       if (state.snapshot) {
         render(state.snapshot);
       }
