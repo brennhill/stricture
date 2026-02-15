@@ -299,7 +299,7 @@ function fieldsForService(snapshot, serviceId, fieldMutationMap) {
   const edges = snapshot.edges || [];
   const fields = new Set();
   edges.forEach((edge) => {
-    if (edge.from === serviceId && fieldMutationMap.has(edge.fieldId)) {
+    if (topologyRootId(edge.from) === serviceId && fieldMutationMap.has(edge.fieldId)) {
       fields.add(edge.fieldId);
     }
   });
@@ -1244,7 +1244,7 @@ async function applyPreset() {
   if (!fieldId) {
     throw new Error("No fields available for this preset.");
   }
-  const candidateSource = (state.snapshot.edges || []).find((edge) => edge.fieldId === fieldId)?.from;
+  const candidateSource = topologyRootId((state.snapshot.edges || []).find((edge) => edge.fieldId === fieldId)?.from);
   updateNarrative(id);
   await bootstrap(); // reset session so findings don’t pile up
   syncMutationControls(state.snapshot, {
