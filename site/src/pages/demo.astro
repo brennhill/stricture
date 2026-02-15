@@ -67,6 +67,18 @@ export const prerender = true;
             <option value="low">low</option>
           </select>
         </label>
+        <label>
+          Critical Service
+          <select id="policy-critical-service"></select>
+        </label>
+        <label>
+          <input id="policy-promotions-hard-block" type="checkbox" checked />
+          Hard block promotions drift for critical service
+        </label>
+        <label>
+          Hard-block Rationale
+          <input id="policy-hard-block-reason" type="text" value="Risk of order loss" />
+        </label>
         <p class="hint">Block: stop deploy when severity ≥ threshold. Warn: allow deploy but surface findings.</p>
         <button id="update-policy" class="button button-secondary">Update Policy</button>
 

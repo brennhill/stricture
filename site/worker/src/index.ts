@@ -64,6 +64,7 @@ interface Finding {
   modifiedBy?: string[];
   validation?: string;
   suggestion?: string;
+  policyRationale?: string;
   timestamp: string;
 }
 
@@ -97,6 +98,7 @@ interface RunSummary {
   findingCount: number;
   blockedCount: number;
   warningCount: number;
+  policyRationale?: string;
   generatedAt: string;
 }
 
@@ -180,6 +182,23 @@ const remediationByChangeType: Record<string, string> = {
   merge_strategy_changed: "Validate merge semantics with downstream consumers and tests.",
   source_removed: "Restore source mapping or annotate accepted migration override.",
 };
+
+interface HardBlockRule {
+  id: string;
+  sourceServiceID?: string;
+  changeType?: string;
+  fieldPrefix?: string;
+  rationale: string;
+}
+
+const hardBlockRules: HardBlockRule[] = [
+  {
+    id: "promotions_enum_order_loss",
+    sourceServiceID: "promotionsconfig",
+    changeType: "enum_changed",
+    rationale: "Risk of order loss",
+  },
+];
 
 function nowISO(): string {
   return new Date().toISOString();
@@ -272,6 +291,25 @@ function compactSnapshot(snapshot: DemoSnapshot): DemoSnapshot {
 
 function remediationFor(changeType: string): string {
   return remediationByChangeType[changeType] || "Inspect diff details and update source annotations/contracts.";
+}
+
+function policyRationaleForFinding(finding: Finding): string | undefined {
+  for (const rule of hardBlockRules) {
+    if (rule.changeType && rule.changeType !== finding.changeType) {
+      continue;
+    }
+    if (rule.sourceServiceID) {
+      const sourceID = normalizeID(finding.source?.serviceId || finding.source?.service || "");
+      if (sourceID !== normalizeID(rule.sourceServiceID)) {
+        continue;
+      }
+    }
+    if (rule.fieldPrefix && !finding.fieldId.startsWith(rule.fieldPrefix)) {
+      continue;
+    }
+    return rule.rationale;
+  }
+  return undefined;
 }
 
 function computeFindings(snapshot: DemoSnapshot): Finding[] {
@@ -391,22 +429,43 @@ function runEngine(snapshot: DemoSnapshot): DemoSnapshot {
     }
     return findingHasDownstreamImpact(snapshot, finding);
   });
+  const findingsWithPolicy = activeFindings.map((finding) => {
+    const rationale = policyRationaleForFinding(finding);
+    if (!rationale) {
+      return finding;
+    }
+    return {
+      ...finding,
+      policyRationale: rationale,
+    };
+  });
 
-  const blockedCount = activeFindings.filter((finding) => finding.severity === "high").length;
-  const warningCount = activeFindings.filter((finding) => finding.severity !== "high").length;
-  const shouldBlock = snapshot.policy.mode === "block" && activeFindings.some((finding) => isBlocked(finding.severity, snapshot.policy));
+  const hardBlocked = findingsWithPolicy.filter((finding) => !!finding.policyRationale);
+  const hardBlockedIDs = new Set(hardBlocked.map((finding) => finding.id));
+  findingsWithPolicy
+    .filter((finding) => finding.severity === "high")
+    .forEach((finding) => hardBlockedIDs.add(finding.id));
+
+  const blockedCount = hardBlockedIDs.size;
+  const warningCount = Math.max(0, findingsWithPolicy.length - blockedCount);
+  const shouldBlock = hardBlocked.length > 0
+    || (snapshot.policy.mode === "block" && findingsWithPolicy.some((finding) => isBlocked(finding.severity, snapshot.policy)));
+  const policyRationale = hardBlocked.length
+    ? `Hard block policy: ${[...new Set(hardBlocked.map((finding) => finding.policyRationale))].join("; ")}.`
+    : undefined;
 
   return {
     ...snapshot,
-    findings: activeFindings,
-    edges: computeEdgeStatus(edgesWithHealthyStatus(), activeFindings),
+    findings: findingsWithPolicy,
+    edges: computeEdgeStatus(edgesWithHealthyStatus(), findingsWithPolicy),
     runSummary: {
       runCount: snapshot.runSummary.runCount + 1,
       gate: shouldBlock ? "BLOCK" : "PASS",
       mode: snapshot.policy.mode,
-      findingCount: activeFindings.length,
+      findingCount: findingsWithPolicy.length,
       blockedCount,
       warningCount,
+      policyRationale,
       generatedAt: nowISO(),
     },
   };

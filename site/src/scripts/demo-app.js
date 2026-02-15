@@ -356,7 +356,8 @@ function renderRunSummary(snapshot) {
   const delta = parseFindingDelta(top);
   const { sourceName, impactName } = findingCauseImpact(snapshot, top, mutation);
   const gateText = summary.gate === "BLOCK" ? "Deploy blocked." : "Deploy allowed.";
-  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} high, ${summary.warningCount} warning). ${gateText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
+  const policyText = summary.policyRationale ? ` ${summary.policyRationale}` : "";
+  selectors.runSummaryText.textContent = `Run #${summary.runCount}: ${summary.findingCount} finding (${summary.blockedCount} blocking, ${summary.warningCount} warning). ${gateText}${policyText} Top issue: ${humanChange[top.changeType] || top.changeType} on ${fieldLabel(top.fieldId)} (${delta.shortDelta}). Cause: ${sourceName}. Impact: ${impactName}.`;
 }
 
 function nodeStatusForService(serviceId, findings) {
@@ -473,6 +474,7 @@ function render(snapshot) {
         </p>
         ${finding.validation ? `<p class="item-meta">Validation: ${finding.validation}</p>` : ""}
         ${finding.suggestion ? `<p class="item-meta">Suggestion: ${finding.suggestion}</p>` : ""}
+        ${finding.policyRationale ? `<p class="item-meta"><strong>Policy:</strong> Hard block (${finding.policyRationale})</p>` : ""}
         <p class="item-meta">Remediation: ${finding.remediation}</p>
       `;
       },
