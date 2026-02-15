@@ -188,12 +188,12 @@ const references = [
   <section class="card what-section">
     <h2>How Stricture addresses the failure mode</h2>
     <ol>
-      <li>Annotate every emitted field with source systems, transforms, and ownership.</li>
-      <li>Normalize annotation synonyms from major profiles (Stricture, OpenLineage, OpenTelemetry conventions, OpenAPI extensions).</li>
+      <li>Start with service-level ownership and flow tiers (registry entry, no code changes).</li>
+      <li>Annotate key functions or API endpoints; helper tooling fills defaults and synonyms.</li>
+      <li>Let Stricture infer field-level provenance from OpenAPI/OTel/protobuf and detect drift even when fields aren’t manually annotated.</li>
       <li>Resolve multi-hop lineage into a graph and compare against release baselines.</li>
       <li>Classify drift by severity, confidence, blast radius, and impacted flow tiers.</li>
       <li>Enforce warn/block policy with downstream-impact gating, flow-tier controls, and escalation chains.</li>
-      <li>Publish machine-readable reports for CI, governance, and incident response workflows.</li>
     </ol>
 
     <pre class="code-view what-snippet"><code>{`# field-level annotation example
