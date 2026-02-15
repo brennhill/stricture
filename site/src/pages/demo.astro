@@ -80,8 +80,8 @@ export const prerender = true;
           Hard-block reason shown in findings
           <input id="policy-hard-block-reason" type="text" value="Risk of order loss" />
         </label>
-        <p class="hint">Policy evaluates currently staged changes in this session. If you want a clean baseline, clear staged changes first.</p>
-        <button id="update-policy" class="button button-secondary">Apply policy</button>
+        <p class="hint" id="policy-impact-tip" title="Policy only affects staged changes in this session. Stage a mutation first, or clear staged changes to return to baseline.">Policy only affects staged changes in this session. Stage a change first.</p>
+        <button id="update-policy" class="button button-primary">Apply policy</button>
 
         <h2>Temporary Exception</h2>
         <p class="hint" id="override-target">No active finding to suppress yet. Run Stricture after a change.</p>

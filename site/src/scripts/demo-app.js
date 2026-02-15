@@ -352,6 +352,18 @@ function updateOverrideControls(snapshot) {
   }
 }
 
+function updatePolicyControls(snapshot) {
+  if (!selectors.updatePolicy) {
+    return;
+  }
+  const stagedCount = snapshot.mutations?.length || 0;
+  const enabled = stagedCount > 0;
+  selectors.updatePolicy.disabled = !enabled;
+  selectors.updatePolicy.title = enabled
+    ? "Apply current policy settings to staged changes."
+    : "Stage at least one change before applying policy.";
+}
+
 function relatedServiceIdsForFinding(snapshot, finding) {
   const related = new Set();
   if (finding?.serviceId) {
@@ -675,6 +687,7 @@ function render(snapshot) {
 
   syncMutationControls(snapshot);
   updateControlStats(snapshot);
+  updatePolicyControls(snapshot);
   updateOverrideControls(snapshot);
   bindFindingEscalationButtons(snapshot);
   buildPresets(snapshot);
@@ -747,6 +760,9 @@ async function mutate() {
 
 async function updatePolicy() {
   if (!state.sessionId) {
+    return;
+  }
+  if ((state.snapshot?.mutations?.length || 0) === 0) {
     return;
   }
   const payload = {
@@ -823,20 +839,6 @@ function bindEvents() {
     if (state.snapshot) {
       updateControlStats(state.snapshot);
     }
-  });
-  selectors.policyMode?.addEventListener("change", () => updatePolicy().catch(showError));
-  selectors.policyFailOn?.addEventListener("change", () => updatePolicy().catch(showError));
-  selectors.policyCriticalService?.addEventListener("change", () => updatePolicy().catch(showError));
-  selectors.policyPromotionsHardBlock?.addEventListener("change", () => updatePolicy().catch(showError));
-  selectors.policyHardBlockReason?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      updatePolicy().catch(showError);
-    }
-  });
-  selectors.policyHardBlockReason?.addEventListener("blur", () => {
-    if (!state.sessionId) return;
-    updatePolicy().catch(showError);
   });
 }
 
