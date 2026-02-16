@@ -19,8 +19,8 @@ if [ ! -f "$BASELINE_PATH" ]; then
 fi
 
 cd "$PROJECT_ROOT"
-go run ./cmd/stricture lineage-export --strict="$STRICT_MODE" --out "$HEAD_PATH" .
-go run ./cmd/stricture lineage-diff --base "$BASELINE_PATH" --head "$HEAD_PATH" --out "$DIFF_PATH" --fail-on "$FAIL_ON" --mode "$MODE"
+go run ./cmd/strict lineage-export --strict="$STRICT_MODE" --out "$HEAD_PATH" .
+go run ./cmd/strict lineage-diff --base "$BASELINE_PATH" --head "$HEAD_PATH" --out "$DIFF_PATH" --fail-on "$FAIL_ON" --mode "$MODE"
 
 echo "Lineage diff result:"
 cat "$DIFF_PATH"

@@ -9,5 +9,5 @@ BASELINE_PATH="${1:-$PROJECT_ROOT/tests/lineage/baseline.json}"
 STRICT_MODE="${LINEAGE_STRICT:-true}"
 
 cd "$PROJECT_ROOT"
-go run ./cmd/stricture lineage-export --strict="$STRICT_MODE" --out "$BASELINE_PATH" .
+go run ./cmd/strict lineage-export --strict="$STRICT_MODE" --out "$BASELINE_PATH" .
 echo "Updated lineage baseline: $BASELINE_PATH"

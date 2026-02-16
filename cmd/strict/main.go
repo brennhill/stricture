@@ -1,4 +1,5 @@
 // main.go — Stricture CLI entry point.
+// Spec: product-spec.md §9 CLI, tech-spec.md §5.1 Main Lint Flow
 package main
 
 import (
@@ -77,7 +78,7 @@ func main() {
 	case "policy":
 		runPolicy(os.Args[2:])
 	case "--version", "-version", "version":
-		fmt.Printf("stricture version %s\n", version)
+		fmt.Printf("strict version %s\n", version)
 	case "--help", "-help", "help":
 		printUsage()
 	default:
@@ -97,7 +98,7 @@ func printUsage() {
 	fmt.Println("Stricture — A fast, language-agnostic linter")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  stricture [command] [options] [paths...]")
+	fmt.Println("  strict [command] [options] [paths...]")
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  lint              Lint files (default when no command given)")
@@ -117,7 +118,7 @@ func printUsage() {
 	fmt.Println("  version           Print version and exit")
 	fmt.Println("  help              Print this help message")
 	fmt.Println()
-	fmt.Println("Run 'stricture <command> --help' for details on a specific command.")
+	fmt.Println("Run 'strict <command> --help' for details on a specific command.")
 }
 
 func printUnknownCommand(command string) {
@@ -627,7 +628,7 @@ func runAudit(args []string) {
 }
 
 func printAuditUsage() {
-	fmt.Println("Usage: stricture audit [options] [paths...]")
+	fmt.Println("Usage: strict audit [options] [paths...]")
 	fmt.Println()
 	fmt.Println("Run contract-focused lint checks (CTR category) as an audit workflow.")
 	fmt.Println()
@@ -701,7 +702,7 @@ func runTrace(args []string) {
 }
 
 func printTraceUsage() {
-	fmt.Println("Usage: stricture trace <file> [options]")
+	fmt.Println("Usage: strict trace <file> [options]")
 	fmt.Println()
 	fmt.Println("Validate a trace artifact baseline (JSON parse + format sanity checks).")
 	fmt.Println()
@@ -732,12 +733,12 @@ func runPolicy(args []string) {
 }
 
 func printPolicyUsage() {
-	fmt.Println("Usage: stricture policy <command> [options]")
+	fmt.Println("Usage: strict policy <command> [options]")
 	fmt.Println()
 	fmt.Println("Policy commands:")
 	fmt.Println("  verify-ref      Verify repo strict:policy_url matches CI expected URL")
 	fmt.Println()
-	fmt.Println("Run 'stricture policy <command> --help' for details.")
+	fmt.Println("Run 'strict policy <command> --help' for details.")
 }
 
 func runPolicyVerifyRef(args []string) {
@@ -798,7 +799,7 @@ func runPolicyVerifyRef(args []string) {
 }
 
 func printPolicyVerifyRefUsage() {
-	fmt.Println("Usage: stricture policy verify-ref [options]")
+	fmt.Println("Usage: strict policy verify-ref [options]")
 	fmt.Println()
 	fmt.Println("CI/CD guard: verify repo strict:policy_url matches the org-approved URL.")
 	fmt.Println()
@@ -1144,7 +1145,7 @@ func runInit(args []string) {
 	force := fs.Bool("force", false, "Overwrite existing .stricture.yml if it exists")
 	pathValue := fs.String("path", ".stricture.yml", "Destination config path")
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture init [options]")
+		fmt.Println("Usage: strict init [options]")
 		fmt.Println()
 		fmt.Println("Create a default .stricture.yml with recommended settings.")
 		fs.PrintDefaults()
@@ -2128,7 +2129,7 @@ func resolvePluginPaths(configPath string, pluginPaths []string) []string {
 func runInspect(args []string) {
 	fs := flag.NewFlagSet("inspect", flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture inspect [options] <file>")
+		fmt.Println("Usage: strict inspect [options] <file>")
 		fmt.Println()
 		fmt.Println("Parse a file and print its UnifiedFileModel as formatted JSON.")
 		fmt.Println("This is a debugging tool for adapter development.")
@@ -2286,7 +2287,7 @@ func supportedInspectLanguages() []string {
 func runInspectLineage(args []string) {
 	fs := flag.NewFlagSet("inspect-lineage", flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture inspect-lineage <file>")
+		fmt.Println("Usage: strict inspect-lineage <file>")
 		fmt.Println()
 		fmt.Println("Parse stricture-source annotations from comments and print them as JSON.")
 	}
@@ -2331,7 +2332,7 @@ func runLineageExport(args []string) {
 	strict := fs.Bool("strict", true, "Exit non-zero if parse errors are found")
 	profileRaw := fs.String("profile", string(lineage.ProfileStricture), "Export profile (stricture, openlineage, otel, openapi, asyncapi)")
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture lineage-export [options] [paths...]")
+		fmt.Println("Usage: strict lineage-export [options] [paths...]")
 		fmt.Println()
 		fmt.Println("Build a normalized lineage artifact from source files.")
 		fs.PrintDefaults()
@@ -2390,7 +2391,7 @@ func runLineageDiff(args []string) {
 	failOn := fs.String("fail-on", "high", "Fail when drift at/above severity (high|medium|low|info|none)")
 	modeRaw := fs.String("mode", string(lineage.ModeBlock), "Enforcement mode: block (exit non-zero) or warn (always exit zero)")
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture lineage-diff --base <file> --head <file> [options]")
+		fmt.Println("Usage: strict lineage-diff --base <file> --head <file> [options]")
 		fmt.Println()
 		fmt.Println("Diff two lineage artifacts and classify drift severity.")
 		fs.PrintDefaults()
@@ -2458,7 +2459,7 @@ func runLineageEscalate(args []string) {
 	systemsPath := fs.String("systems", "", "Path to system registry YAML (optional)")
 	maxDepth := fs.Int("max-depth", 8, "Maximum upstream depth to traverse")
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture lineage-escalate --service <id> --artifact <file> [options]")
+		fmt.Println("Usage: strict lineage-escalate --service <id> --artifact <file> [options]")
 		fmt.Println()
 		fmt.Println("Show emergency contacts for a service and its upstream dependencies.")
 		fs.PrintDefaults()
@@ -2527,7 +2528,7 @@ func runListRules() {
 func runExplain(args []string) {
 	fs := flag.NewFlagSet("explain", flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture explain <rule-id>")
+		fmt.Println("Usage: strict explain <rule-id>")
 		fmt.Println()
 		fmt.Println("Show details for a specific rule.")
 	}
@@ -2544,7 +2545,7 @@ func runExplain(args []string) {
 	ruleDef, ok := registry.ByID(ruleID)
 	if !ok {
 		fmt.Fprintf(os.Stderr, "Error: unknown rule %q\n", ruleID)
-		fmt.Fprintln(os.Stderr, "Run 'stricture list-rules' to see available rules.")
+		fmt.Fprintln(os.Stderr, "Run 'strict list-rules' to see available rules.")
 		os.Exit(2)
 	}
 
@@ -2568,7 +2569,7 @@ func runExplain(args []string) {
 func runValidateConfig(args []string) {
 	fs := flag.NewFlagSet("validate-config", flag.ExitOnError)
 	fs.Usage = func() {
-		fmt.Println("Usage: stricture validate-config [path]")
+		fmt.Println("Usage: strict validate-config [path]")
 		fmt.Println()
 		fmt.Println("Validate a .stricture.yml configuration file.")
 		fmt.Println("Checks YAML syntax and verifies all rule IDs are recognized.")

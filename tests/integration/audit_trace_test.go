@@ -15,7 +15,7 @@ func TestAuditHelp(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("audit --help exit code = %d, want 0\nstderr=%q\nstdout=%q", code, stderr, stdout)
 	}
-	if !strings.Contains(stdout, "Usage: stricture audit") {
+	if !strings.Contains(stdout, "Usage: strict audit") {
 		t.Fatalf("audit --help missing usage line, got %q", stdout)
 	}
 }

@@ -17,11 +17,11 @@ jobs:
       - name: Install Stricture
         run: |
           # Replace with pinned release install flow for your org.
-          go install github.com/stricture/stricture/cmd/stricture@latest
+          go install github.com/stricture/stricture/cmd/strict@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Verify policy URL binding
         run: |
-          stricture policy verify-ref \
+          strict policy verify-ref \
             --config .stricture.yml \
             --expected-url-env STRICTURE_POLICY_URL

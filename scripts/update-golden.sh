@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-STRICTURE="${PROJECT_ROOT}/bin/stricture"
+STRICTURE="${PROJECT_ROOT}/bin/strict"
 GOLDEN_DIR="${PROJECT_ROOT}/tests/golden"
 
 # Check prerequisites

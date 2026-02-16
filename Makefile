@@ -7,10 +7,10 @@ export GOCACHE
 LINEAGE_MODE ?= block
 TEST_PKGS := ./cmd/... ./internal/...
 BENCH_PKGS := ./cmd/... ./internal/...
-PHASE1_PKGS := ./internal/config/... ./internal/adapter/goparser/... ./internal/rules/conv/... ./internal/reporter/... ./cmd/stricture/...
+PHASE1_PKGS := ./internal/config/... ./internal/adapter/goparser/... ./internal/rules/conv/... ./internal/reporter/... ./cmd/strict/...
 
 build:
-	go build $(GOFLAGS) -o bin/stricture ./cmd/stricture
+	go build $(GOFLAGS) -o bin/strict ./cmd/strict
 
 build-server:
 	go build $(GOFLAGS) -o bin/stricture-server ./cmd/stricture-server
@@ -118,7 +118,7 @@ endif
 ifndef HEAD
 	$(error HEAD is required. Usage: make lineage-diff BASE=tests/lineage/baseline.json HEAD=tests/lineage/current.json)
 endif
-	go run ./cmd/stricture lineage-diff --base $(BASE) --head $(HEAD) --mode $(LINEAGE_MODE)
+	go run ./cmd/strict lineage-diff --base $(BASE) --head $(HEAD) --mode $(LINEAGE_MODE)
 
 check-lineage:
 	./scripts/check-lineage-drift.sh
@@ -173,7 +173,7 @@ clean:
 	rm -rf .stricture-cache/
 
 install:
-	go install $(GOFLAGS) ./cmd/stricture
+	go install $(GOFLAGS) ./cmd/strict
 
 # --- Developer workflow targets ---
 

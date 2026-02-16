@@ -1,4 +1,4 @@
-// explain_test.go — Integration checks for stricture explain command.
+// explain_test.go — Integration checks for strict explain command.
 //go:build integration
 
 package integration

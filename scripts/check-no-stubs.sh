@@ -43,7 +43,7 @@ if ! [[ "$phase" =~ ^[1-6]$ ]]; then
 fi
 
 paths=(
-    "cmd/stricture"
+    "cmd/strict"
     "internal/config"
     "internal/adapter/goparser"
     "internal/rules/conv"

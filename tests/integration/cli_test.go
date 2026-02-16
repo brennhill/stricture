@@ -37,21 +37,21 @@ func projectRoot(t *testing.T) string {
 	return filepath.Clean(filepath.Join(wd, "..", ".."))
 }
 
-// binaryPath returns the path to the stricture binary.
+// binaryPath returns the path to the strict binary.
 func binaryPath(t *testing.T) string {
 	t.Helper()
 	root := projectRoot(t)
-	bin := filepath.Join(root, "bin", "stricture")
+	bin := filepath.Join(root, "bin", "strict")
 
 	buildBinaryOnce.Do(func() {
-		cmd := exec.Command("go", "build", "-o", bin, "./cmd/stricture")
+		cmd := exec.Command("go", "build", "-o", bin, "./cmd/strict")
 		cmd.Dir = root
 		if out, err := cmd.CombinedOutput(); err != nil {
-			buildBinaryErr = fmt.Errorf("build stricture binary: %w\n%s", err, string(out))
+			buildBinaryErr = fmt.Errorf("build strict binary: %w\n%s", err, string(out))
 			return
 		}
 		if _, err := os.Stat(bin); err != nil {
-			buildBinaryErr = fmt.Errorf("stricture binary missing after build: %w", err)
+			buildBinaryErr = fmt.Errorf("strict binary missing after build: %w", err)
 			return
 		}
 		buildBinaryPath = bin
@@ -78,13 +78,13 @@ func run(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		exitCode = exitErr.ExitCode()
 	} else if err != nil {
-		t.Fatalf("failed to run stricture: %v", err)
+		t.Fatalf("failed to run strict: %v", err)
 	}
 
 	return outBuf.String(), errBuf.String(), exitCode
 }
 
-// runInDir executes stricture in a specific working directory.
+// runInDir executes strict in a specific working directory.
 func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 	bin := binaryPath(t)
@@ -100,7 +100,7 @@ func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, 
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		exitCode = exitErr.ExitCode()
 	} else if err != nil {
-		t.Fatalf("failed to run stricture in %s: %v", dir, err)
+		t.Fatalf("failed to run strict in %s: %v", dir, err)
 	}
 
 	return outBuf.String(), errBuf.String(), exitCode
@@ -110,7 +110,7 @@ func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, 
 
 func TestBinaryPathRebuildsWhenExistingBinaryIsInvalid(t *testing.T) {
 	root := projectRoot(t)
-	bin := filepath.Join(root, "bin", "stricture")
+	bin := filepath.Join(root, "bin", "strict")
 
 	original, readErr := os.ReadFile(bin)
 	hadOriginal := readErr == nil
@@ -139,7 +139,7 @@ func TestBinaryPathRebuildsWhenExistingBinaryIsInvalid(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("version should still run after rebuild (exit=%d)\nstderr=%q\nstdout=%q", code, stderr, stdout)
 	}
-	if !strings.Contains(stdout, "stricture version") {
+	if !strings.Contains(stdout, "strict version") {
 		t.Fatalf("version output should include marker, got %q", stdout)
 	}
 }
@@ -149,8 +149,8 @@ func TestVersionExitsZero(t *testing.T) {
 	if code != 0 {
 		t.Errorf("--version exit code = %d, want 0", code)
 	}
-	if !strings.Contains(stdout, "stricture version") {
-		t.Errorf("--version output = %q, want to contain 'stricture version'", stdout)
+	if !strings.Contains(stdout, "strict version") {
+		t.Errorf("--version output = %q, want to contain 'strict version'", stdout)
 	}
 }
 

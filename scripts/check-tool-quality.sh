@@ -55,9 +55,9 @@ core_cov="$(extract_coverage "$CORE_PROFILE")"
 assert_min_coverage "$core_cov" "$STRICTURE_CORE_MIN_COVERAGE" "core analyzer"
 
 echo "==> CLI unit coverage gate"
-go test -count=1 -coverprofile="$CMD_PROFILE" -covermode=atomic ./cmd/stricture >/dev/null
+go test -count=1 -coverprofile="$CMD_PROFILE" -covermode=atomic ./cmd/strict >/dev/null
 cmd_cov="$(extract_coverage "$CMD_PROFILE")"
-assert_min_coverage "$cmd_cov" "$STRICTURE_CMD_MIN_COVERAGE" "cmd/stricture"
+assert_min_coverage "$cmd_cov" "$STRICTURE_CMD_MIN_COVERAGE" "cmd/strict"
 
 echo "==> Integration CLI suite"
 go test -tags=integration -count=1 -timeout=180s ./tests/integration/...

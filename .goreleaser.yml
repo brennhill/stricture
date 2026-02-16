@@ -6,9 +6,9 @@ before:
     - go mod tidy
 
 builds:
-  - id: stricture
-    main: ./cmd/stricture
-    binary: stricture
+  - id: strict
+    main: ./cmd/strict
+    binary: strict
     env:
       - CGO_ENABLED=0
     goos:
@@ -24,7 +24,7 @@ builds:
 archives:
   - id: default
     builds:
-      - stricture
+      - strict
     format_overrides:
       - goos: windows
         format: zip
@@ -35,4 +35,3 @@ checksum:
 changelog:
   sort: asc
   use: git
-

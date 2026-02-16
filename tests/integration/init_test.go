@@ -1,4 +1,4 @@
-// init_test.go — Integration checks for stricture init command.
+// init_test.go — Integration checks for strict init command.
 //go:build integration
 
 package integration
