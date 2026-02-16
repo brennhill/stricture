@@ -105,7 +105,7 @@ stricture/
 │       └── incremental_test.go     # --changed / --staged modes
 ├── scripts/
 │   ├── extract-fixtures.sh         # Extract code from validation set markdown
-│   ├── run-validation-set.sh       # Run stricture against validation set
+│   ├── run-validation-set.sh       # Run strict against validation set
 │   ├── validation-health-check.sh  # Validate the validation set itself
 │   └── update-golden.sh            # Regenerate golden files
 ├── docs/
@@ -129,6 +129,8 @@ These interfaces define module boundaries. Every module communicates through the
 
 ### 3.1 UnifiedFileModel
 
+> **Product spec:** §7.1 UnifiedFileModel | **Source:** `internal/model/file.go`
+
 ```go
 // internal/model/file.go
 
@@ -138,7 +140,7 @@ type UnifiedFileModel struct {
     Path        string
     Language    string       // "go", "typescript", "python", "java"
     IsTestFile  bool
-    Source      []byte
+    Source      string
     LineCount   int
     Imports     []ImportDecl
     Exports     []ExportDecl
@@ -242,6 +244,8 @@ type JSONTag struct {
 
 ### 3.2 LanguageAdapter Interface
 
+> **Product spec:** §7 Language Adapters | **Source:** `internal/adapter/adapter.go`
+
 ```go
 // internal/adapter/adapter.go
 
@@ -276,6 +280,8 @@ type AdapterConfig struct {
 
 ### 3.3 Rule Interface
 
+> **Product spec:** §6 Rule Categories | **Source:** `internal/model/rule.go`
+
 ```go
 // internal/model/rule.go
 
@@ -284,7 +290,7 @@ type Rule interface {
     // ID returns the rule identifier (e.g., "TQ-no-shallow-assertions").
     ID() string
 
-    // Category returns the rule category (e.g., "tq", "arch", "conv", "ctr").
+    // Category returns the rule category (e.g., "test-quality", "architecture", "convention", "contract").
     Category() string
 
     // Description returns a one-line description of the rule.
@@ -316,23 +322,25 @@ type RuleConfig struct {
 
 ### 3.4 Violation
 
+> **Product spec:** §10 Output | **Source:** `internal/model/violation.go`
+
 ```go
 // internal/model/violation.go
 
 // Violation represents a single rule violation.
 type Violation struct {
-    RuleID     string      // "TQ-no-shallow-assertions"
-    Category   string      // "tq"
-    Severity   string      // "error" or "warn"
-    File       string      // Absolute file path
-    Line       int         // 1-based line number
-    Column     int         // 0-based column
-    Message    string      // Human-readable message
-    Why        string      // Why this rule exists (one sentence)
-    Suggestion string      // How to fix it
-    Suppress   string      // Suppression comment syntax
-    Fixable    bool        // Whether auto-fix is available
-    Context    ViolationContext // Additional context for tooling
+    RuleID     string      `json:"rule_id"`     // "TQ-no-shallow-assertions"
+    Category   string      `json:"category"`    // "test-quality", "architecture", "convention", "contract"
+    Severity   string      `json:"severity"`    // "error" or "warn"
+    File       string      `json:"file"`        // Absolute file path
+    Line       int         `json:"line"`        // 1-based line number
+    Column     int         `json:"column"`      // 0-based column
+    Message    string      `json:"message"`     // Human-readable message
+    Why        string      `json:"why"`         // Why this rule exists (one sentence)
+    Suggestion string      `json:"suggestion"`  // How to fix it
+    Suppress   string      `json:"suppress"`    // Suppression comment syntax
+    Fixable    bool        `json:"fixable"`     // Whether auto-fix is available
+    Context    ViolationContext `json:"context"` // Additional context for tooling
 }
 
 // ViolationContext provides structured data about the violation.
@@ -350,8 +358,10 @@ type ViolationContext struct {
 
 ### 3.5 ProjectContext
 
+> **Product spec:** §4 Architecture | **Source:** `internal/model/context.go`
+
 ```go
-// internal/engine/context.go
+// internal/model/context.go
 
 // ProjectContext holds cross-file analysis state.
 // Built once per run, shared across all rules.
@@ -381,6 +391,8 @@ type ProjectContext struct {
 
 ### 3.6 Reporter Interface
 
+> **Product spec:** §10 Output | **Source:** `internal/reporter/reporter.go`
+
 ```go
 // internal/reporter/reporter.go
 
@@ -395,11 +407,11 @@ type Reporter interface {
 
 // Summary contains aggregated statistics.
 type Summary struct {
-    FilesChecked int
-    Errors       int
-    Warnings     int
-    Fixable      int
-    ElapsedMs    int64
+    FilesChecked int   `json:"files_checked"`
+    Errors       int   `json:"errors"`
+    Warnings     int   `json:"warnings"`
+    Fixable      int   `json:"fixable"`
+    ElapsedMs    int64 `json:"elapsed_ms"`
 }
 ```
 
@@ -411,10 +423,12 @@ Each phase produces a working binary that passes all tests for that phase. **Nev
 
 ### Phase 1: Foundation (CLI + Config + Go Adapter + CONV Rules)
 
-**Goal:** `stricture` can lint Go files for convention violations.
+> **Product spec:** §5 Configuration, §6.3 CONV, §9 CLI | **Source:** `cmd/strict/`, `internal/config/`, `internal/rules/conv/`
+
+**Goal:** `strict` can lint Go files for convention violations.
 
 **Deliverables:**
-1. CLI entry point with flag parsing (`cmd/stricture/main.go`)
+1. CLI entry point with flag parsing (`cmd/strict/main.go`)
 2. Config loader (reads `.stricture.yml`, merges with defaults)
 3. Go language adapter (`go/parser` + `go/types` → `UnifiedFileModel`)
 4. Two CONV rules: `CONV-file-naming`, `CONV-file-header`
@@ -425,15 +439,15 @@ Each phase produces a working binary that passes all tests for that phase. **Nev
 ```bash
 # All must pass before Phase 2
 make test-phase1
-stricture --version                    # Prints version
-stricture .                            # Runs on current directory
-stricture --format json .              # JSON output
-stricture --rule CONV-file-naming .    # Single rule
+strict --version                    # Prints version
+strict .                            # Runs on current directory
+strict --format json .              # JSON output
+strict --rule CONV-file-naming .    # Single rule
 # Golden file tests for CONV-file-naming and CONV-file-header pass
 ```
 
 **Files to create:**
-- `cmd/stricture/main.go`
+- `cmd/strict/main.go`
 - `internal/config/config.go`, `defaults.go`
 - `internal/adapter/goparser/goparser.go`
 - `internal/model/file.go`, `violation.go`, `rule.go`
@@ -448,7 +462,9 @@ stricture --rule CONV-file-naming .    # Single rule
 
 ### Phase 2: TypeScript + Remaining CONV + ARCH Rules
 
-**Goal:** `stricture` can lint TypeScript files and detect architectural violations.
+> **Product spec:** §6.2 ARCH, §6.3 CONV, §7.3 TS Adapter | **Source:** `internal/adapter/typescript/`, `internal/rules/arch/`, `internal/rules/conv/`
+
+**Goal:** `strict` can lint TypeScript files and detect architectural violations.
 
 **Deliverables:**
 1. TypeScript adapter (tree-sitter → `UnifiedFileModel`)
@@ -460,8 +476,8 @@ stricture --rule CONV-file-naming .    # Single rule
 **Test gate:**
 ```bash
 make test-phase2
-stricture src/                         # Lints TypeScript files
-stricture --category ARCH .            # ARCH rules only
+strict src/                         # Lints TypeScript files
+strict --category ARCH .            # ARCH rules only
 # Golden file tests for all 6 CONV and 6 ARCH rules pass
 # Validation set fixtures for 30-express-layered-app pass
 ```
@@ -479,7 +495,9 @@ stricture --category ARCH .            # ARCH rules only
 
 ### Phase 3: TQ Rules (Test Quality)
 
-**Goal:** `stricture` can analyze test quality — the core differentiator.
+> **Product spec:** §6.1 Test Quality | **Source:** `internal/rules/tq/`
+
+**Goal:** `strict` can analyze test quality — the core differentiator.
 
 **Deliverables:**
 1. Test-to-source file mapping (convention, import analysis, config)
@@ -489,7 +507,7 @@ stricture --category ARCH .            # ARCH rules only
 **Test gate:**
 ```bash
 make test-phase3
-stricture --category TQ tests/        # TQ rules only
+strict --category TQ tests/        # TQ rules only
 # Golden file tests for all 10 TQ rules pass
 # Validation set 40-test-quality-patterns fixtures: 20/20 violations detected
 # Validation set 41-ai-generated-test-patterns fixtures: all anti-patterns caught
@@ -507,19 +525,21 @@ stricture --category TQ tests/        # TQ rules only
 
 ### Phase 4: CTR Rules + Manifest Parser
 
-**Goal:** `stricture` can validate API contracts against a manifest.
+> **Product spec:** §6.4 Contract, §13 Manifest | **Source:** `internal/rules/ctr/`, `internal/manifest/`
+
+**Goal:** `strict` can validate API contracts against a manifest.
 
 **Deliverables:**
 1. Manifest parser (`.stricture-manifest.yml`)
 2. Strictness level calculator
 3. All CTR rules: `request-shape`, `response-shape`, `status-code-handling`, `shared-type-sync`, `json-tag-match`, `dual-test`, `strictness-parity`, `manifest-conformance`
-4. `stricture audit` command
+4. `strict audit` command
 
 **Test gate:**
 ```bash
 make test-phase4
-stricture --category CTR .             # CTR rules
-stricture audit                        # Audit command
+strict --category CTR .             # CTR rules
+strict audit                        # Audit command
 # Golden file tests for all 8 CTR rules pass
 # Cross-language fixtures (20-24) all detect mismatches
 # Manifest parsing tests pass (edge cases, validation, versioning)
@@ -528,7 +548,7 @@ stricture audit                        # Audit command
 **Files to create:**
 - `internal/manifest/manifest.go`, `strictness.go`, `parser.go`
 - `internal/rules/ctr/request_shape.go`, `response_shape.go`, `status_code.go`, `shared_type_sync.go`, `json_tag_match.go`, `dual_test.go`, `strictness_parity.go`, `manifest_conformance.go`
-- `cmd/stricture/audit.go`
+- `cmd/strict/audit.go`
 - Tests for all of the above
 
 **Estimated size:** ~5,000 LOC (cumulative: ~14,500)
@@ -536,6 +556,8 @@ stricture audit                        # Audit command
 ---
 
 ### Phase 5: Python + Java Adapters + Advanced Output
+
+> **Product spec:** §7.4–7.5 Adapters, §10.3–10.4 SARIF/JUnit | **Source:** `internal/adapter/python/`, `internal/adapter/java/`, `internal/reporter/`
 
 **Goal:** Multi-language support complete. All output formats working.
 
@@ -546,14 +568,14 @@ stricture audit                        # Audit command
 4. JUnit XML reporter
 5. `--changed` / `--staged` modes (git integration)
 6. AST caching (`.stricture-cache/`)
-7. `stricture trace` command (runtime trace validation)
+7. `strict trace` command (runtime trace validation)
 
 **Test gate:**
 ```bash
 make test-phase5
-stricture .                            # Multi-language project
-stricture --format sarif .             # SARIF output
-stricture --changed                    # Git-based incremental
+strict .                            # Multi-language project
+strict --format sarif .             # SARIF output
+strict --changed                    # Git-based incremental
 # Python/Java validation fixtures pass
 # Incremental analysis scenarios pass
 # Performance benchmarks within targets
@@ -565,6 +587,8 @@ stricture --changed                    # Git-based incremental
 
 ### Phase 6: Polish + Distribution
 
+> **Product spec:** §8 Plugins, §11 Auto-Fix | **Source:** `internal/plugins/`, `internal/fix/`
+
 **Goal:** Production-ready release.
 
 **Deliverables:**
@@ -572,9 +596,9 @@ stricture --changed                    # Git-based incremental
 2. Inline suppression parsing
 3. Plugin system (YAML custom rules + Go plugins)
 4. Cross-platform binary distribution (GoReleaser)
-5. `stricture init` command
-6. `stricture list-rules` command
-7. `stricture inspect` command (debug)
+5. `strict init` command
+6. `strict list-rules` command
+7. `strict inspect` command (debug)
 
 **Test gate:**
 ```bash
@@ -583,7 +607,7 @@ make ci                                # Full CI suite
 # All validation set fixtures pass
 # Performance benchmarks pass
 # Cross-platform builds succeed
-# Self-lint passes (stricture lints itself)
+# Self-lint passes (strict lints itself)
 ```
 
 **Estimated size:** ~3,500 LOC (cumulative: ~22,000)
@@ -591,6 +615,8 @@ make ci                                # Full CI suite
 ---
 
 ## 5. Data Flow
+
+> **Product spec:** §4 Architecture, §9 CLI | **Source:** `internal/engine/`, `cmd/strict/`
 
 ### 5.1 Main Lint Flow
 
@@ -683,6 +709,8 @@ Cache eviction = delete .stricture-cache/ (or --no-cache flag)
 
 ## 6. Parsing Strategy
 
+> **Product spec:** §7 Language Adapters | **Source:** `internal/adapter/`
+
 ### 6.1 Go Adapter (Native)
 
 Uses `go/parser.ParseFile()` + `go/types.Config.Check()` from stdlib:
@@ -741,6 +769,8 @@ UnifiedFileModel
 
 ## 7. Rule Implementation Pattern
 
+> **Product spec:** §6 Rule Categories | **Source:** `internal/rules/`
+
 Every rule follows the same pattern. This consistency enables LLMs to implement rules by following a template.
 
 ### 7.1 Rule Template
@@ -756,7 +786,7 @@ import "github.com/stricture/stricture/internal/model"
 type FileNaming struct{}
 
 func (r *FileNaming) ID() string          { return "CONV-file-naming" }
-func (r *FileNaming) Category() string    { return "conv" }
+func (r *FileNaming) Category() string    { return "convention" }
 func (r *FileNaming) Description() string { return "Enforce file naming convention" }
 func (r *FileNaming) Why() string {
     return "Consistent naming makes files predictable and searchable."
@@ -771,7 +801,7 @@ func (r *FileNaming) Match(file *model.UnifiedFileModel, config model.RuleConfig
 
 func (r *FileNaming) Check(
     file *model.UnifiedFileModel,
-    context *engine.ProjectContext,
+    context *model.ProjectContext,
     config model.RuleConfig,
 ) []model.Violation {
     // Implementation here
@@ -842,6 +872,8 @@ func TestFileNaming(t *testing.T) {
 
 ## 8. Assertion Classification Algorithm
 
+> **Product spec:** §6.1 Test Quality | **Source:** `internal/rules/tq/`
+
 The assertion classifier is the core of TQ rules. It determines whether an assertion is "shallow" (checks existence only) or "deep" (checks actual values).
 
 ### Classification Rules
@@ -885,12 +917,12 @@ Output: Assertion { Kind, Depth, ConstrainsType }
 
 | Metric | Target | How to measure | Phase |
 |--------|--------|----------------|-------|
-| Cold start (500 files) | < 3s | `time stricture` on benchmark repo | Phase 2 |
-| Cached run (500 files) | < 1s | Second `time stricture` run | Phase 2 |
-| Incremental (20 files) | < 2s | `time stricture --changed` | Phase 5 |
-| Per-file | < 50ms | `stricture --verbose` timing output | Phase 1 |
-| Memory (10K files) | < 500MB | `GOMEMLIMIT=500MiB stricture` | Phase 5 |
-| Binary size | < 50MB | `ls -la stricture` (with tree-sitter) | Phase 2 |
+| Cold start (500 files) | < 3s | `time strict` on benchmark repo | Phase 2 |
+| Cached run (500 files) | < 1s | Second `time strict` run | Phase 2 |
+| Incremental (20 files) | < 2s | `time strict --changed` | Phase 5 |
+| Per-file | < 50ms | `strict --verbose` timing output | Phase 1 |
+| Memory (10K files) | < 500MB | `GOMEMLIMIT=500MiB strict` | Phase 5 |
+| Binary size | < 50MB | `ls -la strict` (with tree-sitter) | Phase 2 |
 
 **Benchmark infrastructure:**
 - `scripts/generate-benchmark-repo.sh` generates synthetic repos at various sizes
@@ -919,19 +951,19 @@ Use zig cc for cross-compilation (handles C cross-compile cleanly)
 
 ```bash
 # Binary download
-curl -fsSL https://github.com/stricture/stricture/releases/latest/download/stricture-$(uname -s)-$(uname -m) -o /usr/local/bin/stricture
+curl -fsSL https://github.com/stricture/stricture/releases/latest/download/strict-$(uname -s)-$(uname -m) -o /usr/local/bin/strict
 
 # Homebrew
 brew install stricture/tap/stricture
 
 # Go install (builds from source, requires C compiler)
-go install github.com/stricture/stricture/cmd/stricture@latest
+go install github.com/stricture/stricture/cmd/strict@latest
 
-# npm wrapper (downloads binary, like esbuild)
-npx stricture
+# Docker
+docker run --rm -v "$PWD":/src stricture/stricture
 
-# pip wrapper (downloads binary, like ruff)
-pip install stricture-cli
+# curl (downloads binary)
+curl -fsSL https://get.stricture.dev | sh
 ```
 
 ---
@@ -953,4 +985,4 @@ rules:
   }]
 ```
 
-**If `stricture .` fails on the stricture codebase, the CI build fails.** This is the ultimate verification: the tool validates its own code quality.
+**If `strict .` fails on the strict codebase, the CI build fails.** This is the ultimate verification: the tool validates its own code quality.
