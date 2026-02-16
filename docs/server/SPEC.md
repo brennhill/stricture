@@ -25,7 +25,7 @@ It is intentionally append-only for v0 and does not require a relational DB.
 5. Preserve both:
    - impact-gated findings for CI/policy workflows
    - non-impacting change events for publication/audit workflows
-6. Preserve flow-tier context (`stricture_flows`, `systems[].flows`) for policy
+6. Preserve flow-tier context (`strict_flows`, `systems[].flows`) for policy
    evaluation and reporting.
 7. Preserve optional service metadata links (`runbook_url`, `doc_root`) for
    responder workflows.
@@ -227,7 +227,7 @@ Detailed design: `docs/server/STORAGE.md`.
 - `STRICTURE_SERVER_DATA_DIR` (default `.stricture-server-data`)
 - `STRICTURE_SERVER_STORAGE_DRIVER` (default `fs`)
 - `STRICTURE_SERVER_OBJECT_BUCKET` (reserved for object storage backends)
-- `STRICTURE_SERVER_OBJECT_PREFIX` (default `stricture`)
+- `STRICTURE_SERVER_OBJECT_PREFIX` (default `strict`)
 - `STRICTURE_SERVER_AUTH_MODE` (`none` or `token`)
 - `STRICTURE_SERVER_INGEST_TOKEN` (required when auth mode is `token`)
 

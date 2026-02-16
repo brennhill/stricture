@@ -7,8 +7,8 @@ const body = `# Stricture Examples
 Practical examples across Java, protobuf/buf, Go, Python, and Node.js.
 
 ## What this page shows
-- Service-level annotations in \`strict:systems[]\` (owner, escalation, runbook, docs, flows)
-- API/field-level lineage with \`stricture-source\` comments
+- Service-level annotations in the registry \`systems[]\` section (owner, escalation, runbook, docs, flows)
+- API/field-level lineage with \`strict-source\` comments
 - Reuse of existing metadata from OpenAPI and OpenTelemetry
 - Inline comments showing where Stricture is "batteries included"
 - Clarified split for Protobuf/Buf and Go: service metadata in registry, field lineage in code

@@ -7,11 +7,11 @@ import (
 )
 
 func validAnnotationLine() string {
-	return `// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=priority break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2,db:users.user_profile#user_id@internal?contract_ref=internal://db/users.user_profile flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply; spec=https://specs.example.com/user-id"`
+	return `// strict-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=priority break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2,db:users.user_profile#user_id@internal?contract_ref=internal://db/users.user_profile flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply; spec=https://specs.example.com/user-id"`
 }
 
 func compactAnnotationLine() string {
-	return `// stricture-source field=response.user_id source_system=IdentityGateway source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2`
+	return `// strict-source field=response.user_id source_system=IdentityGateway source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2`
 }
 
 func TestParse_ValidAnnotation_AllRequiredFields(t *testing.T) {
@@ -71,7 +71,7 @@ func TestParse_ValidAnnotation_AllRequiredFields(t *testing.T) {
 }
 
 func TestParse_ValidExternalSource_RequiresProviderAndAsOf(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?provider_id=spotify&contract_ref=https://developer.spotify.com/reference/get-track&upstream_system=spotify flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?provider_id=spotify&contract_ref=https://developer.spotify.com/reference/get-track&upstream_system=spotify flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
 
 	annotations, errs := Parse(source)
 	if len(errs) > 0 {
@@ -97,7 +97,7 @@ func TestParse_ValidExternalSource_RequiresProviderAndAsOf(t *testing.T) {
 }
 
 func TestParse_AcceptsHierarchicalSystemIDs(t *testing.T) {
-	source := []byte(`// stricture-source field=response.logistics.eta source_system=LogisticsGateway:tracking_api source_version=v1 sources=api:logistics-core.GetEta#response.eta@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@a1b2&upstream_system=LogisticsGateway:routing flow="from @LogisticsGateway:tracking_api mapped @self"`)
+	source := []byte(`// strict-source field=response.logistics.eta source_system=LogisticsGateway:tracking_api source_version=v1 sources=api:logistics-core.GetEta#response.eta@cross_repo?contract_ref=git+https://github.com/acme/logistics-core//openapi.yaml@a1b2&upstream_system=LogisticsGateway:routing flow="from @LogisticsGateway:tracking_api mapped @self"`)
 
 	annotations, errs := Parse(source)
 	if len(errs) > 0 {
@@ -115,7 +115,7 @@ func TestParse_AcceptsHierarchicalSystemIDs(t *testing.T) {
 }
 
 func TestParse_ValidRenameTracking(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_user_primary_id renamed_from=response_user_id field=response.user_primary_id source_system=Identity source_version=v2026.03 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-02-01 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@c3d4 flow="from @Identity normalized @self" note="renamed field to align with product terminology"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_user_primary_id renamed_from=response_user_id field=response.user_primary_id source_system=Identity source_version=v2026.03 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-02-01 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@c3d4 flow="from @Identity normalized @self" note="renamed field to align with product terminology"`)
 
 	annotations, errs := Parse(source)
 	if len(errs) > 0 {
@@ -127,7 +127,7 @@ func TestParse_ValidRenameTracking(t *testing.T) {
 }
 
 func TestParse_RejectsMissingRequiredKeys(t *testing.T) {
-	source := []byte(`// stricture-source field=response.user_id source_system=Identity`)
+	source := []byte(`// strict-source field=response.user_id source_system=Identity`)
 	_, errs := Parse(source)
 	if len(errs) != 1 {
 		t.Fatalf("errors len = %d, want 1", len(errs))
@@ -185,13 +185,42 @@ func TestParse_AppliesDefaultsFromCompactAnnotation(t *testing.T) {
 	if a.Flow != "from @IdentityGateway mapped @self" {
 		t.Fatalf("flow = %q, want from @IdentityGateway mapped @self", a.Flow)
 	}
-	if a.Note != "defaulted_by=stricture" {
-		t.Fatalf("note = %q, want defaulted_by=stricture", a.Note)
+	if a.Note != "defaulted_by=strict" {
+		t.Fatalf("note = %q, want defaulted_by=strict", a.Note)
+	}
+}
+
+func TestParse_ParsesStrictPrefixShortForm(t *testing.T) {
+	source := []byte("// strict-source: PromotionsConfig\nPromotionType string `json:\"promotion_type\"`\n")
+
+	annotations, errs := Parse(source)
+	if len(errs) != 0 {
+		t.Fatalf("unexpected parse errors: %+v", errs)
+	}
+	if len(annotations) != 1 {
+		t.Fatalf("annotations len = %d, want 1", len(annotations))
+	}
+
+	a := annotations[0]
+	if a.SourceSystem != "PromotionsConfig" {
+		t.Fatalf("source_system = %q, want PromotionsConfig", a.SourceSystem)
+	}
+	if a.Field != "response.promotion_type" {
+		t.Fatalf("field = %q, want response.promotion_type", a.Field)
+	}
+	if a.SourceVersion != "v1" {
+		t.Fatalf("source_version = %q, want v1", a.SourceVersion)
+	}
+	if len(a.Sources) != 1 {
+		t.Fatalf("sources len = %d, want 1", len(a.Sources))
+	}
+	if a.Sources[0].ContractRef != "internal://strict/promotions-config/response_promotion_type" {
+		t.Fatalf("contract_ref = %q, want internal://strict/promotions-config/response_promotion_type", a.Sources[0].ContractRef)
 	}
 }
 
 func TestParse_AppliesPriorityMergeDefaultForMultiSource(t *testing.T) {
-	source := []byte(`// stricture-source field=response.user_profile source_system=Identity source_version=v1 sources=api:identity.GetUser#response.user@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2,db:profiles.user#payload@internal?contract_ref=internal://db/profiles.user`)
+	source := []byte(`// strict-source field=response.user_profile source_system=Identity source_version=v1 sources=api:identity.GetUser#response.user@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2,db:profiles.user#payload@internal?contract_ref=internal://db/profiles.user`)
 
 	annotations, errs := Parse(source)
 	if len(errs) != 0 {
@@ -206,7 +235,7 @@ func TestParse_AppliesPriorityMergeDefaultForMultiSource(t *testing.T) {
 }
 
 func TestParse_DerivesFieldFromFieldIDWhenMissing(t *testing.T) {
-	source := []byte(`// stricture-source field_id=response_user_id source_system=Identity source_version=v1 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2`)
+	source := []byte(`// strict-source field_id=response_user_id source_system=Identity source_version=v1 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2`)
 
 	annotations, errs := Parse(source)
 	if len(errs) != 0 {
@@ -248,7 +277,7 @@ func TestParse_RejectsMultiSourceWithSingleSourceStrategy(t *testing.T) {
 }
 
 func TestParse_RejectsExternalWithoutAsOf(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external?provider_id=spotify&contract_ref=https://developer.spotify.com/reference/get-track flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external?provider_id=spotify&contract_ref=https://developer.spotify.com/reference/get-track flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
 	_, errs := Parse(source)
 	if len(errs) != 1 {
 		t.Fatalf("errors len = %d, want 1", len(errs))
@@ -256,7 +285,7 @@ func TestParse_RejectsExternalWithoutAsOf(t *testing.T) {
 }
 
 func TestParse_RejectsExternalWithoutProviderID(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?contract_ref=https://developer.spotify.com/reference/get-track flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?contract_ref=https://developer.spotify.com/reference/get-track flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
 	_, errs := Parse(source)
 	if len(errs) != 1 {
 		t.Fatalf("errors len = %d, want 1", len(errs))
@@ -306,7 +335,7 @@ var x = 1
 }
 
 func TestParseWithOverrides_ValidOverride(t *testing.T) {
-	source := []byte(`// stricture-lineage-override field_id=response_user_id change_type=field_removed expires=2099-12-31 reason="temporary migration window" ticket=INC-123`)
+	source := []byte(`// strict-lineage-override field_id=response_user_id change_type=field_removed expires=2099-12-31 reason="temporary migration window" ticket=INC-123`)
 	annotations, overrides, errs := ParseWithOverrides(source)
 	if len(errs) != 0 {
 		t.Fatalf("unexpected parse errors: %+v", errs)
@@ -326,7 +355,7 @@ func TestParseWithOverrides_ValidOverride(t *testing.T) {
 }
 
 func TestParseWithOverrides_RejectsInvalidOverride(t *testing.T) {
-	source := []byte(`// stricture-lineage-override field_id=ResponseUser change_type=BAD expires=not-a-date reason=""`)
+	source := []byte(`// strict-lineage-override field_id=ResponseUser change_type=BAD expires=not-a-date reason=""`)
 	_, overrides, errs := ParseWithOverrides(source)
 	if len(overrides) != 0 {
 		t.Fatalf("overrides len = %d, want 0", len(overrides))
@@ -337,7 +366,7 @@ func TestParseWithOverrides_RejectsInvalidOverride(t *testing.T) {
 }
 
 func TestParse_AcceptsAliasKeysAndTracksMappedFrom(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field_path=response.track service_name=Media service_version=v1 min_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner_team=team.media escalation=pagerduty:media contract_test=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external?provider=spotify&schema_ref=https://developer.spotify.com/reference/get-track&asof=2026-02-13 flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_track field_path=response.track service_name=Media service_version=v1 min_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner_team=team.media escalation=pagerduty:media contract_test=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external?provider=spotify&schema_ref=https://developer.spotify.com/reference/get-track&asof=2026-02-13 flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
 
 	annotations, errs := Parse(source)
 	if len(errs) != 0 {
@@ -384,7 +413,7 @@ func TestParse_AcceptsAliasKeysAndTracksMappedFrom(t *testing.T) {
 }
 
 func TestParse_RejectsConflictingCanonicalAndAliasValues(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity service_name=Billing source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity service_name=Billing source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"`)
 
 	_, errs := Parse(source)
 	if len(errs) != 1 {
@@ -396,7 +425,7 @@ func TestParse_RejectsConflictingCanonicalAndAliasValues(t *testing.T) {
 }
 
 func TestParse_AcceptsCanonicalAndAliasWhenEqual(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity service_name=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity service_name=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"`)
 
 	annotations, errs := Parse(source)
 	if len(errs) != 0 {
@@ -408,7 +437,7 @@ func TestParse_AcceptsCanonicalAndAliasWhenEqual(t *testing.T) {
 }
 
 func TestParse_RejectsConflictingSourceAliases(t *testing.T) {
-	source := []byte(`// stricture-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?contract_ref=https://a.example/schema&schema_ref=https://b.example/schema&provider_id=spotify flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
+	source := []byte(`// strict-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-01-10 sources=api:spotify.GetTrack#response.track@external!2026-02-13?contract_ref=https://a.example/schema&schema_ref=https://b.example/schema&provider_id=spotify flow="from @Spotify enriched @self" note="mapped in TrackMapper"`)
 
 	_, errs := Parse(source)
 	if len(errs) != 1 {

@@ -14,7 +14,7 @@ import (
 func TestLineageExportProfileOTelIncludesAliasFields(t *testing.T) {
 	tmp := t.TempDir()
 	sourcePath := filepath.Join(tmp, "lineage.go")
-	content := `// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"` + "\n"
+	content := `// strict-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"` + "\n"
 	if err := os.WriteFile(sourcePath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write source: %v", err)
 	}
@@ -51,7 +51,7 @@ func TestLineageExportProfileOTelIncludesAliasFields(t *testing.T) {
 func TestLineageExportRejectsInvalidProfile(t *testing.T) {
 	tmp := t.TempDir()
 	sourcePath := filepath.Join(tmp, "lineage.go")
-	content := `// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"` + "\n"
+	content := `// strict-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v1 min_supported_source_version=v1 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply"` + "\n"
 	if err := os.WriteFile(sourcePath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write source: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestLineageExportRejectsInvalidProfile(t *testing.T) {
 func TestLineageExportCompactAnnotationAppliesDefaults(t *testing.T) {
 	tmp := t.TempDir()
 	sourcePath := filepath.Join(tmp, "lineage.go")
-	content := `// stricture-source field=response.user_id source_system=IdentityGateway source_version=v1 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2` + "\n"
+	content := `// strict-source field=response.user_id source_system=IdentityGateway source_version=v1 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2` + "\n"
 	if err := os.WriteFile(sourcePath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write source: %v", err)
 	}

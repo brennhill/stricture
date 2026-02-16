@@ -32,7 +32,7 @@ Spec: `docs/helper/SPEC.md` (draft)
 
 Scope:
 
-1. Scan source and infer candidate `stricture-source` blocks.
+1. Scan source and infer candidate `strict-source` blocks.
 2. Reuse OpenAPI/AsyncAPI/protobuf metadata where available.
 3. Fill defaults and suggest owner/escalation plus optional runbook/docs links from registry.
 4. Emit patch-ready comments (dry-run + apply modes).
@@ -79,7 +79,7 @@ Scope:
 6. Support policy packs at org/team/service levels.
 7. Serve policy packs to CI/local tooling with offline cache support and GitHub fallback refs.
 8. Add org compliance check to ensure repos reference approved `stricture_policy_url` values.
-9. Serve flow-tier catalogs (`stricture_flows`) and policy snapshots to local/CI clients.
+9. Serve flow-tier catalogs (`strict_flows`) and policy snapshots to local/CI clients.
 10. Record deployment events and show flow-level deployment recency.
 11. Deliver admin Web UI (inventory + policy + tokens).
 12. Add OAuth/OIDC (Okta) for admin access.
@@ -120,11 +120,11 @@ Spec: `docs/data-lineage-annotations.md`, `docs/design/LLM-INTEGRATION.md`
 
 Scope:
 
-1. Redesigned `stricture-source` format: multi-line block syntax, minimal
+1. Redesigned `strict-source` format: multi-line block syntax, minimal
    `from ServiceName` shorthand, decomposed source ref grammar.
-2. `stricture-lineage.yml` sidecar files as primary authoring surface for
+2. `strict-lineage.yml` sidecar files as primary authoring surface for
    lineage metadata (alternative to inline comments).
-3. Expanded `stricture helper` with `init-lineage`, `import-openapi`,
+3. Expanded `strict helper` with `init-lineage`, `import-openapi`,
    `validate`, and `migrate` commands.
 4. LLM prompt templates and autocomplete-friendly annotation patterns.
 5. IDE extension spec for annotation validation, autocomplete, and coverage
@@ -140,7 +140,7 @@ Design constraints:
 
 Planned phases:
 
-1. **v0 (format):** multi-line syntax, `from` shorthand, `stricture-lineage.yml`.
+1. **v0 (format):** multi-line syntax, `from` shorthand, `strict-lineage.yml`.
 2. **v1 (tooling):** expanded helper commands, CI staleness checks.
 3. **v2 (intelligence):** LLM prompt templates, IDE extension, autocomplete.
 

@@ -9,10 +9,9 @@ import MainLayout from "../layouts/MainLayout.astro";
     <p class="lead">Better annotations → clearer findings → faster fixes. Use this checklist when tagging fields.</p>
     <p class="muted">Need the full object model and every key? Start with the <a href="/annotations">Annotation Guide + Index</a>.</p>
     <ul>
-      <li><strong>Field identity:</strong> `field` (or explicit `field_id`).</li>
-      <li><strong>Producer:</strong> `source_system`.</li>
-      <li><strong>Version:</strong> `source_version`.</li>
-      <li><strong>Provenance:</strong> `sources` with contract refs (+ provider/as-of for external).</li>
+      <li><strong>Field identity:</strong> auto-inferred from code position (explicit <code>field</code> only when needed).</li>
+      <li><strong>Producer:</strong> <code>from ServiceName</code> (the only required field).</li>
+      <li><strong>Provenance:</strong> optional <code>contract</code>, <code>scope</code>, <code>provider</code> qualifiers when needed.</li>
       <li><strong>Everything else:</strong> defaulted by Stricture unless you need custom behavior.</li>
     </ul>
   </section>
@@ -20,22 +19,20 @@ import MainLayout from "../layouts/MainLayout.astro";
   <section class="card">
     <h2>Good vs bad examples</h2>
     <ul>
-      <li><strong>Type/size</strong>: Bad “number”; Good “uint8, range 0–255, unit=count”.</li>
+      <li><strong>Type/size</strong>: Bad "number"; Good "uint8, range 0–255, unit=count".</li>
       <li><strong>Enum</strong>: Bad missing cadence; Good lists values and warns PSP adds quarterly.</li>
-      <li><strong>Ownership</strong>: Always include owner + escalation.</li>
-      <li><strong>Service metadata</strong>: In `strict:systems[]`, include `owner_team` and keep `runbook_url`/`doc_root` current when available.</li>
+      <li><strong>Ownership</strong>: Always include owner + escalation in the service registry.</li>
+      <li><strong>Service metadata</strong>: In the registry <code>systems[]</code> section, include <code>owner_team</code> and keep <code>runbook_url</code>/<code>doc_root</code> current when available.</li>
       <li><strong>Freshness</strong>: External providers need as-of + max_staleness.</li>
     </ul>
   </section>
 
   <section class="card">
     <h2>Template</h2>
-    <pre><code>field: response.payments.status
-source_system: PaymentsGateway
-source_version: v2026.04
-sources: api:payments-core.GetStatus#response.status@cross_repo?contract_ref=git+https://github.com/acme/payments-core//openapi.yaml@v1.4.2
-</code></pre>
-    <p class="muted">Defaults fill owner/escalation, merge/transform policy, classification, contract test ID, flow, and note. Service-level runbooks/docs are declared in `strict:systems[]`.</p>
+    <pre><code>{`// strict-source: PaymentsGateway
+//   scope: cross_repo
+//   contract: git+https://github.com/acme/payments-core//openapi.yaml@v1.4.2`}</code></pre>
+    <p class="muted">Defaults fill owner/escalation, merge/transform policy, classification, contract test ID, flow, and note. Service-level runbooks/docs are declared in the registry <code>systems[]</code> section.</p>
   </section>
 
   <section class="card">

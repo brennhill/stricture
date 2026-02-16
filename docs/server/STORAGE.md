@@ -31,7 +31,7 @@ Each ingest request becomes one immutable record envelope:
   - `findings` (impact-gated policy candidates)
   - `change_events` (includes `self_only` drift for publication history)
 - optional policy/flow context:
-  - effective flow levels derived from `stricture_flows` + `systems[].flows`
+  - effective flow levels derived from `strict_flows` + `systems[].flows`
   - policy hard-block rationale when flow-criticality rules trigger
 - optional service metadata context:
   - `owner_team`, `escalation`, `runbook_url`, `doc_root`

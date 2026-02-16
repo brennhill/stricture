@@ -625,7 +625,7 @@ function profileAliasMap(profile, field) {
   }
   if (profile === "openapi") {
     aliases.push(["openapi_field_path", field.fieldPath]);
-    aliases.push(["x-stricture-source", "embedded"]);
+    aliases.push(["x-strict-source", "embedded"]);
   }
   if (profile === "asyncapi") {
     aliases.push(["asyncapi_field_path", field.fieldPath]);
@@ -663,7 +663,7 @@ function buildContractPane(scenario, field, step) {
     "                properties:",
     `                  ${scenario.endpoint.responseField}:`,
     `                    type: ${scenario.endpoint.responseType}`,
-    "                    x-stricture-source:",
+    "                    x-strict-source:",
     `                      field_id: ${escapeHtml(field.fieldId)}`,
     `                      field: ${formatValue("field", field.fieldPath, changed)}`,
     `                      source_system: ${escapeHtml(field.sourceSystem)}`,
@@ -770,7 +770,7 @@ function buildSourcePane(field, step) {
   ];
   const compactParts = compactPairs.map((entry) => renderAnnotationPair(entry, changed));
   const prefix = `<span class="tok-comment">${escapeHtml(commentPrefix)}</span>`;
-  const compactLine = `${prefix} <span class="tok-comment">stricture-source</span> ${compactParts.join(" ")}`;
+  const compactLine = `${prefix} <span class="tok-comment">strict-source</span> ${compactParts.join(" ")}`;
 
   if (!state.sourceExpanded) {
     return [compactLine, ...sourceFunctionLines(state.sourceLanguage, commentPrefix)].join("\n");
@@ -805,7 +805,7 @@ function buildSourcePane(field, step) {
   return [
     `${prefix} ${escapeHtml(path)}`,
     `${prefix} compact: ${compactParts.join(" ")}`,
-    `${prefix} stricture-source`,
+    `${prefix} strict-source`,
     ...canonicalLines,
     ...sourceFunctionLines(state.sourceLanguage, commentPrefix),
   ].join("\n");

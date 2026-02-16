@@ -5,7 +5,7 @@ upstream dependencies from lineage artifacts.
 
 ## Inputs
 
-- Lineage artifact JSON: produced by `stricture lineage-export`.
+- Lineage artifact JSON: produced by `strict lineage-export`.
 - Optional system registry YAML: maps system IDs to emergency contacts.
   Registry rows can also carry optional `runbook_url` and `doc_root` links.
 
@@ -16,7 +16,7 @@ Registry format is defined in:
 
 Registry may also include flow catalog + membership:
 
-- `'strict:flows'`: canonical flow IDs and numeric levels
+- `strict_flows`: canonical flow IDs and numeric levels
 - `systems[].flows`: service membership in flow IDs
 
 By default, registry escalation contacts are strongly recommended but not
@@ -29,7 +29,7 @@ either subsystem or top-level service granularity depending on registry data.
 ## Command
 
 ```bash
-stricture lineage-escalate \
+strict lineage-escalate \
   --service ServiceY \
   --artifact tests/lineage/current.json \
   --systems docs/config-examples/lineage-systems.yml \

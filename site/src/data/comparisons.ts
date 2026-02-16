@@ -83,7 +83,7 @@ export const comparisons: ComparisonEntry[] = [
       "Attach trace IDs and service IDs in Stricture reports for fast incident pivot.",
       "Gate deploys only on high-severity drift after one release of warn mode."
     ],
-    overlaySnippet: `# Stricture annotation with OTel-aligned aliases\nx-stricture-lineage:\n  field: shipment.eta\n  from:\n    - system: CarrierGateway\n      version: 2026.01\n  aliases:\n    otel.attribute: shipment.eta\n    otel.resource.service.name: logistics-gateway`,
+    overlaySnippet: `# Stricture annotation with OTel-aligned aliases\nx-strict-lineage:\n  field: shipment.eta\n  from:\n    - system: CarrierGateway\n      version: 2026.01\n  aliases:\n    otel.attribute: shipment.eta\n    otel.resource.service.name: logistics-gateway`,
     matrix: [
       { criterion: "Runtime traces/metrics/logs", stricture: "Partial", tool: "Yes", note: "OTel is primary runtime telemetry stack." },
       { criterion: "Field-level API lineage", stricture: "Yes", tool: "No", note: "Stricture tracks source provenance per emitted field." },
@@ -153,7 +153,7 @@ export const comparisons: ComparisonEntry[] = [
       "Export Stricture lineage with the openlineage profile for downstream reuse.",
       "Turn on block mode for high-severity source-version drift after baselining."
     ],
-    overlaySnippet: `# One annotation, two profiles\nx-stricture-lineage:\n  field: payout.amount\n  from:\n    - system: TreasuryLedger\n      dataset: ledger_entries\n      version: 2026.02\n  aliases:\n    openlineage.namespace: finance\n    openlineage.name: ledger_entries`,
+    overlaySnippet: `# One annotation, two profiles\nx-strict-lineage:\n  field: payout.amount\n  from:\n    - system: TreasuryLedger\n      dataset: ledger_entries\n      version: 2026.02\n  aliases:\n    openlineage.namespace: finance\n    openlineage.name: ledger_entries`,
     matrix: [
       { criterion: "Dataset/job lineage", stricture: "Partial", tool: "Yes", note: "OpenLineage is native for run/job facets." },
       { criterion: "Field-level API lineage", stricture: "Yes", tool: "Partial", note: "OpenLineage can model related info but not API-first by default." },
@@ -218,12 +218,12 @@ export const comparisons: ComparisonEntry[] = [
       "No cross-service lineage obligations or compliance-driven provenance requirements."
     ],
     adoptionSteps: [
-      "Add `x-stricture-lineage` to highest-risk OpenAPI response fields.",
+      "Add `x-strict-lineage` to highest-risk OpenAPI response fields.",
       "Run Stricture in warn mode against your OpenAPI baseline.",
       "Attach escalation metadata for critical fields and provider dependencies.",
       "Promote high-severity checks to block mode after one stable release cycle."
     ],
-    overlaySnippet: `components:\n  schemas:\n    PaymentResponse:\n      type: object\n      properties:\n        status:\n          type: string\n          x-stricture-lineage:\n            from:\n              - system: PaymentsCore\n                version: 2026.02\n            aliases:\n              openapi.extension: x-source-system`,
+    overlaySnippet: `components:\n  schemas:\n    PaymentResponse:\n      type: object\n      properties:\n        status:\n          type: string\n          x-strict-lineage:\n            from:\n              - system: PaymentsCore\n                version: 2026.02\n            aliases:\n              openapi.extension: x-source-system`,
     matrix: [
       { criterion: "Schema/interface modeling", stricture: "Partial", tool: "Yes", note: "OpenAPI is primary contract format." },
       { criterion: "Field provenance metadata", stricture: "Yes", tool: "Partial", note: "OpenAPI can carry extensions, Stricture defines semantics and checks." },
@@ -293,7 +293,7 @@ export const comparisons: ComparisonEntry[] = [
       "Run warn mode for one release cycle across event producers.",
       "Enable block mode for high-severity producer/consumer drift."
     ],
-    overlaySnippet: `components:\n  messages:\n    ShipmentUpdated:\n      payload:\n        type: object\n        properties:\n          eta:\n            type: string\n            x-stricture-lineage:\n              from:\n                - system: CarrierGateway\n                  version: 2026.01\n              aliases:\n                asyncapi.extension: x-origin-system`,
+    overlaySnippet: `components:\n  messages:\n    ShipmentUpdated:\n      payload:\n        type: object\n        properties:\n          eta:\n            type: string\n            x-strict-lineage:\n              from:\n                - system: CarrierGateway\n                  version: 2026.01\n              aliases:\n                asyncapi.extension: x-origin-system`,
     matrix: [
       { criterion: "Async protocol/channel modeling", stricture: "No", tool: "Yes", note: "AsyncAPI is primary async contract model." },
       { criterion: "Field-level lineage", stricture: "Yes", tool: "Partial", note: "AsyncAPI extensions possible; Stricture defines semantics/enforcement." },
@@ -362,7 +362,7 @@ export const comparisons: ComparisonEntry[] = [
       "Align Spectral extension rules with Stricture overlay keys.",
       "Use Spectral as pre-commit and Stricture as release gate."
     ],
-    overlaySnippet: `extends: ["spectral:oas"]\nrules:\n  stricture-lineage-required:\n    given: "$.components.schemas.*.properties[*]"\n    then:\n      field: "x-stricture-lineage"\n      function: truthy`,
+    overlaySnippet: `extends: ["spectral:oas"]\nrules:\n  stricture-lineage-required:\n    given: "$.components.schemas.*.properties[*]"\n    then:\n      field: "x-strict-lineage"\n      function: truthy`,
     matrix: [
       { criterion: "Static spec linting", stricture: "Partial", tool: "Yes", note: "Spectral is stronger static lint engine." },
       { criterion: "Field provenance semantics", stricture: "Yes", tool: "No", note: "Stricture defines and validates lineage annotations." },
@@ -501,7 +501,7 @@ export const comparisons: ComparisonEntry[] = [
       "Publish Stricture outputs into catalog metadata for discoverability.",
       "Automate escalation links between Stricture findings and catalog owners."
     ],
-    overlaySnippet: `x-stricture-lineage:\n  field: catalog_item.price\n  from:\n    - system: PricingCore\n      version: 2026.02\n  aliases:\n    datahub.urn: "urn:li:dataset:(urn:li:dataPlatform:hive,pricing,PROD)"\n    atlas.guid: "8f7b2..."`,
+    overlaySnippet: `x-strict-lineage:\n  field: catalog_item.price\n  from:\n    - system: PricingCore\n      version: 2026.02\n  aliases:\n    datahub.urn: "urn:li:dataset:(urn:li:dataPlatform:hive,pricing,PROD)"\n    atlas.guid: "8f7b2..."`,
     matrix: [
       { criterion: "Metadata catalog and search", stricture: "No", tool: "Yes", note: "Catalog platforms dominate this area." },
       { criterion: "Field-level API drift gate", stricture: "Yes", tool: "No", note: "Stricture targets release-time enforcement." },

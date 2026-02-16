@@ -129,8 +129,8 @@ Stricture adds only:
 | `source_system` | OTel `service.name`, OpenLineage system identity | Reuse canonical service identity |
 | `source_version` | Spec/document version tags + lineage facet/tag metadata | Map into profile metadata; retain in Stricture artifact |
 | `min_supported_source_version` | No universal standard field | Stricture extension |
-| `transform_type` | Column lineage semantics where available | Reuse when available, else extension |
-| `merge_strategy` | No universal standard field | Stricture extension |
+| `transform` | Column lineage semantics where available | Reuse when available, else extension |
+| `merge` | No universal standard field | Stricture extension |
 | `break_policy` | No universal standard field | Stricture extension |
 | `confidence` | No universal standard field | Stricture extension |
 | `data_classification` | Existing policy tags/labels in platform metadata | Reuse tags where available; keep canonical in Stricture |
@@ -146,7 +146,7 @@ Stricture adds only:
 Attach Stricture metadata to existing OpenAPI properties using extension keys,
 without rewriting the base API spec.
 
-Recommended extension key: `x-stricture-source`.
+Recommended extension key: `x-strict-source`.
 
 Example (conceptual):
 
@@ -155,7 +155,7 @@ overlay: 1.0.0
 actions:
   - target: "$.paths['/users/{id}'].get.responses['200'].content['application/json'].schema.properties.user_id"
     update:
-      x-stricture-source:
+      x-strict-source:
         field_id: response_user_id
         source_system: Identity
         source_version: v2026.02
@@ -170,7 +170,7 @@ actions:
 
 ## 2. AsyncAPI Extension
 
-Attach Stricture metadata to payload properties using `x-stricture-source`.
+Attach Stricture metadata to payload properties using `x-strict-source`.
 
 ## 3. OpenLineage Facet Bridge
 

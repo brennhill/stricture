@@ -4,131 +4,148 @@ import MainLayout from "../layouts/MainLayout.astro";
 const objectRows = [
   {
     object: "Field lineage annotation",
-    where: "Code comments near emit/transform logic",
-    reference: "strict:source",
-    syntax: "stricture-source",
-    why: "Defines per-field provenance, ownership, and drift semantics."
+    where: "Code comments above struct fields, or sidecar `fields:` section",
+    syntax: "// strict-source: ServiceName",
+    why: "Declares per-field provenance, ownership, and drift semantics."
   },
   {
-    object: "Source edge entry",
-    where: "Inside `sources=` on a field annotation",
-    reference: "strict:source-edge",
-    syntax: "kind:target#path@scope?contract_ref=...",
+    object: "Sidecar file",
+    where: "`strict-lineage.yml` at project or package root",
+    syntax: "Standard YAML",
+    why: "Centralizes upstream service definitions and per-field lineage metadata."
+  },
+  {
+    object: "Source entry",
+    where: "Inside `sources:` in a multi-line annotation or sidecar",
+    syntax: "YAML with kind, target, path, scope, contract",
     why: "Defines the upstream contract edge used for blast-radius tracing."
   },
   {
     object: "Service registry record",
     where: "`.stricture/strict-lineage-systems.yaml` (or equivalent registry file)",
-    reference: "strict:systems[]",
     syntax: "systems[] objects",
     why: "Defines service-level ownership, runbooks/docs, escalation defaults, and flow memberships."
   },
   {
     object: "Flow registry catalog",
     where: "Top-level in `.stricture/strict-lineage-systems.yaml`",
-    reference: "strict:flows[]",
-    syntax: "'strict:flows' objects",
+    syntax: "strict_flows objects",
     why: "Defines named business flows and numeric tier levels for policy gating."
   },
   {
     object: "Temporary lineage override",
     where: "Code comments during migration windows",
-    reference: "strict:lineage-override",
-    syntax: "stricture-lineage-override",
+    syntax: "// strict-lineage-override ...",
     why: "Allows time-bounded exceptions with explicit reason and expiry."
   }
 ];
 
-const sourceKeys = [
-  { key: "annotation_schema_version", required: "No", defaultValue: "`1`", purpose: "Schema version for normalized artifacts.", mode: "defaulted" },
-  { key: "break_policy", required: "No", defaultValue: "`strict`", purpose: "Compatibility policy used for drift severity.", mode: "defaulted" },
-  { key: "confidence", required: "No", defaultValue: "`declared`", purpose: "How trusted/inferred the mapping is.", mode: "defaulted" },
-  { key: "contract_test_id", required: "No", defaultValue: "`ci://contracts/<source_system_slug>/<field_id>`", purpose: "Reference to contract test coverage.", mode: "defaulted" },
-  { key: "data_classification", required: "No", defaultValue: "`internal`", purpose: "Data sensitivity classification.", mode: "recommended" },
-  { key: "escalation", required: "No", defaultValue: "`slack:#<source_system_slug>-oncall`", purpose: "Escalation channel for incidents.", mode: "defaulted" },
-  { key: "field", required: "Yes* (helper or manual)", defaultValue: "Derived from code/schema path; fallback from `field_id`", purpose: "Dot path emitted by the API contract.", mode: "autogen" },
-  { key: "field_id", required: "Yes*", defaultValue: "Derived from `field`; helper can auto-generate", purpose: "Stable field identity slug.", mode: "autogen" },
-  { key: "flow", required: "No", defaultValue: "`from @<source_system> mapped @self`", purpose: "Human-readable flow summary.", mode: "defaulted" },
-  { key: "introduced_at", required: "No", defaultValue: "`1970-01-01`", purpose: "First-known introduction date.", mode: "autogen" },
-  { key: "merge_strategy", required: "No", defaultValue: "`single_source` or `priority`", purpose: "Merge policy for multi-source inputs.", mode: "defaulted" },
-  { key: "min_supported_source_version", required: "No", defaultValue: "`source_version`", purpose: "Minimum upstream version considered compatible.", mode: "defaulted" },
-  { key: "note", required: "No", defaultValue: "`defaulted_by=stricture`", purpose: "Freeform implementation note.", mode: "defaulted" },
-  { key: "owner", required: "No", defaultValue: "`team.<source_system_slug>`", purpose: "Owning team for this field contract.", mode: "defaulted" },
-  { key: "renamed_from", required: "No", defaultValue: "None", purpose: "Previous field identity for intentional migrations.", mode: "manual-optional" },
-  { key: "source_system", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service mapping when strict:server_url is configured", purpose: "Primary producing system/service.", mode: "autogen" },
-  { key: "source_version", required: "Yes (helper or manual)", defaultValue: "Derived from source contract ref/commit when available", purpose: "Producer version for this mapping.", mode: "autogen" },
-  { key: "sources", required: "Yes (helper or manual)", defaultValue: "Helper-inferred from AST + contracts", purpose: "One or more upstream source edge refs.", mode: "autogen" },
-  { key: "sunset_at", required: "No", defaultValue: "None", purpose: "Optional deprecation/removal target date.", mode: "manual-optional" },
-  { key: "transform_type", required: "No", defaultValue: "`passthrough`", purpose: "Transform operation type for this field.", mode: "defaulted" }
+const annotationKeys = [
+  { key: "from", required: "Yes", defaultValue: "None", purpose: "Source system name (and optional version). The only required field.", mode: "manual-required" },
+  { key: "scope", required: "No", defaultValue: "From sidecar `upstream.*.scope` or `internal`", purpose: "Where the upstream lives: internal, cross_repo, or external.", mode: "defaulted" },
+  { key: "provider", required: "No (external only)", defaultValue: "From sidecar `upstream.*.provider`", purpose: "Third-party provider ID for external sources.", mode: "defaulted" },
+  { key: "transform", required: "No", defaultValue: "`passthrough`", purpose: "How data is modified: passthrough, normalize, aggregate.", mode: "defaulted" },
+  { key: "merge", required: "No", defaultValue: "`single_source`", purpose: "Merge strategy for multi-source fields: single_source, priority.", mode: "defaulted" },
+  { key: "classification", required: "No", defaultValue: "`internal`", purpose: "Data sensitivity classification.", mode: "defaulted" },
+  { key: "break_policy", required: "No", defaultValue: "`strict`", purpose: "Compatibility policy for drift severity.", mode: "defaulted" },
+  { key: "note", required: "No", defaultValue: "None", purpose: "Free-text context.", mode: "manual-optional" }
 ];
 
-const sourceQueryKeys = [
-  { key: "as_of", required: "Conditional", defaultValue: "Required for `@external` scope (helper can stamp run-date)", purpose: "Snapshot date (`YYYY-MM-DD`) for external providers.", mode: "autogen" },
-  { key: "contract_ref", required: "Yes", defaultValue: "Helper can derive from OpenAPI/AsyncAPI/proto pointers", purpose: "Canonical contract/spec pointer for the source edge.", mode: "autogen" },
-  { key: "provider_id", required: "Conditional", defaultValue: "Required for `@external`; helper can map from provider catalog", purpose: "External provider identifier.", mode: "autogen" },
-  { key: "upstream_system", required: "No", defaultValue: "Helper-inferred from source target/service map", purpose: "Optional explicit upstream service/system id.", mode: "autogen" }
+const autoInferredKeys = [
+  { key: "field", defaultValue: "From struct field on next line", purpose: "Dot path of the API output field.", mode: "autogen" },
+  { key: "field_id", defaultValue: "Derived from `field`", purpose: "Stable field identity slug.", mode: "autogen" },
+  { key: "source_version", defaultValue: "From sidecar `version` or `from` qualifier", purpose: "Producer version for this mapping.", mode: "autogen" },
+  { key: "contract", defaultValue: "From sidecar `upstream.*.contract`", purpose: "Contract artifact reference.", mode: "autogen" },
+  { key: "owner", defaultValue: "`team.<system_slug>`", purpose: "Owning team for this field contract.", mode: "autogen" },
+  { key: "escalation", defaultValue: "`slack:#<system_slug>-oncall`", purpose: "Escalation channel for incidents.", mode: "autogen" },
+  { key: "confidence", defaultValue: "`declared`", purpose: "How trusted the mapping is: declared or inferred.", mode: "autogen" },
+  { key: "contract_test_id", defaultValue: "`ci://contracts/<system>/<field_id>`", purpose: "Reference to contract test coverage.", mode: "autogen" },
+  { key: "introduced_at", defaultValue: "Git blame date", purpose: "First-known introduction date.", mode: "autogen" },
+  { key: "flow", defaultValue: "`from @<system> mapped @self`", purpose: "Human-readable flow summary.", mode: "autogen" },
+  { key: "annotation_schema_version", defaultValue: "`2`", purpose: "Schema version for normalized artifacts.", mode: "autogen" }
+];
+
+const sourceFields = [
+  { key: "kind", required: "Yes", purpose: "Source type: api, db, event, file, cache, input.", mode: "manual-required" },
+  { key: "target", required: "Yes", purpose: "The operation or table (e.g., identity.GetUser).", mode: "manual-required" },
+  { key: "path", required: "Yes", purpose: "Field path in the source response (e.g., response.id).", mode: "manual-required" },
+  { key: "scope", required: "No", purpose: "Override scope for this source: internal, cross_repo, external.", mode: "defaulted" },
+  { key: "contract", required: "Yes", purpose: "Reference to the contract artifact.", mode: "manual-required" },
+  { key: "provider", required: "External only", purpose: "Third-party provider ID.", mode: "manual-optional" },
+  { key: "as_of", required: "External only", purpose: "Snapshot date (YYYY-MM-DD).", mode: "manual-optional" },
+  { key: "upstream_system", required: "No", purpose: "System ID if different from the annotation's `from`.", mode: "manual-optional" }
 ];
 
 const overrideKeys = [
+  { key: "field_id", required: "Yes", defaultValue: "None", purpose: "Field identity receiving the temporary exception.", mode: "manual-required" },
   { key: "change_type", required: "Yes", defaultValue: "None", purpose: "Drift type (or `*`) covered by the override.", mode: "manual-required" },
   { key: "expires", required: "Yes", defaultValue: "None", purpose: "UTC date when override stops applying.", mode: "manual-required" },
-  { key: "field_id", required: "Yes", defaultValue: "None", purpose: "Field identity receiving the temporary exception.", mode: "manual-required" },
   { key: "reason", required: "Yes", defaultValue: "None", purpose: "Human-readable justification for the override.", mode: "manual-required" },
   { key: "ticket", required: "No", defaultValue: "None", purpose: "Optional issue/change ticket id.", mode: "recommended" }
 ];
 
 const serviceRegistryKeys = [
-  { key: "id", required: "Yes (helper/server or manual)", defaultValue: "Derived from repo/service identity when strict:server_url is configured", purpose: "Stable system identifier. Use `parent` for topology and `parent:child` for internal subsystems.", mode: "autogen" },
-  { key: "name", required: "Yes", defaultValue: "None", purpose: "Human-readable system name.", mode: "manual-required" },
-  { key: "owner_team", required: "Yes", defaultValue: "None", purpose: "Owning team/owner label (free-form string).", mode: "manual-required" },
-  { key: "runbook_url", required: "No", defaultValue: "None", purpose: "Optional runbook URL used by responders.", mode: "manual-optional" },
-  { key: "doc_root", required: "No", defaultValue: "None", purpose: "Optional root URL for external/internal service docs.", mode: "manual-optional" },
-  { key: "flows", required: "No (recommended for multi-service policy)", defaultValue: "None", purpose: "Flow IDs this service participates in.", mode: "recommended" },
-  { key: "escalation", required: "No (policy can require)", defaultValue: "None", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
-  { key: "escalation[].channel", required: "No (policy can require)", defaultValue: "None", purpose: "How responders are reached.", mode: "recommended" },
-  { key: "escalation[].name", required: "No (policy can require)", defaultValue: "None", purpose: "Contact display name.", mode: "recommended" },
-  { key: "escalation[].role", required: "No (policy can require)", defaultValue: "None", purpose: "Escalation role (primary/secondary/vendor/etc).", mode: "recommended" }
+  { key: "id", required: "Yes", purpose: "Stable system identifier. Use `parent:child` for internal subsystems.", mode: "manual-required" },
+  { key: "name", required: "Yes", purpose: "Human-readable system name.", mode: "manual-required" },
+  { key: "owner_team", required: "Yes", purpose: "Owning team/owner label.", mode: "manual-required" },
+  { key: "runbook_url", required: "No", purpose: "Optional runbook URL for responders.", mode: "manual-optional" },
+  { key: "doc_root", required: "No", purpose: "Optional root URL for service docs.", mode: "manual-optional" },
+  { key: "flows", required: "No", purpose: "Flow IDs this service participates in.", mode: "recommended" },
+  { key: "escalation", required: "No", purpose: "Ordered escalation contacts for this system.", mode: "recommended" },
+  { key: "escalation[].channel", required: "No", purpose: "How responders are reached.", mode: "recommended" },
+  { key: "escalation[].name", required: "No", purpose: "Contact display name.", mode: "recommended" },
+  { key: "escalation[].role", required: "No", purpose: "Escalation role (primary/secondary/vendor/etc).", mode: "recommended" }
 ];
 
 const flowRegistryKeys = [
-  { key: "strict:flows[].id", required: "Yes", defaultValue: "None", purpose: "Stable flow ID used by service memberships.", mode: "manual-required" },
-  { key: "strict:flows[].name", required: "Yes", defaultValue: "None", purpose: "Human-readable flow name.", mode: "manual-required" },
-  { key: "strict:flows[].level", required: "Yes", defaultValue: "None", purpose: "Numeric tier level (org-defined scale).", mode: "manual-required" },
-  { key: "strict:flows[].owner", required: "No", defaultValue: "None", purpose: "Flow owner label (free-form string).", mode: "recommended" },
-  { key: "strict:flows[].business_risk", required: "No", defaultValue: "None", purpose: "Organization-managed risk code token used by policy (for example order_loss).", mode: "recommended" }
+  { key: "strict_flows[].id", required: "Yes", purpose: "Stable flow ID used by service memberships.", mode: "manual-required" },
+  { key: "strict_flows[].name", required: "Yes", purpose: "Human-readable flow name.", mode: "manual-required" },
+  { key: "strict_flows[].level", required: "Yes", purpose: "Numeric tier level (org-defined scale).", mode: "manual-required" },
+  { key: "strict_flows[].owner", required: "No", purpose: "Flow owner label.", mode: "recommended" },
+  { key: "strict_flows[].business_risk", required: "No", purpose: "Organization-managed risk code token.", mode: "recommended" }
 ];
 
 const modeMeta = {
   defaulted: { label: "Defaulted", className: "anno-chip-defaulted" },
-  autogen: { label: "Auto-gen", className: "anno-chip-autogen" },
-  recommended: { label: "Strongly recommended", className: "anno-chip-recommended" },
-  "manual-required": { label: "Manual + required", className: "anno-chip-manual-required" },
-  "manual-optional": { label: "Manual + optional", className: "anno-chip-manual-optional" }
+  autogen: { label: "Auto-inferred", className: "anno-chip-autogen" },
+  recommended: { label: "Recommended", className: "anno-chip-recommended" },
+  "manual-required": { label: "Required", className: "anno-chip-manual-required" },
+  "manual-optional": { label: "Optional", className: "anno-chip-manual-optional" }
 };
 ---
 
-<MainLayout title="Annotations | Stricture" description="Clear guide to what Stricture annotates, why it matters, and an alphabetical annotation reference with required/default behavior.">
+<MainLayout title="Annotations | Stricture" description="Guide to Stricture lineage annotations: what you annotate, the minimal format, and a complete key reference.">
   <section class="card">
     <p class="kicker">Docs</p>
     <h1>Stricture annotation guide and reference</h1>
     <p class="lead">
-      This page answers three questions: what objects you annotate, why each one exists, and exactly which keys are required vs defaulted.
+      The simplest annotation is <code>// strict-source: ServiceName</code>. Everything else is auto-inferred.
     </p>
     <p class="muted">
-      Scope: lineage authoring (`stricture-source`, source edges, service + flow registries, and temporary lineage overrides).
+      Scope: lineage authoring (inline annotations, sidecar files, service + flow registries, and temporary overrides).
     </p>
-    <p class="muted">
-      `strict:*` labels on this page are reference handles for docs and tooling UX; parser syntax is shown separately in the syntax column.
-    </p>
-    <p class="muted">Backward-compatible alias handles using `stricture:*` remain accepted in docs/tooling.</p>
     <div class="anno-legend">
       {Object.values(modeMeta).map((mode) => (
         <span class={`anno-chip ${mode.className}`}>{mode.label}</span>
       ))}
     </div>
     <p class="muted">Recommended fields can be promoted to required by policy packs.</p>
-    <p class="muted">When part of a multi-service ecosystem, use <code>strict:server_url</code> so Autogen fields resolve from shared service/policy context.</p>
-    <p class="muted">Hierarchy convention: <code>system-id</code> for ecosystem nodes and <code>system-id:subsystem-id</code> for internals; no new annotation key required.</p>
+  </section>
+
+  <section class="card">
+    <h2>Quick example</h2>
+    <p>Sidecar file (<code>strict-lineage.yml</code>):</p>
+    <pre><code>{`service: user-service
+version: v2026.02
+
+upstream:
+  Identity:
+    contract: git+https://github.com/acme/identity//openapi.yaml
+    scope: cross_repo`}</code></pre>
+    <p>Inline annotation:</p>
+    <pre><code>{`// strict-source: Identity
+UserID int \`json:"user_id"\``}</code></pre>
+    <p>That's it. The field path, source version, contract, scope, owner, escalation, and 10+ more fields are all inferred automatically.</p>
   </section>
 
   <section class="card">
@@ -139,7 +156,6 @@ const modeMeta = {
           <tr>
             <th>Object</th>
             <th>Where</th>
-            <th>Stricture reference</th>
             <th>Syntax</th>
             <th>Why it exists</th>
           </tr>
@@ -149,7 +165,6 @@ const modeMeta = {
             <tr>
               <td>{row.object}</td>
               <td>{row.where}</td>
-              <td><code>{row.reference}</code></td>
               <td><code>{row.syntax}</code></td>
               <td>{row.why}</td>
             </tr>
@@ -160,9 +175,9 @@ const modeMeta = {
   </section>
 
   <section class="card">
-    <h2>Field annotation keys (A-Z)</h2>
+    <h2>Annotation keys (what you write)</h2>
     <p class="muted">
-      * `field` or `field_id` must be present. In practice, helper/server workflows should auto-generate both whenever resolvable from code/schema context.
+      Only <code>from</code> is required. Add qualifiers only when overriding defaults.
     </p>
     <div class="compare-table-wrap">
       <table class="compare-table">
@@ -176,7 +191,7 @@ const modeMeta = {
           </tr>
         </thead>
         <tbody>
-          {sourceKeys.map((item) => (
+          {annotationKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
               <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
@@ -191,27 +206,25 @@ const modeMeta = {
   </section>
 
   <section class="card">
-    <h2>Source edge query keys (A-Z)</h2>
+    <h2>Auto-inferred keys (never write these)</h2>
     <p class="muted">
-      Source grammar: <code>kind:target#path[@scope[!as_of]][?contract_ref=&lt;ref&gt;&amp;provider_id=&lt;id&gt;&amp;upstream_system=&lt;id&gt;]</code>
+      These are derived automatically from code context, sidecar files, and service registries.
     </p>
     <div class="compare-table-wrap">
       <table class="compare-table">
         <thead>
           <tr>
-            <th>Query key</th>
+            <th>Key</th>
             <th>Mode</th>
-            <th>Required</th>
-            <th>Default / Rule</th>
+            <th>Default / Source</th>
             <th>Purpose</th>
           </tr>
         </thead>
         <tbody>
-          {sourceQueryKeys.map((item) => (
+          {autoInferredKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
               <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
-              <td>{item.required}</td>
               <td>{item.defaultValue}</td>
               <td>{item.purpose}</td>
             </tr>
@@ -222,7 +235,45 @@ const modeMeta = {
   </section>
 
   <section class="card">
-    <h2>Temporary override keys (A-Z)</h2>
+    <h2>Source entry fields (multi-source annotations)</h2>
+    <p class="muted">
+      Used in <code>sources:</code> blocks when a field has multiple upstream sources.
+    </p>
+    <pre><code>{`// strict-source:
+//   from: Profile v3
+//   merge: priority
+//   sources:
+//     - kind: api
+//       target: identity.GetUser
+//       path: response.user
+//       scope: cross_repo
+//       contract: git+https://github.com/acme/identity//openapi.yaml@f00d`}</code></pre>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Mode</th>
+            <th>Required</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sourceFields.map((item) => (
+            <tr>
+              <td><code>{item.key}</code></td>
+              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td>{item.required}</td>
+              <td>{item.purpose}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Temporary override keys</h2>
     <div class="compare-table-wrap">
       <table class="compare-table">
         <thead>
@@ -250,12 +301,9 @@ const modeMeta = {
   </section>
 
   <section class="card">
-    <h2>Service registry keys (A-Z)</h2>
+    <h2>Service registry keys</h2>
     <p class="muted">
-      Service-level ownership, runbooks/docs, escalation, and flow memberships are defined in a registry file (for example `.stricture/strict-lineage-systems.yaml`), not inline in each handler.
-    </p>
-    <p class="muted">
-      If a `strict:server_url` is configured, helper/server workflows can bootstrap service IDs automatically and register them centrally.
+      Defined in a registry file (e.g., <code>.stricture/strict-lineage-systems.yaml</code>), not inline.
     </p>
     <div class="compare-table-wrap">
       <table class="compare-table">
@@ -264,7 +312,6 @@ const modeMeta = {
             <th>Key</th>
             <th>Mode</th>
             <th>Required</th>
-            <th>Default</th>
             <th>Purpose</th>
           </tr>
         </thead>
@@ -274,7 +321,6 @@ const modeMeta = {
               <td><code>{item.key}</code></td>
               <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
-              <td>{item.defaultValue}</td>
               <td>{item.purpose}</td>
             </tr>
           ))}
@@ -284,12 +330,9 @@ const modeMeta = {
   </section>
 
   <section class="card">
-    <h2>Flow registry keys (A-Z)</h2>
+    <h2>Flow registry keys</h2>
     <p class="muted">
-      Flow catalogs are top-level registry metadata (`'strict:flows'`) used by policy to map drift findings to business-critical tiers.
-    </p>
-    <p class="muted">
-      <code>business_risk</code> is an organization-managed token (for example <code>order_loss</code>), not a built-in global enum.
+      Flow catalogs define business-critical tiers for policy gating.
     </p>
     <div class="compare-table-wrap">
       <table class="compare-table">
@@ -298,7 +341,6 @@ const modeMeta = {
             <th>Key</th>
             <th>Mode</th>
             <th>Required</th>
-            <th>Default</th>
             <th>Purpose</th>
           </tr>
         </thead>
@@ -308,7 +350,6 @@ const modeMeta = {
               <td><code>{item.key}</code></td>
               <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
-              <td>{item.defaultValue}</td>
               <td>{item.purpose}</td>
             </tr>
           ))}
@@ -320,54 +361,14 @@ const modeMeta = {
   <section class="card">
     <h2>Policy packs can change required/default behavior</h2>
     <p class="muted">
-      Teams can keep base annotations lightweight, then enforce stricter org rules through a single policy URL. Repo binding:
+      Teams can keep base annotations lightweight, then enforce stricter org rules through a single policy URL. Repo binding in <code>.stricture.yml</code>:
     </p>
-    <pre><code>{`'strict:policy_url': https://policies.example.com/stricture/strict-policy.yaml
-'strict:policy_sha256': <optional_sha256_pin>`}</code></pre>
+    <pre><code>{`stricture_policy_url: https://policies.example.com/stricture/strict-policy.yaml
+stricture_policy_sha256: <optional_sha256_pin>`}</code></pre>
     <p class="muted">CI/CD enforcement pattern:</p>
-    <pre><code>{`stricture policy verify-ref \
-  --config .stricture.yml \
+    <pre><code>{`strict policy verify-ref \\
+  --config .stricture.yml \\
   --expected-url-env STRICTURE_POLICY_URL`}</code></pre>
-    <p class="muted">Example policy pack at that URL:</p>
-    <pre><code>{`schema_version: 1
-policy_id: strict:policy
-
-lineage:
-  require:
-    field_keys:
-      - owner
-      - escalation
-    system_registry_keys:
-      - escalation
-      - escalation[].role
-      - escalation[].name
-      - escalation[].channel
-      - runbook_url
-      - doc_root
-  defaults:
-    escalation: pagerduty:platform-oncall
-    break_policy: strict
-  findings:
-    require_downstream_impact: true
-    flow_criticality:
-      enabled: true
-      level_direction: lower_is_more_critical
-      fail_on_level: 1
-      critical_flow_ids:
-        - checkout
-      critical_flow_block_reason: "Risk of order loss"`}</code></pre>
-  </section>
-
-  <section class="card">
-    <h2>How tool-assisted authoring makes this easier</h2>
-    <ul>
-      <li><strong>`source_system`</strong>: helper derives service identity from repo/service mapping; prefer <code>strict:server_url</code> in multi-service environments.</li>
-      <li><strong>`source_version`</strong>: helper resolves from contract source ref (repo tag/commit) so humans do not bump it manually every PR.</li>
-      <li><strong>`sources`</strong>: helper infers edge candidates from AST + contract schemas and writes normalized refs.</li>
-      <li><strong>`contract_ref`</strong>: helper reuses OpenAPI/AsyncAPI/proto pointers already present in repo/config.</li>
-      <li><strong>`provider_id` + `as_of`</strong>: helper fills from provider registry and run timestamp for external sources.</li>
-      <li><strong>Manual override remains</strong>: engineers can still pin or override values when migration windows need explicit intent.</li>
-    </ul>
   </section>
 
   <section class="card">

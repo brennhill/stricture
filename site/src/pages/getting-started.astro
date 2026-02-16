@@ -6,44 +6,57 @@ import MainLayout from "../layouts/MainLayout.astro";
   <section class="card">
     <p class="kicker">Start Here</p>
     <h1>Getting Started with Stricture</h1>
-    <p class="lead">Three steps: annotate, set policy, run Stricture. Keep source comments compact; let defaults and helper/server automation compute the rest.</p>
+    <p class="lead">Three steps: create a sidecar file, annotate fields, run Stricture. Keep source comments minimal; let defaults and tooling compute the rest.</p>
   </section>
 
   <section class="card">
-    <h2>1) Annotate fields (minimal + clear)</h2>
+    <h2>1) Create a sidecar file (one-time)</h2>
+    <p>Create <code>strict-lineage.yml</code> at your project root:</p>
+    <pre><code>{`# strict-lineage.yml
+service: my-service
+version: v1.0.0
+
+upstream:
+  Identity:
+    contract: git+https://github.com/acme/identity//openapi.yaml
+    scope: cross_repo`}</code></pre>
+    <p>This declares your upstream services and their contracts. Or generate it automatically:</p>
+    <pre><code>strict helper init-lineage .</code></pre>
+  </section>
+
+  <section class="card">
+    <h2>2) Annotate fields</h2>
+    <p>Add a comment above each struct field that comes from an upstream service:</p>
+    <pre><code>{`// strict-source: Identity
+UserID int \`json:"user_id"\``}</code></pre>
+    <p>That's it. Two words after the prefix. Everything else is inferred from the sidecar file.</p>
     <ul>
-      <li><strong>Required core</strong>: <code>field/field_id</code>, <code>source_system</code>, <code>source_version</code>, <code>sources</code>.</li>
-      <li><strong>Contract ref</strong>: always include <code>contract_ref</code> in each source edge.</li>
-      <li><strong>External source keys</strong>: include <code>provider_id</code> + <code>as_of</code> for <code>@external</code>.</li>
-      <li><strong>Computed/defaulted keys</strong>: owner/escalation/merge/flow/note can be normalized automatically.</li>
-      <li><strong>Service registry metadata</strong>: in <code>strict:systems[]</code>, keep <code>owner_team</code> and optionally <code>runbook_url</code>/<code>doc_root</code> plus escalation contacts.</li>
-      <li><strong>Hierarchy</strong>: use <code>service</code> and <code>service:subsystem</code> IDs (no extra key).</li>
-      <li><strong>Flow tiers</strong>: define flow levels in <code>'strict:flows'</code>; map services via <code>systems[].flows</code>.</li>
+      <li><strong>Only required field</strong>: <code>from</code> (the upstream service name).</li>
+      <li><strong>Optional qualifiers</strong>: <code>scope</code>, <code>provider</code>, <code>transform</code>, <code>merge</code>, <code>classification</code>, <code>break_policy</code>, <code>note</code>.</li>
+      <li><strong>Auto-inferred</strong>: field path, source version, contract, owner, escalation, and 12 more fields.</li>
     </ul>
-    <p>See the <a href="/annotations">Annotation Guide + Index</a> for the object model and complete A-Z key reference, then use the <a href="/annotation-quality">Annotation Quality Guide</a> for writing quality.</p>
+    <p>See the <a href="/annotations">Annotation Reference</a> for the complete key list, then use the <a href="/annotation-quality">Annotation Quality Guide</a> for writing tips.</p>
   </section>
 
   <section class="card">
-    <h2>2) Set policy and server bindings</h2>
+    <h2>3) Set policy and run</h2>
     <ul>
-      <li><strong>Policy URL</strong>: set <code>strict:policy_url</code> (optional <code>strict:policy_sha256</code> pin).</li>
-      <li><strong>Server URL</strong>: set <code>strict:server_url</code> for shared catalogs/registration.</li>
-      <li><strong>Policy mode</strong>: <code>warn</code> (surface) vs <code>block</code> (stop deploy).</li>
-      <li><strong>Fail-on threshold</strong>: high/medium/low; use <code>high</code> to block only severe drift.</li>
-      <li><strong>Downstream-impact default</strong>: keep <code>require_downstream_impact=true</code> unless intentionally changed.</li>
-      <li><strong>Flow criticality</strong>: enable <code>lineage.findings.flow_criticality</code> for business-tier hard blocks.</li>
-      <li><strong>Overrides</strong>: time-bound, ticketed, field + change-type scoped; use <code>*</code> only for emergency waivers.</li>
+      <li><strong>Policy URL</strong>: set <code>stricture_policy_url</code> in <code>.stricture.yml</code> (optional).</li>
+      <li><strong>Validate</strong>: <code>strict helper validate --strict .</code></li>
+      <li><strong>Export + diff</strong>: <code>strict lineage-export</code> and <code>strict lineage-diff</code> for CI drift checks.</li>
+      <li><strong>Overrides</strong>: time-bound, ticketed, field + change-type scoped for migration windows.</li>
     </ul>
-  </section>
+    <p>CI example:</p>
+    <pre><code>{`- name: Validate lineage
+  run: strict helper validate --strict .
 
-  <section class="card">
-    <h2>3) Run Stricture</h2>
-    <ol>
-      <li>Generate the demo pack (or your own artifacts): <code>npm run demo-pack</code>.</li>
-      <li>Build: <code>npm run build</code>.</li>
-      <li>CI/CD: push to <code>main</code>; workflow runs pack+build and optionally deploys.</li>
-      <li>CLI: run <code>stricture diff</code> or <code>stricture check</code> in your repo; wire into CI with your policy settings.</li>
-    </ol>
+- name: Check drift
+  run: |
+    strict lineage-export --out lineage/current.json .
+    strict lineage-diff \\
+      --base lineage/baseline.json \\
+      --head lineage/current.json \\
+      --fail-on medium`}</code></pre>
   </section>
 
   <section class="card">

@@ -8,11 +8,11 @@ import (
 )
 
 func validLine(fieldID string, fieldPath string) string {
-	return "// stricture-source annotation_schema_version=1 field_id=" + fieldID + " field=" + fieldPath + " source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow=\"from @Identity normalized @self\" note=\"normalized by UserNormalizer.Apply\""
+	return "// strict-source annotation_schema_version=1 field_id=" + fieldID + " field=" + fieldPath + " source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow=\"from @Identity normalized @self\" note=\"normalized by UserNormalizer.Apply\""
 }
 
 func compactLine(fieldPath string) string {
-	return "// stricture-source field=" + fieldPath + " source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2"
+	return "// strict-source field=" + fieldPath + " source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2"
 }
 
 func TestCollect_BuildsDeterministicArtifact(t *testing.T) {
@@ -53,7 +53,7 @@ func TestCollect_ReturnsParseErrorsWithFilePaths(t *testing.T) {
 	if err := os.WriteFile(valid, []byte(validLine("response_user_id", "response.user_id")+"\n"), 0o644); err != nil {
 		t.Fatalf("write valid: %v", err)
 	}
-	if err := os.WriteFile(invalid, []byte("// stricture-source field=response.user_id\n"), 0o644); err != nil {
+	if err := os.WriteFile(invalid, []byte("// strict-source field=response.user_id\n"), 0o644); err != nil {
 		t.Fatalf("write invalid: %v", err)
 	}
 
@@ -75,7 +75,7 @@ func TestCollect_ReturnsParseErrorsWithFilePaths(t *testing.T) {
 func TestCollect_IncludesOverrides(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "override.go")
-	content := `// stricture-lineage-override field_id=response_user_id change_type=field_removed expires=2099-12-31 reason="temporary migration window" ticket=INC-123` + "\n"
+	content := `// strict-lineage-override field_id=response_user_id change_type=field_removed expires=2099-12-31 reason="temporary migration window" ticket=INC-123` + "\n"
 
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write file: %v", err)
@@ -128,7 +128,7 @@ func TestCollect_AppliesDefaultsForCompactAnnotation(t *testing.T) {
 	if field.ContractTestID != "ci://contracts/identity/response_user_id" {
 		t.Fatalf("contract_test_id = %q, want ci://contracts/identity/response_user_id", field.ContractTestID)
 	}
-	if field.Note != "defaulted_by=stricture" {
-		t.Fatalf("note = %q, want defaulted_by=stricture", field.Note)
+	if field.Note != "defaulted_by=strict" {
+		t.Fatalf("note = %q, want defaulted_by=strict", field.Note)
 	}
 }

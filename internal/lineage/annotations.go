@@ -22,6 +22,7 @@ var (
 	providerIDRe    = regexp.MustCompile(`^[a-z][a-z0-9_-]{1,63}$`)
 	changeTypeRe    = regexp.MustCompile(`^(\*|[a-z][a-z0-9_-]{1,63})$`)
 	flowRe          = regexp.MustCompile(`(?i)^from @[A-Za-z][A-Za-z0-9_-]*(:[A-Za-z][A-Za-z0-9_-]*)?( (enriched|normalized|derived|validated|mapped|merged) @[A-Za-z][A-Za-z0-9_-]*(:[A-Za-z][A-Za-z0-9_-]*)?)*$`)
+	identifierRe    = regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
 )
 
 const (
@@ -31,7 +32,7 @@ const (
 	defaultConfidence              = "declared"
 	defaultDataClassification      = "internal"
 	defaultIntroducedAt            = "1970-01-01"
-	defaultNote                    = "defaulted_by=stricture"
+	defaultNote                    = "defaulted_by=strict"
 )
 
 // Annotation describes lineage metadata for one API output field.
@@ -130,7 +131,7 @@ func ParseWithOverrides(source []byte) ([]Annotation, []Override, []ParseError) 
 		}
 
 		if payload, ok := annotationPayload(commentBody); ok {
-			annotation, err := parsePayload(payload, lineNo)
+			annotation, err := parsePayload(payload, lineNo, lines, i)
 			if err != nil {
 				errors = append(errors, *err)
 				continue
@@ -172,6 +173,12 @@ func commentText(line string) (string, bool) {
 
 func annotationPayload(comment string) (string, bool) {
 	trimmed := strings.TrimSpace(comment)
+	if strings.HasPrefix(trimmed, "strict-source") {
+		return strings.TrimSpace(strings.TrimPrefix(trimmed, "strict-source")), true
+	}
+	if strings.HasPrefix(trimmed, "strict:source") {
+		return strings.TrimSpace(strings.TrimPrefix(trimmed, "strict:source")), true
+	}
 	if strings.HasPrefix(trimmed, "stricture-source") {
 		return strings.TrimSpace(strings.TrimPrefix(trimmed, "stricture-source")), true
 	}
@@ -183,6 +190,12 @@ func annotationPayload(comment string) (string, bool) {
 
 func overridePayload(comment string) (string, bool) {
 	trimmed := strings.TrimSpace(comment)
+	if strings.HasPrefix(trimmed, "strict-lineage-override") {
+		return strings.TrimSpace(strings.TrimPrefix(trimmed, "strict-lineage-override")), true
+	}
+	if strings.HasPrefix(trimmed, "strict:lineage-override") {
+		return strings.TrimSpace(strings.TrimPrefix(trimmed, "strict:lineage-override")), true
+	}
 	if strings.HasPrefix(trimmed, "stricture-lineage-override") {
 		return strings.TrimSpace(strings.TrimPrefix(trimmed, "stricture-lineage-override")), true
 	}
@@ -192,11 +205,20 @@ func overridePayload(comment string) (string, bool) {
 	return "", false
 }
 
-func parsePayload(payload string, line int) (Annotation, *ParseError) {
+func parsePayload(payload string, line int, lines []string, lineIndex int) (Annotation, *ParseError) {
 	fields := map[string]string{}
 	mappedFrom := make([]string, 0)
+	compactMode := false
 
 	matches := kvPairRe.FindAllStringSubmatch(payload, -1)
+	if len(matches) == 0 {
+		if compactFields, ok := parseCompactPayload(payload); ok {
+			for key, value := range compactFields {
+				fields[key] = value
+			}
+			compactMode = true
+		}
+	}
 	for _, match := range matches {
 		key := strings.TrimSpace(match[1])
 		value := strings.TrimSpace(match[2])
@@ -208,6 +230,9 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 	}
 	mappedFrom = append(mappedFrom, normalizedMapped...)
 
+	if compactMode {
+		applyCompactDefaults(fields, lines, lineIndex)
+	}
 	applyAnnotationDefaults(fields)
 
 	if strings.TrimSpace(fields["field_id"]) == "" && strings.TrimSpace(fields["field"]) == "" {
@@ -215,6 +240,9 @@ func parsePayload(payload string, line int) (Annotation, *ParseError) {
 	}
 
 	required := []string{"source_system", "source_version", "sources"}
+	if compactMode {
+		required = []string{"source_system", "field"}
+	}
 	for _, key := range required {
 		if strings.TrimSpace(fields[key]) == "" {
 			return Annotation{}, parseErr(line, fmt.Sprintf("missing required key %q", key))
@@ -651,6 +679,191 @@ func normalizeAliases(fields map[string]string, aliases map[string][]string) ([]
 		}
 	}
 	return uniqueSortedStrings(mappedFrom), nil
+}
+
+func parseCompactPayload(payload string) (map[string]string, bool) {
+	raw := strings.TrimSpace(payload)
+	raw = strings.TrimSpace(strings.TrimPrefix(raw, ":"))
+	if raw == "" || strings.Contains(raw, "=") {
+		return nil, false
+	}
+	if strings.HasPrefix(strings.ToLower(raw), "from ") {
+		raw = strings.TrimSpace(raw[5:])
+	}
+	if raw == "" {
+		return nil, false
+	}
+
+	parts := strings.Split(raw, ",")
+	sourceSystem := strings.TrimSpace(parts[0])
+	if sourceSystem == "" {
+		return nil, false
+	}
+
+	fields := map[string]string{
+		"source_system": sourceSystem,
+	}
+
+	for _, part := range parts[1:] {
+		chunk := strings.TrimSpace(part)
+		if chunk == "" {
+			continue
+		}
+		key, value, ok := strings.Cut(chunk, " ")
+		if !ok {
+			continue
+		}
+		key = strings.ToLower(strings.TrimSpace(key))
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		switch key {
+		case "source_version":
+			fields["source_version"] = value
+		case "transform":
+			fields["transform_type"] = value
+		case "merge":
+			fields["merge_strategy"] = value
+		case "classification":
+			fields["data_classification"] = value
+		case "break_policy":
+			fields["break_policy"] = value
+		case "scope":
+			fields["__scope"] = value
+		case "provider":
+			fields["__provider_id"] = value
+		case "note":
+			fields["note"] = unquote(value)
+		}
+	}
+
+	return fields, true
+}
+
+func applyCompactDefaults(fields map[string]string, lines []string, lineIndex int) {
+	sourceSystem := strings.TrimSpace(fields["source_system"])
+	if sourceSystem == "" {
+		return
+	}
+
+	if strings.TrimSpace(fields["field"]) == "" && strings.TrimSpace(fields["field_id"]) == "" {
+		if inferred := inferFieldFromNextLine(lines, lineIndex); inferred != "" {
+			fields["field"] = inferred
+		}
+	}
+	if strings.TrimSpace(fields["field"]) == "" && strings.TrimSpace(fields["field_id"]) != "" {
+		fields["field"] = deriveFieldPath(strings.TrimSpace(fields["field_id"]))
+	}
+	if strings.TrimSpace(fields["field_id"]) == "" && strings.TrimSpace(fields["field"]) != "" {
+		fields["field_id"] = deriveFieldID(strings.TrimSpace(fields["field"]))
+	}
+
+	if strings.TrimSpace(fields["source_version"]) == "" {
+		fields["source_version"] = "v1"
+	}
+	if strings.TrimSpace(fields["min_supported_source_version"]) == "" {
+		fields["min_supported_source_version"] = fields["source_version"]
+	}
+	if strings.TrimSpace(fields["sources"]) == "" && strings.TrimSpace(fields["field"]) != "" && strings.TrimSpace(fields["field_id"]) != "" {
+		fields["sources"] = compactSourceRef(fields)
+	}
+}
+
+func compactSourceRef(fields map[string]string) string {
+	system := strings.TrimSpace(fields["source_system"])
+	field := strings.TrimSpace(fields["field"])
+	fieldID := strings.TrimSpace(fields["field_id"])
+	systemSlug := slugifySystemID(system)
+	target := systemSlug + ".emitter"
+	contractRef := fmt.Sprintf("internal://strict/%s/%s", systemSlug, fieldID)
+
+	scope := strings.TrimSpace(fields["__scope"])
+	if scope == "" {
+		scope = "internal"
+	}
+
+	if scope == "external" {
+		providerID := strings.TrimSpace(fields["__provider_id"])
+		if providerID == "" {
+			providerID = systemSlug
+		}
+		asOf := time.Now().UTC().Format("2006-01-02")
+		return fmt.Sprintf("api:%s#%s@external!%s?provider_id=%s&contract_ref=%s", target, field, asOf, providerID, contractRef)
+	}
+
+	return fmt.Sprintf("api:%s#%s@%s?contract_ref=%s", target, field, scope, contractRef)
+}
+
+func inferFieldFromNextLine(lines []string, lineIndex int) string {
+	if lineIndex < 0 || lineIndex >= len(lines)-1 {
+		return ""
+	}
+	limit := lineIndex + 4
+	if limit >= len(lines) {
+		limit = len(lines) - 1
+	}
+	for i := lineIndex + 1; i <= limit; i++ {
+		trimmed := strings.TrimSpace(lines[i])
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "//") || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "/*") || strings.HasPrefix(trimmed, "*") {
+			continue
+		}
+		token := extractFieldToken(trimmed)
+		if token != "" {
+			return "response." + token
+		}
+	}
+	return ""
+}
+
+func extractFieldToken(line string) string {
+	if split := strings.SplitN(line, "//", 2); len(split) > 0 {
+		line = strings.TrimSpace(split[0])
+	}
+	if hash := strings.Index(line, "#"); hash >= 0 {
+		line = strings.TrimSpace(line[:hash])
+	}
+	if line == "" {
+		return ""
+	}
+
+	idents := identifierRe.FindAllString(line, -1)
+	for _, ident := range idents {
+		lower := strings.ToLower(ident)
+		switch lower {
+		case "type", "struct", "func", "var", "const", "let", "return", "class", "interface", "public", "private", "protected", "static", "final", "package", "import", "new":
+			continue
+		}
+		return toSnakeCase(ident)
+	}
+	return ""
+}
+
+func toSnakeCase(value string) string {
+	var b strings.Builder
+	lastUnderscore := false
+	for i, r := range value {
+		switch {
+		case unicode.IsUpper(r):
+			if i > 0 && !lastUnderscore {
+				b.WriteRune('_')
+			}
+			b.WriteRune(unicode.ToLower(r))
+			lastUnderscore = false
+		case unicode.IsLower(r) || unicode.IsDigit(r):
+			b.WriteRune(unicode.ToLower(r))
+			lastUnderscore = false
+		default:
+			if !lastUnderscore {
+				b.WriteRune('_')
+				lastUnderscore = true
+			}
+		}
+	}
+	return strings.Trim(b.String(), "_")
 }
 
 func applyAnnotationDefaults(fields map[string]string) {

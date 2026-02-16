@@ -25,13 +25,13 @@ It tells you **what changed, who is impacted, and whether deploy should proceed*
 Minimal annotation:
 
 ```go
-// stricture-source: from PromotionsConfig
+// strict-source: PromotionsConfig
 PromotionType string `json:"promotion_type"`
 ```
 
 Namespace convention:
 
-- Source comments use `stricture-` prefixes (for example `stricture-source`).
+- Source comments use `strict-` prefixes (for example `strict-source`).
 - YAML config keys use `stricture_` prefixes (for example `stricture_policy_url`).
 
 ## Quickstart

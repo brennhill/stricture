@@ -54,7 +54,7 @@ func TestCollect_SkipsIgnoredDirectoriesAndNonSourceFiles(t *testing.T) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatalf("mkdir %s: %v", dir, err)
 		}
-		if err := os.WriteFile(filepath.Join(dir, "ignored.go"), []byte("// stricture-source field=response.user_id\n"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "ignored.go"), []byte("// strict-source field=response.user_id\n"), 0o644); err != nil {
 			t.Fatalf("write ignored file: %v", err)
 		}
 	}

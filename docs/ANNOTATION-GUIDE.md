@@ -1,85 +1,142 @@
 # Annotation Quality Guide
 
-**What it is:** guidance for writing compact, high-signal annotations that make findings readable.  
-**What it isn’t:** a full schema reference (see `docs/data-lineage-annotations.md`).  
-**Who it’s for:** engineers and reviewers writing `stricture-source` comments or registry metadata.
+**What it is:** guidance for writing compact, high-signal annotations that make findings readable.
+**What it isn't:** a full schema reference (see `docs/data-lineage-annotations.md`).
+**Who it's for:** engineers and reviewers writing `strict-source` comments or sidecar metadata.
 
 Clear annotations make Stricture findings readable and actionable. Use this checklist when tagging fields.
 
-For CI/build automation and `.stricture-history` design, see
-`docs/LINEAGE-AUTOMATION-SPEC.md`.
+## Required field
 
-## Must-have fields (compact mode)
-- **Field identity/path**: `field` (or explicit `field_id` if you need stable rename handling).
-- **Producer**: `source_system`.
-- **Producer version**: `source_version`.
-- **Provenance**: `sources` with `contract_ref` (plus `provider_id` + `as_of` for external).
+Only one value is required: the source system name after `strict-source:`.
 
-Everything else can be defaulted by Stricture and expanded in normalized artifacts.
+```go
+// strict-source: Identity
+UserID int `json:"user_id"`
+```
 
-Reference handle namespace in docs/tooling UX uses `strict:*` (for example
-`strict:source`, `strict:systems[]`, `strict:flows[]`). Source-comment syntax
-remains `stricture-source`.
+Everything else is defaulted by Stricture and expanded in normalized artifacts.
+See `docs/data-lineage-annotations.md` for the full auto-inferred fields table.
 
-## Hierarchical service IDs (for ecosystem + internals)
-- Use one optional `:` in system IDs to model internals without new keys.
+## Sidecar setup (one-time)
+
+Create `strict-lineage.yml` at your project root to declare upstream services:
+
+```yaml
+service: my-service
+version: v2026.02
+
+upstream:
+  Identity:
+    contract: git+https://github.com/acme/identity//openapi.yaml
+    scope: cross_repo
+```
+
+Once this exists, `Identity` resolves contract and scope automatically.
+
+## When to add qualifiers
+
+Only add qualifiers when overriding defaults:
+
+```go
+// strict-source: Spotify, scope external, provider spotify
+TrackID string `json:"track_id"`
+```
+
+Available qualifiers: `scope`, `provider`, `transform`, `merge`, `classification`, `break_policy`, `note`.
+
+## Multi-line block (complex cases)
+
+Use multi-line when a field has multiple sources or needs detailed metadata:
+
+```go
+// strict-source:
+//   from: Profile v3
+//   transform: aggregate
+//   merge: priority
+//   sources:
+//     - kind: api
+//       target: identity.GetUser
+//       path: response.user
+//       scope: cross_repo
+//       contract: git+https://github.com/acme/identity//openapi.yaml@f00d
+//     - kind: db
+//       target: profiles.user
+//       path: payload
+//       scope: internal
+//       contract: internal://db/profiles.user
+```
+
+## Hierarchical service IDs
+
+Use one optional `:` to model internal subsystems without extra keys:
+
 - Topology service: `location-tracking-service`
 - Internal subsystem: `location-tracking-service:tracking-api`
-- Use the same format in `source_system` and `upstream_system`.
-
-## Flow tiers (service-level, not API-level)
-- Define business flows in registry metadata (`'strict:flows'`) with numeric levels.
-- Tag services with flow membership (`systems[].flows`).
-- Keep service-level ops metadata in the same registry row (`owner_team`, optional `runbook_url`, optional `doc_root`, escalation).
-- Do not assign criticality tiers directly on individual APIs by default.
-- Let lineage path analysis determine which APIs/edges are affected at runtime.
-- Keep flow tier decisions in policy packs (`lineage.findings.flow_criticality`).
 
 ## Good vs bad examples
+
+- **Annotation format**
+  - Bad: `// strict-source field=response.user_id source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo`
+  - Good: `// strict-source: Identity`
 - **Type/size**
   - Bad: `type: number`
   - Good: `type: uint8, range: 0-255, unit: count`
 - **Enum**
   - Bad: `enum: [pending, success]`
-  - Good: `enum: [pending, success, failed], note: PSP may add values quarterly; add guardrails before deploy`
+  - Good: `enum: [pending, success, failed], note: PSP may add values quarterly`
 - **Ownership**
   - Bad: owner missing
-  - Good: owner: `team.payments-platform`, escalation: `pagerduty:payments-oncall`
+  - Good: owner in sidecar or registry: `team.payments-platform`, escalation: `pagerduty:payments-oncall`
 - **Freshness**
-  - Bad: as-of unspecified
-  - Good: external provider as-of `2026-02-10`, max_staleness `24h`, SLA notes
+  - Bad: as-of unspecified for external
+  - Good: external provider as-of `2026-02-10`, max_staleness `24h`
 
 ## Writer prompts
-- “What will break downstream if this changes?”
-- “Which systems consume this field? Include them.”
-- “What’s the largest/smallest value seen in prod?”
-- “How fast can this provider add a new enum or widen a type?”
+
+- "What will break downstream if this changes?"
+- "Which systems consume this field? Include them."
+- "What's the largest/smallest value seen in prod?"
+- "How fast can this provider add a new enum or widen a type?"
 
 ## Field annotation template
-```
-field: response.payments.status
-source_system: PaymentsGateway
-source_version: v2026.04
-sources: api:payments-core.GetStatus#response.status@cross_repo?contract_ref=git+https://github.com/acme/payments-core//openapi.yaml@v1.4.2
+
+Minimal (recommended):
+
+```go
+// strict-source: PaymentsGateway
+Status string `json:"status"`
 ```
 
-Defaulted by tool:
-- `annotation_schema_version=1`
-- `min_supported_source_version=source_version`
-- `transform_type=passthrough`
-- `merge_strategy=single_source`
-- `break_policy=strict`
-- `confidence=declared`
-- `data_classification=internal`
-- `owner=team.<source_system_slug>`
-- `escalation=slack:#<source_system_slug>-oncall`
-- `contract_test_id=ci://contracts/<source_system_slug>/<field_id>`
-- `introduced_at=1970-01-01`
-- `flow="from @<source_system> mapped @self"`
-- `note="defaulted_by=stricture"`
+With qualifiers (only when needed):
+
+```go
+// strict-source: PaymentsGateway, transform normalize
+Status string `json:"status"`
+```
+
+Everything else is defaulted:
+
+- `field` = inferred from struct field below
+- `source_version` = from sidecar `version` or `upstream.*.version`
+- `scope` = from sidecar `upstream.*.scope`
+- `contract` = from sidecar `upstream.*.contract`
+- `owner` = from service registry
+- `escalation` = from service registry
+- `transform` = `passthrough`
+- `merge` = `single_source`
+- `break_policy` = `strict`
+- `data_classification` = `internal`
 
 ## When to block vs warn
+
 - **Block**: type narrowing, enum removals, size increases crossing consumer limits, missing owner/contract for regulated data.
 - **Warn**: additive enum, documentation-only changes, non-breaking optional fields with owners set.
 
 Keep annotations specific; Stricture findings will inherit that clarity.
+
+## Related docs
+
+- `docs/LINEAGE-QUICKSTART.md` (getting started)
+- `docs/data-lineage-annotations.md` (full spec)
+- `docs/GLOSSARY.md` (term definitions)

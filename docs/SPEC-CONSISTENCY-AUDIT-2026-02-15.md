@@ -70,7 +70,7 @@ Website docs/pages:
 ## Remaining Intentional Differences
 
 1. Source comment examples intentionally still use parser tokens
-   (`stricture-source`, `stricture-lineage-override`).
+   (`strict-source`, `strict-lineage-override`).
 2. Some long-tail test-plan and research docs are rule-test fixtures rather than
    lineage product docs; they were not rewritten unless directly in scope.
 3. Override semantics remain documented because they are still part of policy,

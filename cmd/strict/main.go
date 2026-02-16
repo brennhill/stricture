@@ -108,7 +108,7 @@ func printUsage() {
 	fmt.Println("  audit             Run cross-service strictness audit checks")
 	fmt.Println("  trace <file>      Validate a trace artifact against basic constraints")
 	fmt.Println("  policy            Policy URL binding and compliance checks")
-	fmt.Println("  inspect-lineage   Parse stricture-source annotations from a file")
+	fmt.Println("  inspect-lineage   Parse strict-source annotations from a file")
 	fmt.Println("  lineage-export    Build normalized lineage artifact from source files")
 	fmt.Println("  lineage-diff      Diff two lineage artifacts and classify drift severity")
 	fmt.Println("  lineage-escalate  Resolve emergency contacts upstream from a service")
@@ -2283,13 +2283,13 @@ func supportedInspectLanguages() []string {
 	return []string{"go", "typescript", "javascript", "python", "java"}
 }
 
-// runInspectLineage parses stricture-source annotations and prints JSON output.
+// runInspectLineage parses strict-source annotations and prints JSON output.
 func runInspectLineage(args []string) {
 	fs := flag.NewFlagSet("inspect-lineage", flag.ExitOnError)
 	fs.Usage = func() {
 		fmt.Println("Usage: strict inspect-lineage <file>")
 		fmt.Println()
-		fmt.Println("Parse stricture-source annotations from comments and print them as JSON.")
+		fmt.Println("Parse strict-source annotations from comments and print them as JSON.")
 	}
 	parseFlagSetOrExit(fs, args)
 

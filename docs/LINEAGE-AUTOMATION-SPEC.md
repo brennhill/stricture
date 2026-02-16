@@ -40,11 +40,11 @@ records both machine and human-readable change history.
 ## CLI Surface (Proposed)
 
 ```bash
-stricture history init
-stricture history record [paths...]
-stricture history diff
-stricture history summarize
-stricture history promote
+strict history init
+strict history record [paths...]
+strict history diff
+strict history summarize
+strict history promote
 ```
 
 Semantics:
@@ -66,16 +66,16 @@ Automation tiers:
 
 | Key | Tier | Source | Notes |
 |---|---|---|---|
-| `annotation_schema_version` | Auto | constant | always `1` |
+| `annotation_schema_version` | Auto | constant | always `2` |
 | `field_id` | Auto | derive from `field` | stable slug transform |
 | `field` | Auto | derive from `field_id` | fallback only |
 | `source_system` | Suggest/Auto+Policy | repo/service mapping | can be defaulted from module map |
 | `systems[].flows` | Auto+Policy / Manual | service registry + org policy | service-level business flow membership |
-| `'strict:flows'` definitions | Manual / Policy | org governance | canonical flow IDs, names, numeric levels |
+| `strict_flows` definitions | Manual / Policy | org governance | canonical flow IDs, names, numeric levels |
 | `source_version` | Auto | `.stricture-history/versions.json` + contract ref revision | computed build version, preferably pinned to contract commit/tag |
 | `min_supported_source_version` | Auto | source version policy | default same as `source_version` |
-| `transform_type` | Auto+Policy / Suggest | defaults + static analysis hints | default `passthrough` |
-| `merge_strategy` | Auto | source count | single source => `single_source`, multi => `priority` |
+| `transform` | Auto+Policy / Suggest | defaults + static analysis hints | default `passthrough` |
+| `merge` | Auto | source count | single source => `single_source`, multi => `priority` |
 | `break_policy` | Auto+Policy / Manual | policy pack | default `strict`; override for compatibility windows |
 | `confidence` | Auto | derivation mode | `declared`/`inferred` based on generation source |
 | `data_classification` | Auto+Policy / Manual | path/classification registry | default `internal`; regulated paths policy-driven |
@@ -141,21 +141,20 @@ Notes:
 1. Base schema remains adoption-friendly.
 2. Policy packs provide org-level strictness without forcing all teams into the
    same baseline on day one.
-3. `strict:policy` naming is a draft reference handle; concrete CLI/config
+3. `stricture_policy` naming is a draft reference handle; concrete CLI/config
    wiring is part of helper/server roadmap phases.
-4. docs/tooling reference handles use `strict:*`; parser/source syntax remains
-   `stricture-source` and `stricture-lineage-override`.
+4. Config keys use `stricture_` prefix; source comment syntax uses `stricture-` prefix.
 
 Policy source and cache model:
 
-1. repo declares `'strict:policy_url'`
+1. repo declares `'stricture_policy_url'`
 2. local tool resolves from cache first, then URL
 3. URL may point to stricture-server or GitHub-hosted policy
 4. local cache is used for offline runs
 
 Service registry bootstrap model:
 
-1. if `strict:server_url` is configured, helper/server can auto-register
+1. if `stricture_server_url` is configured, helper/server can auto-register
    service IDs from repo identity
 2. generated IDs remain overrideable manually in repo-local registry files
 3. policy packs can still require additional manual service metadata
@@ -170,7 +169,7 @@ Service registry bootstrap model:
 
 Organizations can define named flows with numeric levels in registry metadata:
 
-1. `'strict:flows'[]` defines canonical `id`, `name`, and numeric `level`.
+1. `strict_flows[]` defines canonical `id`, `name`, and numeric `level`.
 2. `systems[].flows` declares service membership in those flow IDs.
 3. Drift findings derive impacted flows from affected service/path sets.
 4. Effective level is the highest criticality level touched (policy-configured

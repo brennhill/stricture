@@ -522,7 +522,7 @@ func writeFakeAPIData(domains []domainDefinition, flows []flowCatalogEntry) erro
 func formatAnnotationLine(flow flowCatalogEntry) string {
 	sources := strings.Join(flow.Annotation.Sources, ",")
 	return fmt.Sprintf(
-		"// stricture-source annotation_schema_version=%s field_id=%s field=%s source_system=%s source_version=%s min_supported_source_version=%s transform_type=%s merge_strategy=%s break_policy=%s confidence=%s data_classification=%s owner=%s escalation=%s contract_test_id=%s introduced_at=%s sources=%s flow=%q note=%q",
+		"// strict-source annotation_schema_version=%s field_id=%s field=%s source_system=%s source_version=%s min_supported_source_version=%s transform_type=%s merge_strategy=%s break_policy=%s confidence=%s data_classification=%s owner=%s escalation=%s contract_test_id=%s introduced_at=%s sources=%s flow=%q note=%q",
 		annotationSchemaVersion,
 		flow.Annotation.FieldID,
 		flow.Annotation.Field,

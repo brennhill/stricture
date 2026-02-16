@@ -21,11 +21,11 @@ This is the control plane for:
 
 This spec covers lineage-facing policy behavior for:
 
-1. field annotations (`stricture-source`)
-2. source edge query keys (`sources=...?...`)
+1. field annotations (`strict-source`)
+2. source references (inline `sources:` or sidecar `fields:`)
 3. service registry keys (`systems[]`)
-4. lineage override keys (`stricture-lineage-override`)
-5. business flow tier metadata (`'strict:flows'`, `systems[].flows`)
+4. lineage override keys (`strict-lineage-override`)
+5. business flow tier metadata (`strict_flows`, `systems[].flows`)
 
 System IDs in policy scope can use hierarchical form `parent:child` to model
 internal subsystems without introducing new annotation keys.
@@ -37,7 +37,7 @@ Policy packs are standalone YAML files.
 Recommended location:
 
 ```text
-.stricture-policy.yml
+.stricture/strict-policy.yaml
 ```
 
 Recommended identity handle:
@@ -46,7 +46,7 @@ Recommended identity handle:
 policy_id: production_standard # org-provided string; can be any useful value
 ```
 
-`strict:policy` is a reference handle (not a parser token in source code).
+`stricture_policy` is the config key prefix for policy-related settings.
 
 ## Policy File Shape (v0 Draft)
 
@@ -58,7 +58,7 @@ extends: []
 lineage:
   require:
     field_keys: []
-    source_query_keys: []
+    source_keys: []
     system_registry_keys: []
     override_keys: []
   defaults: {}
@@ -184,7 +184,7 @@ Policy must be consumable by:
 Canonical repository binding is a single policy URL reference:
 
 ```yaml
-'strict:policy_url': https://policies.example.com/stricture/strict-policy.yaml
+stricture_policy_url: https://policies.example.com/stricture/strict-policy.yaml
 ```
 
 Recommended naming: keep the policy file named `strict-policy.yaml` whether it is stored locally or served remotely, so the URL and the repo-local filename match.
@@ -198,22 +198,22 @@ Supported URL targets:
 Optional integrity pin:
 
 ```yaml
-'strict:policy_sha256': <sha256-hex>
+stricture_policy_sha256: <sha256-hex>
 ```
 
 Optional server binding for registry/bootstrap workflows:
 
 ```yaml
-'strict:server_url': https://stricture.example.com
+stricture_server_url: https://stricture.example.com
 ```
 
 When flow-criticality rules are enabled, clients should also resolve flow
-catalog metadata (for example `'strict:flows'`) from the same governed source
+catalog metadata (for example `strict_flows`) from the same governed source
 as policy packs (server API or pinned GitHub source).
 
 ## Resolution Order
 
-When `'strict:policy_url'` is configured, clients should resolve in this order:
+When `stricture_policy_url` is configured, clients should resolve in this order:
 
 1. valid local cache entry (if fresh)
 2. fetch from configured policy URL
@@ -253,11 +253,11 @@ metadata) to minimize downloads.
 ## Org Compliance Check (Draft)
 
 Companies can enforce consistent policy adoption by checking all repos for the
-expected `'strict:policy_url'`.
+expected `stricture_policy_url`.
 
 Recommended rule:
 
-1. every governed repo must declare `'strict:policy_url'`
+1. every governed repo must declare `stricture_policy_url`
 2. value must match the org-approved URL (or approved allowlist)
 3. CI should fail when repo binding deviates
 
@@ -284,7 +284,7 @@ lineage:
     field_keys:
       - owner
       - escalation
-    source_query_keys:
+    source_keys:
       - contract_ref
     system_registry_keys:
       - escalation

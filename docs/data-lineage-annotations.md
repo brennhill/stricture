@@ -3,19 +3,15 @@ SPDX-FileCopyrightText: 2026 Brenn Hill
 SPDX-License-Identifier: CC-BY-4.0
 -->
 
-# Data Lineage Annotations for API Outputs
+# Data Lineage Annotations
 
 This document defines a strict, versioned annotation contract for tracing each API
 output field back to all source systems and contracts.
 
-For standards compatibility and reuse policy (OpenAPI/AsyncAPI/OpenLineage/OTel),
-see `OVERLAY.md`.
-
-For build/CI automation and version-history workflow design, see
-`docs/LINEAGE-AUTOMATION-SPEC.md`.
-
-For plain-language finding templates (change -> impact -> next step), see
-`docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.
+For a quick-start walkthrough, see `docs/LINEAGE-QUICKSTART.md`.
+For annotation quality guidance, see `docs/ANNOTATION-GUIDE.md`.
+For build/CI automation, see `docs/LINEAGE-AUTOMATION-SPEC.md`.
+For term definitions, see `docs/GLOSSARY.md`.
 
 ## Goals
 
@@ -23,76 +19,271 @@ For plain-language finding templates (change -> impact -> next step), see
 - Make ownership and emergency escalation explicit.
 - Produce deterministic artifacts for tool-based diffing.
 
-## Annotation Marker
+## Annotation Format
 
-Use one annotation per output field:
+Stricture uses inline comments and optional YAML sidecar files for lineage
+metadata. The simplest inline annotation is `strict-source: ServiceName`.
 
-```text
-stricture-source <key=value pairs>
+### Minimal Inline (most common)
+
+```go
+// strict-source: Identity
+UserID int `json:"user_id"`
 ```
 
-Accepted comment prefixes:
+The field is inferred from the struct field on the next line. The source system
+is `Identity`. Everything else is derived from `strict-lineage.yml` and
+normalization defaults.
 
-- `// stricture-source ...`
-- `// stricture:source ...`
-- `# stricture-source ...`
-- `# stricture:source ...`
+### Inline with Qualifiers
 
-Reference handles for docs/tooling UX use `strict:*` forms:
+When defaults are insufficient, add comma-separated qualifiers:
 
-- `strict:source`
-- `strict:source-edge`
-- `strict:systems[]`
-- `strict:flows[]`
-- `strict:lineage-override`
+```go
+// strict-source: Identity, scope external, provider spotify
+TrackID string `json:"track_id"`
+```
 
-Backward-compatible `stricture:*` reference aliases remain acceptable.
+### Multi-Line Block
 
-## Authoring-Minimal Keys
+For complex annotations or multiple sources:
 
-To keep annotations compact, only these keys are required in source comments:
+```go
+// strict-source:
+//   field: response.user_profile
+//   from: Profile v3
+//   transform: aggregate
+//   merge: priority
+//   sources:
+//     - kind: api
+//       target: identity.GetUser
+//       path: response.user
+//       scope: cross_repo
+//       contract: git+https://github.com/acme/identity//openapi.yaml@f00d
+//     - kind: db
+//       target: profiles.user
+//       path: payload
+//       scope: internal
+//       contract: internal://db/profiles.user
+//   note: "identity payload enriched with profile DB fields"
+```
 
-- `field` or `field_id`
-- `source_system`
-- `source_version`
-- `sources`
+### Sidecar File (`strict-lineage.yml`)
 
-All other canonical keys are defaulted during parsing/normalization.
-
-## System ID Hierarchy (No New Keys)
-
-Stricture supports service-internal topology without introducing additional
-annotation keys. Use a single system ID with an optional `:` suffix:
-
-- top-level ecosystem service: `location-tracking-service`
-- internal subsystem: `location-tracking-service:tracking-api`
-
-This convention is valid for:
-
-- `source_system`
-- source edge `upstream_system`
-- `systems[].id` in service registries
-
-The prefix before `:` is the ecosystem/topology ID; the suffix identifies the
-internal subsystem.
-
-## Business Flows And Tier Levels
-
-Stricture supports named business flows with numeric criticality levels (tiers).
-Use this for "checkout is tier 1, support is tier 3" style governance.
-
-Flow criticality is modeled at the service/system layer, not per API field.
-
-Why:
-
-1. service membership is maintainable and auditable
-2. per-API tier tagging is easy to under-declare in subtle failure paths
-3. lineage graph analysis already determines affected edges/fields at runtime
-
-Recommended registry shape:
+Per-package or per-project YAML that centralizes lineage metadata:
 
 ```yaml
-'strict:flows':
+# strict-lineage.yml
+service: user-service
+version: v2026.02
+
+upstream:
+  Identity:
+    contract: git+https://github.com/acme/identity//openapi.yaml
+    scope: cross_repo
+  PaymentsCore:
+    contract: git+https://github.com/acme/payments-core//openapi.yaml@v1.4.2
+    scope: cross_repo
+  Spotify:
+    contract: https://developer.spotify.com/reference/get-track
+    scope: external
+    provider: spotify
+
+fields:
+  response.user_id:
+    from: Identity
+  response.user_name:
+    from: Identity
+  response.track_id:
+    from: Spotify
+  response.payment_status:
+    from: PaymentsCore
+    transform: normalize
+    note: "Mapped from PSP status codes to internal enum"
+```
+
+When a sidecar file exists, inline annotations can reference it implicitly.
+`strict-source: Identity` on a field resolves to the contract and scope defined
+in the sidecar's `upstream.Identity` section.
+
+## Comment Prefixes
+
+Accepted prefixes for inline annotations:
+
+- `// strict-source: ...`
+- `# strict-source: ...`
+
+Accepted prefixes for overrides:
+
+- `// strict-lineage-override ...`
+- `# strict-lineage-override ...`
+
+## Required Field
+
+Only one value is required in inline annotations:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| source system token | Source system name (and optional version) after `strict-source:` | `strict-source: Identity`, `strict-source: Identity v2026.02` |
+
+## Auto-Inferred Fields
+
+These fields are derived automatically and should never be written manually:
+
+| Field | Inferred From | Default |
+|-------|---------------|---------|
+| `field` | Struct field / variable on the line below the annotation | -- |
+| `field_id` | Derived from `field` (dots/brackets to underscores) | -- |
+| `source_version` | `from` qualifier or sidecar `version` | sidecar version |
+| `scope` | Sidecar `upstream.*.scope` or contract URL analysis | `internal` |
+| `contract` | Sidecar `upstream.*.contract` | -- |
+| `provider` | Sidecar `upstream.*.provider` (external only) | -- |
+| `owner` | Service registry lookup by source system | `team.<system_slug>` |
+| `escalation` | Service registry lookup | `slack:#<system_slug>-oncall` |
+| `annotation_schema_version` | Always `2` | `2` |
+| `confidence` | `declared` for manual, `inferred` for helper-generated | `declared` |
+| `data_classification` | Policy default | `internal` |
+| `break_policy` | Policy default | `strict` |
+| `transform` | -- | `passthrough` |
+| `merge` | -- | `single_source` |
+| `contract_test_id` | Org naming template | `ci://contracts/<system>/<field_id>` |
+| `introduced_at` | Git blame date of the annotation | -- |
+| `flow` | -- | `from @<system> mapped @self` |
+| `note` | -- | `""` |
+
+## Optional Qualifiers
+
+Write only when overriding defaults:
+
+| Qualifier | When to Use | Example |
+|-----------|-------------|---------|
+| `scope` | Override auto-detected scope | `scope external` |
+| `provider` | External provider ID | `provider spotify` |
+| `transform` | Non-passthrough transformation | `transform aggregate` |
+| `merge` | Multiple sources with merge strategy | `merge priority` |
+| `classification` | Override data classification | `classification sensitive` |
+| `break_policy` | Override break policy | `break_policy additive_only` |
+| `note` | Free-text context | `note "mapped via UserNormalizer"` |
+
+## Source References
+
+Each source in a multi-source annotation uses explicit named fields:
+
+```yaml
+sources:
+  - kind: api
+    target: identity.GetUser
+    path: response.id
+    scope: cross_repo
+    contract: git+https://github.com/acme/identity//openapi.yaml@a1b2
+```
+
+Source fields:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `kind` | Yes | `api`, `db`, `event`, `file`, `cache`, `input` |
+| `target` | Yes | The operation or table (e.g., `identity.GetUser`, `profiles.user`) |
+| `path` | Yes | The field path in the source response (e.g., `response.id`) |
+| `scope` | No | `internal` (default), `cross_repo`, `external` |
+| `contract` | Yes | Reference to the contract artifact |
+| `provider` | External only | Third-party provider ID |
+| `as_of` | External only | Snapshot date `YYYY-MM-DD` |
+| `upstream_system` | No | System ID if different from the annotation's `from` |
+
+## Sidecar File Spec
+
+### File Discovery
+
+Stricture looks for lineage sidecar files in this order:
+
+1. `strict-lineage.yml` in the same directory as the source file
+2. `strict-lineage.yml` in parent directories (up to project root)
+3. `strict-lineage.yml` at project root
+
+Closer files take precedence. Fields defined in an inline annotation override
+sidecar values.
+
+### Schema
+
+```yaml
+# Required
+service: string          # This service's identity
+
+# Optional
+version: string          # Current service version (used as default source_version)
+
+# Upstream service definitions
+upstream:
+  <ServiceName>:
+    contract: string     # Contract artifact reference (required)
+    scope: string        # internal | cross_repo | external (default: cross_repo)
+    provider: string     # External provider ID (external scope only)
+    version: string      # Override source_version for this upstream
+
+# Per-field lineage (alternative to inline annotations)
+fields:
+  <dotted.field.path>:
+    from: string         # Source system name (must match an upstream key)
+    transform: string    # Override transform type
+    merge: string        # Override merge strategy
+    classification: string  # Override data classification
+    note: string         # Free-text context
+    sources:             # Multiple sources (overrides simple from)
+      - kind: string
+        target: string
+        path: string
+        scope: string
+        contract: string
+```
+
+### Sidecar vs. Inline: When to Use Which
+
+| Scenario | Recommendation |
+|----------|---------------|
+| Simple 1:1 field mapping | Inline `strict-source: ServiceName` |
+| Many fields from same upstream | Sidecar `fields:` section |
+| Complex multi-source with merge | Multi-line inline block |
+| Team wants centralized lineage review | Sidecar file |
+| Team wants co-located lineage context | Inline annotations |
+| Both exist for same field | Inline wins (override) |
+
+## Canonical Field Ordering
+
+When generating multi-line annotations, fields appear in this order:
+
+```
+1. field          (auto-inferred in minimal form)
+2. source system token after `strict-source:` (required)
+3. scope          (only if overriding default)
+4. provider       (external only)
+5. transform      (only if non-passthrough)
+6. merge          (only if non-single_source)
+7. classification (only if non-internal)
+8. break_policy   (only if non-strict)
+9. sources        (only for multi-source or when specifying details)
+10. note          (free text, always last)
+```
+
+## System ID Hierarchy
+
+Stricture supports service-internal topology using a single system ID with an
+optional `:` suffix:
+
+- Top-level service: `location-tracking-service`
+- Internal subsystem: `location-tracking-service:tracking-api`
+
+This convention applies to `from` values and `upstream_system` in sources.
+
+## Business Flows and Tier Levels
+
+Stricture supports named business flows with numeric criticality levels.
+Flow criticality is modeled at the service level, not per API field.
+
+Registry shape:
+
+```yaml
+strict_flows:
   - id: checkout
     name: Checkout
     level: 1
@@ -120,157 +311,113 @@ systems:
 
 Rules:
 
-1. `level` is numeric and organization-defined (no fixed max level count).
-2. each service can belong to zero or more flows (`systems[].flows`).
-3. flow definitions are canonical in `'strict:flows'`; do not duplicate levels on
-   each service membership row.
-4. findings derive impacted flows from affected services + lineage paths.
-5. per-API flow tier tags are intentionally not part of the baseline model.
-6. `runbook_url` and `doc_root` are optional service-level metadata links.
-7. `business_risk` is an organization-defined risk code token (no global
-   built-in enum list in core Stricture).
-8. `owner_team` and flow `owner` are free-form strings by default (no required
-   central team-inventory enum).
+1. `level` is numeric and organization-defined.
+2. Each service can belong to zero or more flows (`systems[].flows`).
+3. Flow definitions are canonical in `strict_flows`.
+4. Findings derive impacted flows from affected services + lineage paths.
+5. `runbook_url` and `doc_root` are optional service-level metadata.
+6. `business_risk` is an organization-defined risk code token.
+7. `owner_team` and flow `owner` are free-form strings.
 
-## Normalization Defaults
+## Namespace Convention
 
-If omitted, Stricture fills:
+Stricture uses consistent prefixes:
 
-- `annotation_schema_version`: `1`
-- `field_id`: derived from `field` (`.` / `-` / `[` / `]` -> `_`)
-- `field`: derived from `field_id` (`_` -> `.`) when needed
-- `min_supported_source_version`: equals `source_version`
-- `transform_type`: `passthrough`
-- `merge_strategy`: `single_source` (one source) or `priority` (multi-source)
-- `break_policy`: `strict`
-- `confidence`: `declared`
-- `data_classification`: `internal`
-- `owner`: `team.<source_system_slug>`
-- `escalation`: `slack:#<source_system_slug>-oncall`
-- `contract_test_id`: `ci://contracts/<source_system_slug>/<field_id>`
-- `introduced_at`: `1970-01-01`
-- `flow`: `from @<source_system> mapped @self`
-- `note`: `defaulted_by=stricture`
+| Context | Prefix | Example |
+|---------|--------|---------|
+| Source comments | `strict-` | `// strict-source:` |
+| YAML config keys | `stricture_` | `stricture_policy_url` |
+| Override comments | `strict-` | `// strict-lineage-override` |
+| Sidecar filenames | `strict-` | `strict-lineage.yml` |
 
-Normalized artifacts still emit explicit canonical fields so diffs remain
-deterministic.
-
-## Accepted Synonyms (No-Rename Adoption)
-
-Stricture keeps canonical keys above, but accepts these synonyms to ease
-interop with existing metadata conventions:
-
-- `field_path` -> `field`
-- `service_name` -> `source_system`
-- `service_version` / `spec_version` -> `source_version`
-- `min_source_version` / `min_supported_version` -> `min_supported_source_version`
-- `owner_team` -> `owner`
-- `contract_test` / `test_id` -> `contract_test_id`
-
-If both canonical and synonym are present with different values, parsing fails.
-
-## Optional Keys
+## Optional Fields
 
 - `renamed_from`: previous `field_id` when identity is intentionally migrated.
 - `sunset_at`: `YYYY-MM-DD` deprecation/removal target date.
 
-## Automation Guidance
-
-In compact authoring mode, only field identity/path, source system/version, and
-sources should be hand-authored by default.
-
-Commonly auto-filled in normalized artifacts:
-
-- owner/escalation (from system registry)
-- contract_test_id (from org naming template)
-- merge/transform/confidence defaults
-- flow/note defaults
-- introduced_at fallback
-
-Keep `data_classification`, `break_policy`, and lifecycle migration fields under
-explicit human review for high-risk domains.
-
-Escalation metadata in service registries is strongly recommended by default and
-can be promoted to required by org policy packs.
-Service registry `runbook_url` and `doc_root` are optional by default and can
-also be promoted to required by policy packs.
-
-## Source Ref Grammar
-
-Each entry in `sources`:
-
-```text
-kind:target#path[@scope[!as_of]][?contract_ref=<ref>[&provider_id=<id>][&upstream_system=<id>]]
-```
-
-`kind` values:
-
-- `api`, `input`, `db`, `event`, `file`, `cache`
-
-`scope` values:
-
-- `internal`: same repo/system boundary (default)
-- `cross_repo`: internal but different repo/system
-- `external`: third-party/public API/provider
-
-Rules:
-
-- `contract_ref` is required for every source.
-- `provider_id` is required for `external` sources.
-- `as_of` (`YYYY-MM-DD`) is required for `external` sources.
-- `provider_id` must not be set on non-external sources.
-
-Accepted source query synonyms:
-
-- `schema_ref` / `spec_ref` / `contract_uri` / `schema_url` -> `contract_ref`
-- `provider` / `external_provider` -> `provider_id`
-- `upstream_service` / `upstream_source_system` -> `upstream_system`
-- `asof` / `snapshot_as_of` -> `as_of`
-
 ## Examples
 
-Compact single-source internal (recommended):
+### Minimal Internal API Field
 
 ```go
-// stricture-source field=response.user_id source_system=Identity source_version=v2026.02 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2
+// strict-source: Identity
+UserID int `json:"user_id"`
 ```
 
-Compact internal subsystem example:
+### With Version Override
 
 ```go
-// stricture-source field=response.logistics.eta source_system=location-tracking-service:tracking-api source_version=v2026.07 sources=api:location-tracking-service:routing.GetEta#response.eta@internal?contract_ref=internal://location-tracking/routing/eta&upstream_system=location-tracking-service:routing
+// strict-source: Identity v2026.01
+LegacyID int `json:"legacy_id"`
 ```
 
-Expanded (all canonical fields explicit):
+### External Provider
 
 ```go
-// stricture-source annotation_schema_version=1 field_id=response_user_id field=response.user_id source_system=Identity source_version=v2026.02 min_supported_source_version=v2026.01 transform_type=normalize merge_strategy=single_source break_policy=additive_only confidence=declared data_classification=internal owner=team.identity escalation=slack:#identity-oncall contract_test_id=ci://contracts/identity-user-id introduced_at=2026-01-10 sources=api:identity.GetUser#response.id@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@a1b2 flow="from @Identity normalized @self" note="normalized by UserNormalizer.Apply; spec=https://specs.example.com/user-id"
+// strict-source: Spotify, scope external, provider spotify
+TrackID string `json:"track_id"`
 ```
 
-Multi-source with merge:
-
-```ts
-// stricture-source annotation_schema_version=1 field_id=response_user_profile field=response.user_profile source_system=Profile source_version=v3 min_supported_source_version=v2 transform_type=aggregate merge_strategy=priority break_policy=strict confidence=declared data_classification=sensitive owner=team.profile escalation=pagerduty:profile contract_test_id=ci://contracts/profile-user introduced_at=2026-01-15 sources=api:identity.GetUser#response.user@cross_repo?contract_ref=git+https://github.com/acme/identity//openapi.yaml@f00d,db:profiles.user#payload@internal?contract_ref=internal://db/profiles.user flow="from @Identity enriched @self" note="identity payload is enriched with profile DB fields in UserProfileAggregator"
-```
-
-External provider:
+### Internal Subsystem
 
 ```go
-// stricture-source annotation_schema_version=1 field_id=response_track field=response.track source_system=Media source_version=v1 min_supported_source_version=v1 transform_type=passthrough merge_strategy=single_source break_policy=strict confidence=declared data_classification=public owner=team.media escalation=pagerduty:media contract_test_id=ci://contracts/media-track introduced_at=2026-02-13 sources=api:spotify.GetTrack#response.track@external!2026-02-13?provider_id=spotify&contract_ref=https://developer.spotify.com/reference/get-track flow="from @Spotify enriched @self" note="mapped in TrackMapper"
+// strict-source: location-tracking-service:tracking-api
+ETA float64 `json:"eta"`
+```
+
+### Multi-Source Merge
+
+```go
+// strict-source:
+//   field: response.user_profile
+//   from: Profile v3
+//   transform: aggregate
+//   merge: priority
+//   sources:
+//     - kind: api
+//       target: identity.GetUser
+//       path: response.user
+//       scope: cross_repo
+//       contract: git+https://github.com/acme/identity//openapi.yaml@f00d
+//     - kind: db
+//       target: profiles.user
+//       path: payload
+//       scope: internal
+//       contract: internal://db/profiles.user
+```
+
+### Sidecar-Only (No Inline Annotations)
+
+```yaml
+# strict-lineage.yml
+service: checkout-service
+version: v2026.02
+
+upstream:
+  Payments:
+    contract: git+https://github.com/acme/payments//openapi.yaml
+  Inventory:
+    contract: git+https://github.com/acme/inventory//openapi.yaml
+
+fields:
+  response.order.total:
+    from: Payments
+  response.order.items:
+    from: Inventory
+    note: "Aggregated from inventory availability check"
+  response.order.shipping_estimate:
+    from: Inventory
+    transform: normalize
 ```
 
 ## Commands
 
 - Export normalized artifact:
-  - `stricture lineage-export --out tests/lineage/current.json .`
-- Export with profile aliases/proxies:
-  - `stricture lineage-export --profile otel --out tests/lineage/current-otel.json .`
+  - `strict lineage-export --out tests/lineage/current.json .`
 - Diff artifacts:
-  - `stricture lineage-diff --base tests/lineage/baseline.json --head tests/lineage/current.json --fail-on medium --mode block`
-- CI helper (uses baseline + head artifact generation):
-  - `LINEAGE_MODE=warn ./scripts/check-lineage-drift.sh`
-- Resolve emergency chain for bad data at a service:
-  - `stricture lineage-escalate --service ServiceY --artifact tests/lineage/current.json --systems docs/config-examples/lineage-systems.yml`
+  - `strict lineage-diff --base tests/lineage/baseline.json --head tests/lineage/current.json --fail-on medium --mode block`
+- Resolve emergency chain:
+  - `strict lineage-escalate --service ServiceY --artifact tests/lineage/current.json --systems docs/config-examples/lineage-systems.yml`
 
 `lineage-diff` mode:
 
@@ -278,12 +425,12 @@ External provider:
 - `--mode warn`: always return zero; prints warning when threshold is met.
 
 By default, findings are impact-gated (downstream impact required). Self-only
-drift is still recorded in diff output for history/publication but does not
-warn/block unless policy overrides that behavior.
+drift is still recorded in diff output but does not warn/block unless policy
+overrides that behavior.
 
-## Impact-Gated Findings And Publication (Default)
+## Impact-Gated Findings
 
-Each drift item is classified as one of:
+Each drift item is classified as:
 
 1. `downstream`: change can impact one or more downstream consumers.
 2. `self_only`: change is isolated to the producing service.
@@ -292,43 +439,29 @@ Each drift item is classified as one of:
 Default behavior:
 
 1. `downstream` -> emits finding with severity model and participates in gates.
-2. `self_only` -> no warning/error finding by default.
-3. `self_only` -> still tracked and publishable as a change event.
-4. `unknown` -> emits low-severity finding unless policy overrides.
+2. `self_only` -> no warning/error finding by default; tracked as change event.
+3. `unknown` -> emits low-severity finding unless policy overrides.
 
 When flow criticality is enabled in policy, downstream findings also carry
 derived flow context (flow IDs + effective tier) based on affected services.
 
-This keeps deploy gates focused on actual blast radius while still preserving a
-complete change history for internal/external consumers.
-
 ## Plain-Language Finding Requirement
 
-Findings should be understandable without lineage internals context.
+Findings should be understandable without lineage internals context. For every
+emitted finding, Stricture provides:
 
-For every emitted finding, Stricture should provide:
-
-1. a direct "what changed" statement
-2. a plain-language impact explanation
-3. a plain-language next step
-4. explicit cause (`source`) and impacted context (`impact`) when known
-
-Normative template library: `docs/LINEAGE-PLAIN-LANGUAGE-LIBRARY.md`.
+1. A direct "what changed" statement.
+2. A plain-language impact explanation.
+3. A plain-language next step.
+4. Explicit cause and impacted context when known.
 
 ## Temporary Overrides
 
 Use time-bounded overrides when a known migration window would otherwise block CI:
 
-```text
-stricture-lineage-override field_id=<field_id> change_type=<change_type|*> expires=YYYY-MM-DD reason="<why>" [ticket=<id>]
+```go
+// strict-lineage-override field_id=response_user_id change_type=field_removed expires=2026-06-30 reason="temporary dual-write migration" ticket=INC-12345
 ```
-
-Accepted comment prefixes:
-
-- `// stricture-lineage-override ...`
-- `// stricture:lineage-override ...`
-- `# stricture-lineage-override ...`
-- `# stricture:lineage-override ...`
 
 Rules:
 
@@ -336,12 +469,6 @@ Rules:
 - `change_type=*` matches any drift change type for that field.
 - Override is active through its `expires` date (UTC day semantics).
 - Expired overrides are ignored.
-
-Example:
-
-```go
-// stricture-lineage-override field_id=response_user_id change_type=field_removed expires=2026-06-30 reason="temporary dual-write migration" ticket=INC-12345
-```
 
 ## Drift Severity Model
 
@@ -351,7 +478,26 @@ Examples:
 
 - High: field removed, break policy changed, data classification relaxed,
   min supported version changed, source removed, external `as_of` rollback.
-- Medium: field added, source version changed, source contract ref changed,
+- Medium: field added, source version changed, source contract changed,
   transform or merge strategy changed, contract test ID changed.
 - Low/info: owner/escalation/note updates, classification tightened,
   external `as_of` advanced.
+
+## Validation
+
+```bash
+# Check all annotations parse and reference valid fields/systems
+strict helper validate [paths...]
+
+# Strict mode (fail on stale versions, missing contracts)
+strict helper validate --strict [paths...]
+```
+
+Validation checks:
+
+1. Annotation syntax is valid.
+2. `from` references match a sidecar `upstream` entry or service registry.
+3. `field` references correspond to actual struct/interface fields.
+4. `contract` URLs are reachable (optional, with `--check-contracts`).
+5. Sidecar `upstream` entries have valid `contract` values.
+6. No duplicate field definitions (sidecar + inline for same field).

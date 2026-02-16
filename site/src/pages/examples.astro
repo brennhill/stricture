@@ -4,7 +4,7 @@ import { Code } from "astro:components";
 
 export const prerender = true;
 
-const serviceRegistrySnippet = String.raw`'strict:flows':
+const serviceRegistrySnippet = String.raw`flows:
   - id: checkout
     name: Checkout
     level: 1
@@ -45,9 +45,9 @@ class CheckoutController {
   @Operation(summary = "Authorize payment")
   @GetMapping("/authorize/{cartId}")
   PaymentResponse authorize(@PathVariable String cartId) {
-    // stricture-source field=response.checkout.payment_status source_system=CheckoutGateway:API
-    // source_version=v2026.08
-    // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+    // strict-source: CheckoutGateway:API
+    //   scope: cross_repo
+    //   contract: git+https://github.com/acme/payment-core//openapi.yaml@9a12
     // re-used by Stricture, batteries included: OpenAPI + OTel + strict provenance
     return checkoutService.authorize(cartId);
   }
@@ -69,9 +69,9 @@ service CheckoutService {
 message AuthorizeResponse {
   // Stricture annotations attach to concrete output fields.
   // re-used by Stricture: Buf/proto schema docs and field identity
-  // stricture-source field=response.checkout.payment_status source_system=CheckoutGateway:API
-  // source_version=v2026.08
-  // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=buf://acme/payment-core/payment/v1/payment.proto
+  // strict-source: CheckoutGateway:API
+  //   scope: cross_repo
+  //   contract: buf://acme/payment-core/payment/v1/payment.proto
   string payment_status = 1;
 }
 `;
@@ -85,9 +85,9 @@ func (h *Handler) Authorize(w http.ResponseWriter, r *http.Request) {
   ctx, span := h.tracer.Start(r.Context(), "checkout.authorize") // re-used by Stricture: OpenTelemetry trace
   defer span.End()
 
-  // stricture-source field=response.checkout.payment_status source_system=CheckoutGateway:API
-  // source_version=v2026.08
-  // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+  // strict-source: CheckoutGateway:API
+  //   scope: cross_repo
+  //   contract: git+https://github.com/acme/payment-core//openapi.yaml@9a12
   // re-used by Stricture, batteries included: OTel + OpenAPI contract pointers
   resp := CheckoutResponse{PaymentStatus: "authorized"}
   _ = ctx
@@ -108,9 +108,9 @@ class CheckoutResponse(BaseModel):
 @app.get("/v1/checkout/authorize/{cart_id}", response_model=CheckoutResponse)
 def authorize(cart_id: str) -> CheckoutResponse:
     with tracer.start_as_current_span("checkout.authorize"):  # re-used by Stricture: OTel span
-        # stricture-source field=response.checkout.payment_status source_system=CheckoutGateway:API
-        # source_version=v2026.08
-        # sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+        # strict-source: CheckoutGateway:API
+        #   scope: cross_repo
+        #   contract: git+https://github.com/acme/payment-core//openapi.yaml@9a12
         # re-used by Stricture, batteries included: FastAPI OpenAPI + OTel + strict lineage
         return CheckoutResponse(payment_status="authorized")
 `;
@@ -132,9 +132,9 @@ const tracer = trace.getTracer("checkout-gateway");
  */
 app.get("/v1/checkout/authorize/:cartId", (req, res) => {
   tracer.startActiveSpan("checkout.authorize", (span) => { // re-used by Stricture: OTel
-    // stricture-source field=response.checkout.payment_status source_system=CheckoutGateway:web-ui
-    // source_version=v2026.08
-    // sources=api:PaymentCore.Authorize#response.payment_status@cross_repo?contract_ref=git+https://github.com/acme/payment-core//openapi.yaml@9a12
+    // strict-source: CheckoutGateway:web-ui
+    //   scope: cross_repo
+    //   contract: git+https://github.com/acme/payment-core//openapi.yaml@9a12
     // re-used by Stricture, batteries included: OpenAPI JSDoc + OTel + strict lineage
     res.json({ payment_status: "authorized" });
     span.end();
@@ -143,9 +143,9 @@ app.get("/v1/checkout/authorize/:cartId", (req, res) => {
 `;
 
 const policyBindingSnippet = String.raw`# .stricture.yml
-'strict:policy_url': https://policies.example.com/stricture/strict-policy.yaml
-'strict:policy_sha256': <optional_sha256_pin>
-'strict:server_url': https://stricture.example.com
+stricture_policy_url: https://policies.example.com/stricture/strict-policy.yaml
+stricture_policy_sha256: <optional_sha256_pin>
+stricture_server_url: https://stricture.example.com
 `;
 
 const policySnippet = String.raw`# .stricture/strict-policy.yaml
@@ -168,14 +168,14 @@ lineage:
       - doc_root
 `;
 
-const aviationShippingSnippet = String.raw`'strict:flows':
+const aviationShippingSnippet = String.raw`flows:
   - id: cargo-tracking
     level: 1
     owner: ops-logistics
   - id: flight-ops
     level: 1
     owner: ops-flight
-'strict:systems':
+systems:
   - id: CargoTelemetry
     flows: [cargo-tracking]
     business_risk: safety_delay
@@ -184,14 +184,14 @@ const aviationShippingSnippet = String.raw`'strict:flows':
     business_risk: incident_response
 `;
 
-const administrationSnippet = String.raw`'strict:flows':
+const administrationSnippet = String.raw`flows:
   - id: licensing
     level: 1
     owner: admin-services
   - id: payments
     level: 2
     owner: finance-ops
-'strict:systems':
+systems:
   - id: PermitGateway
     flows: [licensing]
     business_risk: compliance_delay
@@ -200,14 +200,14 @@ const administrationSnippet = String.raw`'strict:flows':
     business_risk: revenue_delay
 `;
 
-const industrialSnippet = String.raw`'strict:flows':
+const industrialSnippet = String.raw`flows:
   - id: plant-control
     level: 1
     owner: manufacturing-ops
   - id: quality-inspection
     level: 2
     owner: qa-ops
-'strict:systems':
+systems:
   - id: PLCGateway
     flows: [plant-control]
     business_risk: safety_shutdown
@@ -217,24 +217,24 @@ const industrialSnippet = String.raw`'strict:flows':
 `;
 
 const aviationShippingCode = String.raw`// Cargo Telemetry (Go)
-// stricture-source field=response.cargo.eta_minutes source_system=CargoTelemetry
-// source_version=v2026.03
-// sources=api:FlightOpsGateway.TrackCargo#response.eta_minutes@cross_repo?contract_ref=openapi://flight-ops/track
+// strict-source: CargoTelemetry
+//   scope: cross_repo
+//   contract: openapi://flight-ops/track
 func (h *Handler) TrackCargo(w http.ResponseWriter, r *http.Request) {
   resp := TrackCargoResponse{EtaMinutes: 42}
   json.NewEncoder(w).Encode(resp)
 }`;
 
 const administrationCode = String.raw`// Permit Gateway (Java)
-// stricture-source field=response.permit.status source_system=PermitGateway
-// source_version=v2026.02
-// sources=api:TreasuryAPI.SubmitPermit#response.permit.status@cross_repo?contract_ref=openapi://treasury/permit
+// strict-source: PermitGateway
+//   scope: cross_repo
+//   contract: openapi://treasury/permit
 return Response.ok(new PermitResponse("APPROVED")).build();`;
 
 const industrialCode = String.raw`# PLC Gateway (Python)
-# stricture-source field=response.plant.temperature_c source_system=PLCGateway
-# source_version=v2026.04
-# sources=api:BatchQAService.ReportMetrics#response.temperature_c@cross_repo?contract_ref=openapi://qa/metrics
+# strict-source: PLCGateway
+#   scope: cross_repo
+#   contract: openapi://qa/metrics
 return {"temperature_c": 412.3}`;
 
 const examples = [
@@ -266,7 +266,7 @@ const examples = [
     id: "go",
     tabLabel: "Go",
     title: "Golang + net/http + OTel",
-    description: "Go example keeps Stricture annotations at field emit points; service-level owner/runbook/docs remain in strict:systems[].",
+    description: "Go example keeps Stricture annotations at field emit points; service-level owner/runbook/docs remain in the registry systems[] section.",
     links: [
       { label: "Annotation Guide", href: "/annotations" },
       { label: "Annotation Quality", href: "/annotation-quality" },
@@ -312,7 +312,7 @@ const examples = [
       Reuse OpenAPI, OpenTelemetry, and protobuf/buf, then add strict lineage comments where fields are emitted or transformed.
     </p>
     <p class="muted">
-      Pattern: service metadata lives in <code>strict:systems[]</code>; API/field provenance lives in <code>stricture-source</code> comments.
+      Pattern: service metadata lives in the registry <code>systems[]</code> section; API/field provenance lives in <code>strict-source</code> comments.
     </p>
     <p class="muted">
       Repo convention: shared files in <code>.stricture/</code> (for example <code>.stricture/strict-lineage-systems.yaml</code>), repo-level settings in <code>.stricture.yml</code>.
@@ -333,7 +333,7 @@ const examples = [
     <p class="muted">
       This is where ownership, escalation, runbooks/docs, and flow tiers live. It is a shared registry file (for example <code>.stricture/strict-lineage-systems.yaml</code>), not inline code comments.
     </p>
-    <p class="muted"><strong>What you’ll learn:</strong> how services declare ownership, flow tiers, and risk.</p>
+    <p class="muted"><strong>What you'll learn:</strong> how services declare ownership, flow tiers, and risk.</p>
     <p class="example-links">
       <a href="/annotations">Annotation Guide</a>
       <span class="link-dot">·</span>
@@ -348,7 +348,7 @@ const examples = [
       <code>owner_team</code> and flow <code>owner</code> are free-form strings (for example <code>Payments platform team</code> or <code>team.payments-platform</code>). No centralized team inventory is required by default.
     </p>
     <p class="muted">
-      Flow tier is defined on the flow catalog row (<code>'strict:flows'[].level</code>) and services join that tier via <code>systems[].flows: [checkout]</code>.
+      Flow tier is defined on the flow catalog row (<code>flows[].level</code>) and services join that tier via <code>systems[].flows: [checkout]</code>.
     </p>
     <div class="code-shell">
       <Code code={serviceRegistrySnippet} lang="yaml" />
@@ -360,7 +360,7 @@ const examples = [
     <p class="muted">
       Same schema, different risks. Flow tiers and service ownership keep drift findings aligned with real business impact.
     </p>
-    <p class="muted"><strong>What you’ll learn:</strong> how flows map to real business risks in different industries.</p>
+    <p class="muted"><strong>What you'll learn:</strong> how flows map to real business risks in different industries.</p>
     <div class="panel-grid">
       <div class="panel">
         <h3>Aviation + Shipping</h3>
@@ -389,7 +389,7 @@ const examples = [
   <section id="industry-language-examples" class="card">
     <h2>Industry language examples</h2>
     <p class="muted">Same industries, now shown as annotated code in realistic stacks.</p>
-    <p class="muted"><strong>What you’ll learn:</strong> how `stricture-source` looks in Go, Java, and Python.</p>
+    <p class="muted"><strong>What you'll learn:</strong> how `strict-source` looks in Go, Java, and Python.</p>
     <div class="panel-grid">
       <div class="panel">
         <h3>Aviation + Shipping (Go)</h3>
@@ -420,7 +420,7 @@ const examples = [
     <p class="muted">
       Same topology, different stack: API is Java (<code>CheckoutGateway:API</code>) and web UI is Node.js (<code>CheckoutGateway:web-ui</code>).
     </p>
-    <p class="muted"><strong>What you’ll learn:</strong> how to reuse OpenAPI, OTel, and Buf metadata with Stricture.</p>
+    <p class="muted"><strong>What you'll learn:</strong> how to reuse OpenAPI, OTel, and Buf metadata with Stricture.</p>
     <div class="example-tabs" role="tablist" aria-label="Language examples">
       {examples.map((example, idx) => (
         <button
@@ -464,7 +464,7 @@ const examples = [
       Repo-level pointers go in <code>.stricture.yml</code>; policy content can live in <code>.stricture/strict-policy.yaml</code> (or remote URL).
       See the <a href="/policy">Policy Guide</a> for required/optional fields and best practices.
     </p>
-    <p class="muted"><strong>What you’ll learn:</strong> how flow tiers turn drift findings into CI gates.</p>
+    <p class="muted"><strong>What you'll learn:</strong> how flow tiers turn drift findings into CI gates.</p>
     <div class="code-shell">
       <Code code={policyBindingSnippet} lang="yaml" />
     </div>
