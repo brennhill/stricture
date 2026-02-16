@@ -2,110 +2,105 @@
 
 ![Stricture Splash](docs/assets/stricture-splash.svg)
 
-## Ship Fast. Stay Correct.
+> **v0.1-alpha:** Stricture is in active development. CLI shape, annotation profiles, and policy schema are still being refined.
 
-**Stricture is a lineage-first drift control and architectural enforcement layer for API ecosystems.**
+## Stop API Drift Before Deploy
 
-It helps teams ship quickly without losing system integrity by making data provenance,
-architecture invariants, and release policies **semantic + deterministic**.
+Stricture is a lineage-first drift control and architectural enforcement layer for API ecosystems.
+It tells you **what changed, who is impacted, and whether deploy should proceed**.
 
-## Why Stricture
+## Why Teams Use It
 
-### Catch What Traditional Linters Miss
+- Detect drift traditional linters miss: field contracts, source versions, and cross-service invariants.
+- Get actionable findings: cause service, impacted services, blast radius, and owner/escalation.
+- Enforce policy in CI/CD with deterministic warn/block decisions.
+- Reuse existing metadata via overlays (OpenAPI, OpenTelemetry, OpenLineage, AsyncAPI).
 
-- Field-level source provenance drift across services
-- Architecture breaks that jump boundaries between systems
-- Silent source-version and as-of mismatches from upstream providers
-- Weak release decisions without ownership or escalation context
+## How It Works (60 Seconds)
 
-### Built For AI-Accelerated Development
+1. Add lightweight source comments where fields are emitted or transformed.
+2. Keep service metadata in a systems registry (`docs/config-examples/lineage-systems.yml` pattern).
+3. Export lineage, diff against baseline, and apply policy gates in CI.
 
-- LLMs can generate code quickly; Stricture adds deterministic release gates
-- Semantic annotations become executable checks, not stale docs
-- Overlays let teams reuse metadata across OpenAPI, OpenTelemetry,
-  OpenLineage, and AsyncAPI without duplicate work
+Minimal annotation:
 
-## Core Capabilities
+```go
+// stricture-source: from PromotionsConfig
+PromotionType string `json:"promotion_type"`
+```
 
-- Lineage annotations per output field
-- Service-level business flow tiers (`'strict:flows'`, `systems[].flows`)
-- Drift classification with severity and deterministic ordering
-- Architecture invariant enforcement
-- Warn/block mode and time-bounded overrides
-- Source system version and as-of freshness controls
-- Owner, runbook/docs, and escalation chain resolution
-- Policy URL/server distribution (`strict:policy_url`, `strict:server_url`)
-- Export/report pipelines for CI and governance workflows
+Namespace convention:
 
-Reference handle namespace in docs/tooling UX uses `strict:*` (for example
-`strict:source`, `strict:systems[]`). Source-comment parser syntax remains
-`stricture-source` / `stricture-lineage-override`.
+- Source comments use `stricture-` prefixes (for example `stricture-source`).
+- YAML config keys use `stricture_` prefixes (for example `stricture_policy_url`).
 
 ## Quickstart
 
 ```bash
-# Build the CLI
+# Build CLI
 make build
 
-# Run linting (default command)
-./bin/stricture lint .
+# Initialize repo config
+./bin/strict init
 
-# Export lineage artifact
-./bin/stricture lineage-export --out tests/lineage/current.json .
+# Run static checks
+./bin/strict lint .
 
-# Diff lineage artifacts
-./bin/stricture lineage-diff \
-  --base tests/lineage/baseline.json \
-  --head tests/lineage/current.json \
+# Export current lineage snapshot
+./bin/strict lineage-export --out .stricture/current-lineage.json .
+
+# Compare against baseline and gate release
+./bin/strict lineage-diff \
+  --base .stricture/baseline-lineage.json \
+  --head .stricture/current-lineage.json \
   --mode block
 ```
 
-## CLI Commands
+First run bootstrap:
 
 ```bash
-stricture list-rules
-stricture explain --rule ARCH-dependency-direction
-stricture inspect-lineage path/to/file.go
-stricture lineage-escalate --service ServiceY --artifact tests/lineage/current.json --systems docs/config-examples/lineage-systems.yml
+mkdir -p .stricture
+cp .stricture/current-lineage.json .stricture/baseline-lineage.json
 ```
 
-## Testing And CI
+## Common Commands
 
-Contributor and CI commands are documented in [TESTING.md](TESTING.md).
+```bash
+strict list-rules
+strict explain --rule ARCH-dependency-direction
+strict inspect-lineage path/to/file.go
+strict lineage-escalate --service ServiceY --artifact .stricture/current-lineage.json --systems docs/config-examples/lineage-systems.yml
+```
 
 ## Open Standard (SOS)
 
-Stricture is being formalized as an open standard.
+Stricture Open Standard defines portable lineage, drift, and policy semantics.
 
 - Charter: [SPEC-CHARTER.md](SPEC-CHARTER.md)
 - Draft spec: [spec/0.1-draft.md](spec/0.1-draft.md)
-- Lineage annotations: [docs/data-lineage-annotations.md](docs/data-lineage-annotations.md)
+- License split: [LICENSES.md](LICENSES.md)
 
-## Documentation Map
+## Documentation
 
 - Product spec: [docs/product-spec.md](docs/product-spec.md)
-- Product roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
-- Lineage automation spec: [docs/LINEAGE-AUTOMATION-SPEC.md](docs/LINEAGE-AUTOMATION-SPEC.md)
-- Policy pack spec (draft): [docs/POLICY-PACK-SPEC.md](docs/POLICY-PACK-SPEC.md)
-- Policy CLI contract (draft): [docs/POLICY-CLI-CONTRACT.md](docs/POLICY-CLI-CONTRACT.md)
-- Stricture Helper draft spec: [docs/helper/SPEC.md](docs/helper/SPEC.md)
-- Stricture Server spec: [docs/server/SPEC.md](docs/server/SPEC.md)
-- Stricture Server storage/auth design: [docs/server/STORAGE.md](docs/server/STORAGE.md)
-- Technical spec: [docs/tech-spec.md](docs/tech-spec.md)
-- Invariants: [docs/INVARIANTS.md](docs/INVARIANTS.md)
-- Lineage annotations: [docs/data-lineage-annotations.md](docs/data-lineage-annotations.md)
+- Annotation reference: [docs/data-lineage-annotations.md](docs/data-lineage-annotations.md)
+- Annotation quality: [docs/ANNOTATION-GUIDE.md](docs/ANNOTATION-GUIDE.md)
+- Policy guide: [docs/POLICY-GUIDE.md](docs/POLICY-GUIDE.md)
+- Helper draft spec: [docs/helper/SPEC.md](docs/helper/SPEC.md)
+- Server spec: [docs/server/SPEC.md](docs/server/SPEC.md)
+- Server storage/auth design: [docs/server/STORAGE.md](docs/server/STORAGE.md)
 - Testing and quality gates: [TESTING.md](TESTING.md)
-- Deploying site: [DEPLOY.md](DEPLOY.md)
+- Site deploy: [DEPLOY.md](DEPLOY.md)
 
 ## Website
 
-- Landing page: https://stricture-lint.com/
-- With AI: https://stricture-lint.com/with-ai
-- Open Standard: https://stricture-lint.com/open-standard
+- Home: https://stricture-lint.com/
+- What is Stricture: https://stricture-lint.com/what-is-stricture
+- Examples: https://stricture-lint.com/examples
 - Live demo: https://stricture-lint.com/demo
 
 ## License
 
 - Implementation (CLI, engine, adapters, scripts): [AGPL-3.0](LICENSE)
-- Open Standard spec and schemas: [CC BY 4.0](LICENSES/CC-BY-4.0.md)
+- Open Standard docs and schemas: [CC BY 4.0](LICENSES/CC-BY-4.0.md)
 - Path-level mapping: [LICENSES.md](LICENSES.md)
