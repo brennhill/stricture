@@ -15,35 +15,35 @@ annotation grammar. The helper writes annotations; developers review and approve
 ## CLI Surface
 
 ```bash
-# Discovery and generation
-strict scan [paths...]              # Discover candidate fields
-strict suggest [paths...]           # Generate annotation proposals
-strict apply [paths...]             # Write annotations to source
-
-# Quality and validation
-strict quality [paths...]           # Score existing annotations
-strict validate [paths...]          # Check annotation validity
-strict validate --strict [paths...] # Strict mode (CI gate)
-strict coverage [paths...]          # Lineage coverage report
+# Primary (most teams)
+strict init service [paths...]      # Bootstrap + scan + infer + suggest + report
 strict audit [paths...]             # Coverage + inference + TODO report
+strict validate --strict [paths...] # CI gate (strict mode)
 
-# Bootstrap and import
-strict init service [paths...]          # Bootstrap service + scan + suggest
-strict import-openapi <spec> [paths...] # Import from OpenAPI
-strict import-asyncapi <spec> [paths...] # Import from AsyncAPI
-strict import-proto <spec> [paths...]    # Import from protobuf
-
-# Migration and maintenance
+# Optional workflows
+strict apply [paths...]             # Write proposals to sidecar/inline
 strict migrate-rename <old> <new>   # Update annotations after rename
+
+# Advanced / debug
+strict scan [paths...]
+strict suggest [paths...]
+strict quality [paths...]
+strict coverage [paths...]
+strict import-openapi <spec> [paths...]
+strict import-asyncapi <spec> [paths...]
+strict import-proto <spec> [paths...]
 ```
 
 ## Command Specifications
 
-### `strict scan`
+Primary commands are `strict init service`, `strict audit`, and `strict validate --strict`.
+The remaining commands are advanced/debug workflows.
+
+### `strict scan` (advanced)
 
 Discover candidate source fields/functions that should have lineage annotations.
 
-### `strict suggest`
+### `strict suggest` (advanced)
 
 Build annotation proposals with confidence scores and rationale.
 
@@ -66,7 +66,7 @@ strict apply --output sidecar internal/handler/
 strict apply --output inline internal/handler/
 ```
 
-### `strict quality`
+### `strict quality` (advanced)
 
 Score existing annotations 0-100 with weighted checks:
 
@@ -203,7 +203,7 @@ Check that all annotations are syntactically valid and semantically consistent.
   run: strict validate --strict .
 ```
 
-### `strict coverage`
+### `strict coverage` (advanced)
 
 Report lineage annotation coverage across the codebase.
 
