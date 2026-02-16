@@ -25,6 +25,7 @@ strict quality [paths...]           # Score existing annotations
 strict validate [paths...]          # Check annotation validity
 strict validate --strict [paths...] # Strict mode (CI gate)
 strict coverage [paths...]          # Lineage coverage report
+strict audit [paths...]             # Coverage + inference + TODO report
 
 # Bootstrap and import
 strict init service [paths...]          # Bootstrap service + scan + suggest
@@ -82,6 +83,7 @@ Score existing annotations 0-100 with weighted checks:
 ### `strict init service`
 
 Bootstrap a service with a sidecar file, scan, and suggestions.
+This should be the single entrypoint for most teams.
 
 **What it does:**
 
@@ -94,7 +96,7 @@ Bootstrap a service with a sidecar file, scan, and suggestions.
      directory name.
    - `upstream` entries with `TODO` placeholders for contract URLs.
    - `fields` entries for every detected output field, with `from: TODO`.
-4. Outputs a quality report showing confidence levels for each inference.
+4. Outputs a report showing what succeeded, what failed, and what to fix next.
 5. Optionally disables suggestions or specific sources via flags.
 
 **Example output:**
@@ -131,6 +133,7 @@ fields:
 | `--no-suggest` | false | Skip suggestion generation |
 | `--no-otel` | false | Skip OpenTelemetry-based inference |
 | `--no-openapi` | false | Skip OpenAPI import |
+| `--no-proto` | false | Skip Protobuf import |
 
 ### `strict import-openapi`
 
@@ -221,6 +224,23 @@ internal/handler/order.go
 
 internal/handler/search.go
   SearchResponse: 0/12 fields (0.0%)  <- no annotations
+```
+
+### `strict audit`
+
+One command that summarizes what worked, what failed, and what to do next.
+
+**Report includes:**
+
+- Coverage summary (per service + per file).
+- Unannotated fields and top-risk outputs.
+- Inference hits/misses (OpenAPI/OTel/Proto).
+- TODOs and missing contract refs.
+
+**Example:**
+
+```
+strict audit .
 ```
 
 **Flags:**

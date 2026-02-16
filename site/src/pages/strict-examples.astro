@@ -21,7 +21,7 @@ import MainLayout from "../layouts/MainLayout.astro";
       <pre><code>{`strict init service
 
 # Optional: skip suggestions or specific sources
-strict init service --no-suggest --no-otel`}</code></pre>
+strict init service --no-suggest --no-otel --no-openapi --no-proto`}</code></pre>
     </div>
   </section>
 
@@ -39,10 +39,10 @@ strict init service --no-suggest --no-otel`}</code></pre>
   </section>
 
   <section class="card">
-    <h2>4) Coverage report</h2>
-    <p class="muted">Find unannotated responses and prioritize the highest-risk ones.</p>
+    <h2>4) Audit report</h2>
+    <p class="muted">One command for coverage, TODOs, and inference misses.</p>
     <div class="code-shell">
-      <pre><code>{`strict coverage .`}</code></pre>
+      <pre><code>{`strict audit .`}</code></pre>
     </div>
   </section>
 
