@@ -18,7 +18,10 @@ import MainLayout from "../layouts/MainLayout.astro";
     <h2>1) Bootstrap a repo in minutes</h2>
     <p class="muted">One command bootstraps the service, scans code, and suggests annotations.</p>
     <div class="code-shell">
-      <pre><code>{`strict init service`}</code></pre>
+      <pre><code>{`strict init service
+
+# Optional: skip suggestions or specific sources
+strict init service --no-suggest --no-otel`}</code></pre>
     </div>
   </section>
 
