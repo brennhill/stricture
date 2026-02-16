@@ -1796,12 +1796,21 @@ select {
   background: #ffffff;
   box-shadow: var(--shadow);
   padding: 0.6rem;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  position: relative;
+  min-height: clamp(360px, 34vw, 620px);
 }
 
 .what-hero-visual img {
-  display: block;
-  width: 100%;
-  height: auto;
+  position: absolute;
+  inset: 0.6rem;
+  width: calc(100% - 1.2rem);
+  height: calc(100% - 1.2rem);
+  object-fit: cover;
+  object-position: center;
+  border-radius: 12px;
 }
 
 .headline-line {
@@ -2295,6 +2304,15 @@ select {
 
   .hero-visual {
     min-height: 0;
+  }
+
+  .what-hero-visual img {
+    position: static;
+    inset: auto;
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    object-fit: contain;
   }
 
   .demo-controls {
