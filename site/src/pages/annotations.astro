@@ -112,6 +112,8 @@ const modeMeta = {
   "manual-required": { label: "Required", className: "anno-chip-manual-required" },
   "manual-optional": { label: "Optional", className: "anno-chip-manual-optional" }
 };
+
+const inlineAnnotationSnippet = "// strict-source: Identity\nUserID int `json:\"user_id\"`";
 ---
 
 <MainLayout title="Annotations | Stricture" description="Guide to Stricture lineage annotations: what you annotate, the minimal format, and a complete key reference.">
@@ -126,7 +128,7 @@ const modeMeta = {
     </p>
     <div class="anno-legend">
       {Object.values(modeMeta).map((mode) => (
-        <span class={`anno-chip ${mode.className}`}>{mode.label}</span>
+        <span class={"anno-chip " + mode.className}>{mode.label}</span>
       ))}
     </div>
     <p class="muted">Recommended fields can be promoted to required by policy packs.</p>
@@ -143,8 +145,7 @@ upstream:
     contract: git+https://github.com/acme/identity//openapi.yaml
     scope: cross_repo`}</code></pre>
     <p>Inline annotation:</p>
-    <pre><code>{`// strict-source: Identity
-UserID int \`json:"user_id"\``}</code></pre>
+    <pre><code>{inlineAnnotationSnippet}</code></pre>
     <p>That's it. The field path, source version, contract, scope, owner, escalation, and 10+ more fields are all inferred automatically.</p>
   </section>
 
@@ -194,7 +195,7 @@ UserID int \`json:"user_id"\``}</code></pre>
           {annotationKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
-              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td><span class={"anno-chip " + modeMeta[item.mode].className}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
               <td><code>{item.defaultValue}</code></td>
               <td>{item.purpose}</td>
@@ -224,7 +225,7 @@ UserID int \`json:"user_id"\``}</code></pre>
           {autoInferredKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
-              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td><span class={"anno-chip " + modeMeta[item.mode].className}>{modeMeta[item.mode].label}</span></td>
               <td>{item.defaultValue}</td>
               <td>{item.purpose}</td>
             </tr>
@@ -262,7 +263,7 @@ UserID int \`json:"user_id"\``}</code></pre>
           {sourceFields.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
-              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td><span class={"anno-chip " + modeMeta[item.mode].className}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
               <td>{item.purpose}</td>
             </tr>
@@ -289,7 +290,7 @@ UserID int \`json:"user_id"\``}</code></pre>
           {overrideKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
-              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td><span class={"anno-chip " + modeMeta[item.mode].className}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
               <td>{item.defaultValue}</td>
               <td>{item.purpose}</td>
@@ -319,7 +320,7 @@ UserID int \`json:"user_id"\``}</code></pre>
           {serviceRegistryKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
-              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td><span class={"anno-chip " + modeMeta[item.mode].className}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
               <td>{item.purpose}</td>
             </tr>
@@ -348,7 +349,7 @@ UserID int \`json:"user_id"\``}</code></pre>
           {flowRegistryKeys.map((item) => (
             <tr>
               <td><code>{item.key}</code></td>
-              <td><span class={`anno-chip ${modeMeta[item.mode].className}`}>{modeMeta[item.mode].label}</span></td>
+              <td><span class={"anno-chip " + modeMeta[item.mode].className}>{modeMeta[item.mode].label}</span></td>
               <td>{item.required}</td>
               <td>{item.purpose}</td>
             </tr>

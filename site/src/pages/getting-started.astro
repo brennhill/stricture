@@ -1,5 +1,7 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
+
+const inlineAnnotationSnippet = "// strict-source: Identity\nUserID int `json:\"user_id\"`";
 ---
 
 <MainLayout title="Getting Started | Stricture" description="Learn how to set up Stricture, author clear annotations, and tune policy/override settings for safe releases.">
@@ -27,8 +29,7 @@ upstream:
   <section class="card">
     <h2>2) Annotate fields</h2>
     <p>Add a comment above each struct field that comes from an upstream service:</p>
-    <pre><code>{`// strict-source: Identity
-UserID int \`json:"user_id"\``}</code></pre>
+    <pre><code>{inlineAnnotationSnippet}</code></pre>
     <p>That's it. Two words after the prefix. Everything else is inferred from the sidecar file.</p>
     <ul>
       <li><strong>Only required field</strong>: <code>from</code> (the upstream service name).</li>

@@ -1,0 +1,265 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+export const prerender = true;
+
+const rules = [
+  {
+    id: "dependency-direction",
+    name: "One-Way Streets",
+    analogy: "Like a one-way street system — traffic flows in one direction so nothing gets jammed going the wrong way.",
+    catches: "Detects when a low-level module imports from a high-level one, reversing the intended dependency flow.",
+    snippet: `# Config
+rules:
+  dependency-direction:
+    layers: [handler, service, repository]
+
+# Violation
+# repository/db.go imports handler/auth.go
+# → "repository" must not depend on "handler"`
+  },
+  {
+    id: "import-boundary",
+    name: "Fenced Yards",
+    analogy: "Like a hospital's operating room — only authorized staff are allowed in. Some parts of your code are off-limits to others.",
+    catches: "Flags imports that cross a declared boundary, like a UI component reaching directly into database internals.",
+    snippet: `# Config
+rules:
+  import-boundary:
+    boundaries:
+      - package: internal/db
+        allow: [internal/service]
+
+# Violation
+# cmd/api/main.go imports internal/db
+# → "cmd/api" is not allowed to import "internal/db"`
+  },
+  {
+    id: "no-circular-deps",
+    name: "No Going in Circles",
+    analogy: "Like a delivery route that loops back on itself — packages never arrive because the trucks keep going round and round.",
+    catches: "Finds cycles where package A imports B, B imports C, and C imports A again, creating a tangled loop.",
+    snippet: `# No config needed — always on
+
+# Violation
+# auth → users → permissions → auth
+# → circular dependency: auth → users → permissions → auth`
+  },
+  {
+    id: "max-file-lines",
+    name: "Keep It Manageable",
+    analogy: "Like a rule that says \"no book chapter over 30 pages\" — if it's too long, split it so people can actually find things.",
+    catches: "Reports files that exceed the configured line limit, a signal that the file is doing too much.",
+    snippet: `# Config (default: 800)
+rules:
+  max-file-lines:
+    limit: 800
+
+# Violation
+# internal/engine/process.go has 1,247 lines
+# → file exceeds 800-line limit (1247 > 800)`
+  },
+  {
+    id: "layer-violation",
+    name: "Stay in Your Lane",
+    analogy: "Like a restaurant: the waiter takes orders, the chef cooks. If the waiter starts cooking, things go wrong fast.",
+    catches: "Catches code that skips a layer, like a controller calling the database directly instead of going through the service layer.",
+    snippet: `# Config
+rules:
+  layer-violation:
+    layers: [handler, service, repository]
+
+# Violation
+# handler/users.go calls repository/user_repo.go
+# → "handler" must not skip "service" layer`
+  },
+  {
+    id: "module-boundary",
+    name: "Use the Front Door",
+    analogy: "Like accessing a building through the lobby instead of climbing in a back window. Every module has a public entrance — use it.",
+    catches: "Detects imports of internal sub-packages that aren't part of a module's public API.",
+    snippet: `# Config
+rules:
+  module-boundary:
+    modules:
+      - root: pkg/auth
+        public: [pkg/auth]
+
+# Violation
+# service/user.go imports pkg/auth/internal/token
+# → use "pkg/auth" public API, not internal path`
+  }
+];
+---
+
+<MainLayout
+  title="Guard Your Architecture | Stricture"
+  description="Stricture's 6 ARCH rules enforce software architecture automatically — dependency direction, import boundaries, circular dependencies, and more."
+>
+  <section class="hero arch-hero">
+    <div class="hero-copy">
+      <p class="kicker">Architecture Rules</p>
+      <h1>Your codebase has invisible rules. Make them visible.</h1>
+      <p class="lead">
+        Software architecture is like a building's blueprint — it only works if everyone follows the plan.
+        Stricture makes your architecture rules executable so they can't be broken by accident.
+      </p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="/demo">Try the Live Demo</a>
+        <a class="button button-secondary" href="/examples">See Examples</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>What is software architecture?</h2>
+    <p>
+      A building has rules: plumbing doesn't go through electrical conduits, load-bearing walls can't be removed,
+      exits must be accessible. Software has the same kind of rules, but they're usually just in people's heads.
+    </p>
+    <p>
+      Without enforcement, these rules get broken gradually — a shortcut here, a workaround there — until the whole
+      structure is fragile. A new team member adds a "quick import" that bypasses a boundary. A deadline
+      leads to a file that grows to 2,000 lines. Nobody notices until something breaks.
+    </p>
+    <p>
+      Architecture rules are the structural decisions that keep a codebase maintainable: which parts can talk to
+      which, how data flows through layers, and where the boundaries are. Stricture turns those decisions into
+      automated checks.
+    </p>
+  </section>
+
+  <section class="card compare-section">
+    <h2>The six rules Stricture enforces</h2>
+    <p class="muted">
+      Each rule catches a specific structural problem. Hover over a card to see the analogy, or read the code snippet to see what a violation looks like.
+    </p>
+    <div class="panel-grid">
+      {rules.map((rule) => (
+        <article class="panel">
+          <div class="panel-head">
+            <span class="panel-icon icon-invariants" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M6 7h12M6 12h12M6 17h8M16 15l2 2 4-4" />
+              </svg>
+            </span>
+            <h2>{rule.name}</h2>
+          </div>
+          <p><em>{rule.analogy}</em></p>
+          <p>{rule.catches}</p>
+          <pre class="code-view"><code>{rule.snippet}</code></pre>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="card compare-section">
+    <h2>How it works</h2>
+    <ol>
+      <li>
+        <strong>Describe your architecture</strong> in a simple config file. Tell Stricture what your layers
+        are, which packages are off-limits, and what the maximum file size should be.
+      </li>
+      <li>
+        <strong>Stricture checks every file</strong> against those rules. It reads your code's import
+        statements and structure, then compares them to your declared architecture.
+      </li>
+      <li>
+        <strong>Violations are reported before code ships.</strong> Run it locally, in CI, or both.
+        Problems are caught before they reach production.
+      </li>
+    </ol>
+    <pre class="code-view compare-code"><code>{`# .stricture.yml — minimal architecture config
+rules:
+  dependency-direction:
+    layers: [handler, service, repository]
+  import-boundary:
+    boundaries:
+      - package: internal/db
+        allow: [internal/service]
+  no-circular-deps: {}
+  max-file-lines:
+    limit: 800
+  layer-violation:
+    layers: [handler, service, repository]
+  module-boundary:
+    modules:
+      - root: pkg/auth
+        public: [pkg/auth]`}</code></pre>
+  </section>
+
+  <section class="card compare-section">
+    <h2>What a violation looks like</h2>
+    <p class="muted">
+      Clear, actionable messages that tell you exactly what's wrong and where.
+    </p>
+    <pre class="code-view compare-code"><code>{`$ strict check ./...
+
+internal/handler/users.go:14:2
+  ARCH-layer-violation: "handler" must not skip "service" layer
+  handler/users.go imports repository/user_repo.go directly.
+  Route the call through a service-layer function instead.
+
+internal/engine/process.go:1
+  ARCH-max-file-lines: file exceeds 800-line limit (1247 > 800)
+  Split this file into focused modules. Consider extracting
+  related functions into a new file.
+
+pkg/api/client.go:8:2
+  ARCH-import-boundary: "pkg/api" is not allowed to import "internal/db"
+  Use the public service API instead of reaching into
+  internal packages.
+
+Found 3 violations in 847 files (42ms)`}</code></pre>
+  </section>
+
+  <section class="card compare-section">
+    <h2>Set it up in 5 minutes</h2>
+    <ol>
+      <li>Install Stricture: <code>go install github.com/brennhill/stricture/cmd/strict@latest</code></li>
+      <li>Create a <code>.stricture.yml</code> in your project root with the rules you want (see the config example above).</li>
+      <li>Run <code>strict check ./...</code> to see results immediately.</li>
+      <li>Add it to your CI pipeline so violations are caught on every pull request.</li>
+    </ol>
+    <pre class="code-view compare-code"><code>{`# Add to your CI pipeline (GitHub Actions example)
+- name: Architecture check
+  run: strict check ./...`}</code></pre>
+  </section>
+
+  <section class="card compare-section compare-both-section">
+    <h2>Why automate this?</h2>
+    <div class="compare-grid">
+      <article class="compare-card">
+        <h3>Before: tribal knowledge</h3>
+        <p>Architecture rules live in a wiki nobody reads. They're enforced by senior engineers in code review — when they have time. New team members break boundaries they didn't know existed. Problems surface weeks later as mysterious bugs.</p>
+      </article>
+      <article class="compare-card">
+        <h3>After: automated guardrails</h3>
+        <p>Rules are checked automatically on every change. Violations are caught in seconds, not days. New team members get instant feedback instead of a confused code review. The architecture stays intact even as the team grows.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Try it on your own codebase.</h2>
+    <p>
+      Architecture rules only matter if they're enforced. Set up Stricture once and never worry about
+      accidental structural drift again.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="/demo">Launch Live Demo</a>
+      <a class="button button-secondary" href="/getting-started">Getting Started Guide</a>
+      <a class="button button-secondary" href="/examples">Browse Examples</a>
+    </div>
+  </section>
+</MainLayout>
+
+<style>
+  .arch-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .arch-hero h1 {
+    max-width: 28ch;
+  }
+</style>
