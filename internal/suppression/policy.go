@@ -15,66 +15,92 @@ type Policy struct {
 
 // Compile parses suppression directives from source and returns a query policy.
 func Compile(source []byte) *Policy {
-	p := &Policy{
-		fileRules: map[string]bool{},
-		lineAll:   map[int]bool{},
-		lineRules: map[int]map[string]bool{},
+	c := &compiler{
+		policy: &Policy{
+			fileRules: map[string]bool{},
+			lineAll:   map[int]bool{},
+			lineRules: map[int]map[string]bool{},
+		},
+		activeRules: map[string]bool{},
 	}
-
-	lines := strings.Split(string(source), "\n")
-	activeAll := false
-	activeRules := map[string]bool{}
-
-	for i, line := range lines {
+	for i, line := range strings.Split(string(source), "\n") {
 		lineNo := i + 1
-
-		if activeAll {
-			p.lineAll[lineNo] = true
-		}
-		for ruleID := range activeRules {
-			addLineRule(p.lineRules, lineNo, ruleID)
-		}
-
+		c.markActive(lineNo)
 		dir, rules, all := parseDirective(line)
-		switch dir {
-		case "disable-file":
-			if all {
-				p.fileAll = true
-				continue
-			}
-			for _, ruleID := range rules {
-				p.fileRules[ruleID] = true
-			}
-		case "disable-next-line":
-			next := lineNo + 1
-			if all {
-				p.lineAll[next] = true
-				continue
-			}
-			for _, ruleID := range rules {
-				addLineRule(p.lineRules, next, ruleID)
-			}
-		case "disable":
-			if all {
-				activeAll = true
-				continue
-			}
-			for _, ruleID := range rules {
-				activeRules[ruleID] = true
-			}
-		case "enable":
-			if all {
-				activeAll = false
-				activeRules = map[string]bool{}
-				continue
-			}
-			for _, ruleID := range rules {
-				delete(activeRules, ruleID)
-			}
-		}
+		c.apply(dir, lineNo, rules, all)
 	}
+	return c.policy
+}
 
-	return p
+// compiler tracks the block-level (disable ... enable) state while scanning lines.
+type compiler struct {
+	policy      *Policy
+	activeAll   bool
+	activeRules map[string]bool
+}
+
+// markActive applies any open disable block to lineNo.
+func (c *compiler) markActive(lineNo int) {
+	if c.activeAll {
+		c.policy.lineAll[lineNo] = true
+	}
+	for ruleID := range c.activeRules {
+		addLineRule(c.policy.lineRules, lineNo, ruleID)
+	}
+}
+
+func (c *compiler) apply(dir string, lineNo int, rules []string, all bool) {
+	switch dir {
+	case "disable-file":
+		c.disableFile(rules, all)
+	case "disable-next-line":
+		c.disableLine(lineNo+1, rules, all)
+	case "disable":
+		c.openBlock(rules, all)
+	case "enable":
+		c.closeBlock(rules, all)
+	}
+}
+
+func (c *compiler) disableFile(rules []string, all bool) {
+	if all {
+		c.policy.fileAll = true
+		return
+	}
+	for _, ruleID := range rules {
+		c.policy.fileRules[ruleID] = true
+	}
+}
+
+func (c *compiler) disableLine(lineNo int, rules []string, all bool) {
+	if all {
+		c.policy.lineAll[lineNo] = true
+		return
+	}
+	for _, ruleID := range rules {
+		addLineRule(c.policy.lineRules, lineNo, ruleID)
+	}
+}
+
+func (c *compiler) openBlock(rules []string, all bool) {
+	if all {
+		c.activeAll = true
+		return
+	}
+	for _, ruleID := range rules {
+		c.activeRules[ruleID] = true
+	}
+}
+
+func (c *compiler) closeBlock(rules []string, all bool) {
+	if all {
+		c.activeAll = false
+		c.activeRules = map[string]bool{}
+		return
+	}
+	for _, ruleID := range rules {
+		delete(c.activeRules, ruleID)
+	}
 }
 
 // Suppressed reports whether a violation at line for ruleID should be filtered.

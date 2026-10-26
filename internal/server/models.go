@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // ArtifactIngestRequest is the v0 ingest envelope for lineage runs.
@@ -68,24 +69,20 @@ func sanitizePathToken(value string) string {
 	var b strings.Builder
 	lastDash := false
 	for _, r := range trimmed {
-		switch {
-		case (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9'):
-			if r >= 'A' && r <= 'Z' {
-				r = r - 'A' + 'a'
-			}
-			b.WriteRune(r)
+		if isASCIIAlnum(r) {
+			b.WriteRune(unicode.ToLower(r))
 			lastDash = false
-		case r == '-' || r == '_' || r == '.':
-			if !lastDash {
-				b.WriteRune('-')
-				lastDash = true
-			}
-		default:
-			if !lastDash {
-				b.WriteRune('-')
-				lastDash = true
-			}
+			continue
+		}
+		// '-', '_', '.' and every other rune collapse into a single dash.
+		if !lastDash {
+			b.WriteRune('-')
+			lastDash = true
 		}
 	}
 	return strings.Trim(b.String(), "-")
+}
+
+func isASCIIAlnum(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
 }

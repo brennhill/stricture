@@ -35,58 +35,80 @@ func Collect(paths []string) (Artifact, []ParseError, error) {
 		paths = []string{"."}
 	}
 
-	fields := make([]Annotation, 0)
-	overrides := make([]Override, 0)
-	errors := make([]ParseError, 0)
-
+	acc := &collection{
+		fields:    make([]Annotation, 0),
+		overrides: make([]Override, 0),
+		errors:    make([]ParseError, 0),
+	}
 	for _, path := range paths {
-		info, err := os.Stat(path)
-		if err != nil {
-			return Artifact{}, nil, fmt.Errorf("collect lineage: stat %s: %w", path, err)
+		if err := acc.collectPath(path); err != nil {
+			return Artifact{}, nil, err
 		}
-
-		if info.IsDir() {
-			err = filepath.WalkDir(path, func(filePath string, d fs.DirEntry, walkErr error) error {
-				if walkErr != nil {
-					return walkErr
-				}
-				if d.IsDir() {
-					name := d.Name()
-					if name == ".git" || name == "node_modules" || name == "bin" {
-						return filepath.SkipDir
-					}
-					return nil
-				}
-				if !isSourceFile(filePath) {
-					return nil
-				}
-				collected, collectedOverrides, parseErrs, readErr := collectFile(filePath)
-				if readErr != nil {
-					return readErr
-				}
-				fields = append(fields, collected...)
-				overrides = append(overrides, collectedOverrides...)
-				errors = append(errors, parseErrs...)
-				return nil
-			})
-			if err != nil {
-				return Artifact{}, nil, fmt.Errorf("collect lineage: walk %s: %w", path, err)
-			}
-			continue
-		}
-
-		if !isSourceFile(path) {
-			continue
-		}
-		collected, collectedOverrides, parseErrs, readErr := collectFile(path)
-		if readErr != nil {
-			return Artifact{}, nil, readErr
-		}
-		fields = append(fields, collected...)
-		overrides = append(overrides, collectedOverrides...)
-		errors = append(errors, parseErrs...)
 	}
 
+	sortCollection(acc)
+	return Artifact{
+		SchemaVersion: "1",
+		Fields:        acc.fields,
+		Overrides:     acc.overrides,
+	}, acc.errors, nil
+}
+
+// collection accumulates parse results across files.
+type collection struct {
+	fields    []Annotation
+	overrides []Override
+	errors    []ParseError
+}
+
+func (c *collection) collectPath(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("collect lineage: stat %s: %w", path, err)
+	}
+	if !info.IsDir() {
+		return c.addFile(path)
+	}
+	if err := filepath.WalkDir(path, c.walk); err != nil {
+		return fmt.Errorf("collect lineage: walk %s: %w", path, err)
+	}
+	return nil
+}
+
+func (c *collection) walk(filePath string, d fs.DirEntry, walkErr error) error {
+	if walkErr != nil {
+		return walkErr
+	}
+	if d.IsDir() {
+		if isSkippedDir(d.Name()) {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+	return c.addFile(filePath)
+}
+
+func isSkippedDir(name string) bool {
+	return name == ".git" || name == "node_modules" || name == "bin"
+}
+
+// addFile parses one file when it has a supported source extension.
+func (c *collection) addFile(path string) error {
+	if !isSourceFile(path) {
+		return nil
+	}
+	collected, collectedOverrides, parseErrs, readErr := collectFile(path)
+	if readErr != nil {
+		return readErr
+	}
+	c.fields = append(c.fields, collected...)
+	c.overrides = append(c.overrides, collectedOverrides...)
+	c.errors = append(c.errors, parseErrs...)
+	return nil
+}
+
+func sortCollection(c *collection) {
+	fields, overrides, errors := c.fields, c.overrides, c.errors
 	sort.Slice(fields, func(i, j int) bool {
 		if fields[i].FieldID != fields[j].FieldID {
 			return fields[i].FieldID < fields[j].FieldID
@@ -125,12 +147,6 @@ func Collect(paths []string) (Artifact, []ParseError, error) {
 		}
 		return errors[i].Line < errors[j].Line
 	})
-
-	return Artifact{
-		SchemaVersion: "1",
-		Fields:        fields,
-		Overrides:     overrides,
-	}, errors, nil
 }
 
 // LoadArtifact reads a lineage artifact JSON file.

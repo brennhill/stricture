@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const maxIngestBodyBytes = 10 << 20 // 10MB
@@ -27,8 +28,9 @@ func New(cfg Config) (*http.Server, error) {
 		return nil, err
 	}
 	return &http.Server{
-		Addr:    cfg.Addr,
-		Handler: handler,
+		Addr:              cfg.Addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}, nil
 }
 

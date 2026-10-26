@@ -70,8 +70,8 @@ func edgeCopy(edge *DriftEdge) *DriftEdge {
 	if edge == nil {
 		return nil
 	}
-	copy := *edge
-	return &copy
+	clone := *edge
+	return &clone
 }
 
 // DiffSummary aggregates change counts by severity.
@@ -127,8 +127,6 @@ var plainLanguageGuidanceByChangeType = map[string]plainLanguageGuidance{
 
 // DiffArtifacts classifies drift from base -> head.
 func DiffArtifacts(base Artifact, head Artifact) DiffResult {
-	changes := make([]DriftChange, 0)
-
 	baseByID := map[string]Annotation{}
 	headByID := map[string]Annotation{}
 	renameMap := map[string]string{}
@@ -143,7 +141,22 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 	}
 
 	processedHead := map[string]bool{}
+	changes := diffBaseFields(baseByID, headByID, renameMap, processedHead)
+	changes = append(changes, diffAddedFields(baseByID, headByID, processedHead)...)
 
+	for i := range changes {
+		enrichPlainLanguage(&changes[i])
+	}
+
+	applyOverrides(changes, head.Overrides)
+	sortChanges(changes)
+
+	return DiffResult{Summary: summarizeChanges(changes), Changes: changes}
+}
+
+// diffBaseFields compares every base field with its head counterpart, rename, or removal.
+func diffBaseFields(baseByID, headByID map[string]Annotation, renameMap map[string]string, processedHead map[string]bool) []DriftChange {
+	changes := make([]DriftChange, 0)
 	for baseID, baseField := range baseByID {
 		headField, exists := headByID[baseID]
 		if exists {
@@ -153,7 +166,6 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 		}
 
 		if renamedID, renamed := renameMap[baseID]; renamed {
-			headRenamed := headByID[renamedID]
 			processedHead[renamedID] = true
 			changes = append(changes, DriftChange{
 				Severity:   SeverityMedium,
@@ -161,7 +173,7 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 				FieldID:    renamedID,
 				Message:    fmt.Sprintf("Field ID renamed from %s to %s", baseID, renamedID),
 			})
-			changes = append(changes, compareField(baseField, headRenamed)...)
+			changes = append(changes, compareField(baseField, headByID[renamedID])...)
 			continue
 		}
 
@@ -172,18 +184,15 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 			Message:    "Field was removed from lineage artifact",
 		})
 	}
+	return changes
+}
 
+// diffAddedFields reports head fields that are new (not present or renamed from base).
+func diffAddedFields(baseByID, headByID map[string]Annotation, processedHead map[string]bool) []DriftChange {
+	changes := make([]DriftChange, 0)
 	for headID, headField := range headByID {
-		if processedHead[headID] {
+		if processedHead[headID] || isExistingField(baseByID, headID, headField) {
 			continue
-		}
-		if _, existed := baseByID[headID]; existed {
-			continue
-		}
-		if headField.RenamedFrom != "" {
-			if _, existed := baseByID[headField.RenamedFrom]; existed {
-				continue
-			}
 		}
 		changes = append(changes, DriftChange{
 			Severity:   SeverityMedium,
@@ -192,13 +201,21 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 			Message:    "New field added to lineage artifact",
 		})
 	}
+	return changes
+}
 
-	for i := range changes {
-		enrichPlainLanguage(&changes[i])
+func isExistingField(baseByID map[string]Annotation, headID string, headField Annotation) bool {
+	if _, existed := baseByID[headID]; existed {
+		return true
 	}
+	if headField.RenamedFrom == "" {
+		return false
+	}
+	_, existed := baseByID[headField.RenamedFrom]
+	return existed
+}
 
-	applyOverrides(changes, head.Overrides)
-
+func sortChanges(changes []DriftChange) {
 	sort.Slice(changes, func(i, j int) bool {
 		ri := severityRank(changes[i].Severity)
 		rj := severityRank(changes[j].Severity)
@@ -210,7 +227,9 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 		}
 		return changes[i].ChangeType < changes[j].ChangeType
 	})
+}
 
+func summarizeChanges(changes []DriftChange) DiffSummary {
 	summary := DiffSummary{Total: len(changes)}
 	for _, c := range changes {
 		switch c.Severity {
@@ -224,123 +243,7 @@ func DiffArtifacts(base Artifact, head Artifact) DiffResult {
 			summary.Info++
 		}
 	}
-
-	return DiffResult{Summary: summary, Changes: changes}
-}
-
-func compareField(base Annotation, head Annotation) []DriftChange {
-	changes := make([]DriftChange, 0)
-	fieldID := head.FieldID
-	if fieldID == "" {
-		fieldID = base.FieldID
-	}
-
-	producerService := strings.TrimSpace(head.SourceSystem)
-	if producerService == "" {
-		producerService = strings.TrimSpace(base.SourceSystem)
-	}
-	producerField := strings.TrimSpace(head.Field)
-	if producerField == "" {
-		producerField = strings.TrimSpace(base.Field)
-	}
-	if producerField == "" {
-		producerField = fieldID
-	}
-	producerEdge := edgeOrNil(producerService, producerField)
-	impactEdge := edgeOrNil(producerService, fieldID)
-
-	appendProducerChange := func(severity Severity, changeType string, message string) {
-		changes = append(changes, DriftChange{
-			Severity:   severity,
-			ChangeType: changeType,
-			FieldID:    fieldID,
-			Message:    message,
-			Source:     edgeCopy(producerEdge),
-			Impact:     edgeCopy(impactEdge),
-		})
-	}
-
-	if base.Field != head.Field {
-		appendProducerChange(SeverityMedium, "field_path_changed", fmt.Sprintf("Producer %s changed field path from %s to %s for %s.", producerServiceLabel(producerService), base.Field, head.Field, fieldID))
-	}
-
-	if base.SourceSystem != head.SourceSystem {
-		appendProducerChange(SeverityHigh, "source_system_changed", fmt.Sprintf("Producer system changed from %s to %s for %s.", base.SourceSystem, head.SourceSystem, fieldID))
-	}
-
-	if base.SourceVersion != head.SourceVersion {
-		appendProducerChange(SeverityMedium, "source_version_changed", fmt.Sprintf("Producer %s changed source version for %s from %s to %s. Consumers pinned to previous semantics should verify compatibility.", producerServiceLabel(producerService), fieldID, base.SourceVersion, head.SourceVersion))
-	}
-
-	if base.MinSupportedSourceVersion != head.MinSupportedSourceVersion {
-		appendProducerChange(SeverityHigh, "min_supported_source_version_changed", fmt.Sprintf("Producer %s changed min supported source version for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.MinSupportedSourceVersion, head.MinSupportedSourceVersion))
-	}
-
-	if base.TransformType != head.TransformType {
-		appendProducerChange(SeverityMedium, "transform_type_changed", fmt.Sprintf("Producer %s changed transform type for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.TransformType, head.TransformType))
-	}
-
-	if base.MergeStrategy != head.MergeStrategy {
-		changes = append(changes, DriftChange{
-			Severity:   SeverityMedium,
-			ChangeType: "merge_strategy_changed",
-			FieldID:    fieldID,
-			Message:    fmt.Sprintf("Producer %s changed merge strategy for %s from %s (%s) to %s (%s). This changes how upstream values are combined and can change downstream behavior even when schema/type stays the same.", producerServiceLabel(producerService), fieldID, base.MergeStrategy, mergeStrategyMeaning(base.MergeStrategy), head.MergeStrategy, mergeStrategyMeaning(head.MergeStrategy)),
-			Source:     edgeCopy(producerEdge),
-			Impact:     edgeCopy(impactEdge),
-			Validation: "merge semantics regression check for precedence/fallback behavior",
-			Suggestion: "add fixture tests for representative source combinations and verify downstream expectations before rollout",
-		})
-	}
-
-	if base.BreakPolicy != head.BreakPolicy {
-		appendProducerChange(SeverityHigh, "break_policy_changed", fmt.Sprintf("Producer %s changed break policy for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.BreakPolicy, head.BreakPolicy))
-	}
-
-	if base.Confidence != head.Confidence {
-		severity := SeverityLow
-		if base.Confidence == "declared" && head.Confidence == "inferred" {
-			severity = SeverityMedium
-		}
-		appendProducerChange(severity, "confidence_changed", fmt.Sprintf("Producer %s changed confidence for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.Confidence, head.Confidence))
-	}
-
-	if base.DataClassification != head.DataClassification {
-		baseRank := classificationRank(base.DataClassification)
-		headRank := classificationRank(head.DataClassification)
-		if headRank < baseRank {
-			appendProducerChange(SeverityHigh, "classification_relaxed", fmt.Sprintf("Producer %s relaxed data classification for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.DataClassification, head.DataClassification))
-		} else {
-			appendProducerChange(SeverityLow, "classification_tightened", fmt.Sprintf("Producer %s tightened data classification for %s from %s to %s.", producerServiceLabel(producerService), fieldID, base.DataClassification, head.DataClassification))
-		}
-	}
-
-	if base.Owner != head.Owner {
-		appendProducerChange(SeverityLow, "owner_changed", fmt.Sprintf("Owner changed from %s to %s for %s.", base.Owner, head.Owner, fieldID))
-	}
-
-	if base.Escalation != head.Escalation {
-		appendProducerChange(SeverityLow, "escalation_changed", fmt.Sprintf("Escalation contact changed for %s.", fieldID))
-	}
-
-	if base.ContractTestID != head.ContractTestID {
-		appendProducerChange(SeverityMedium, "contract_test_id_changed", fmt.Sprintf("Contract test reference changed for %s.", fieldID))
-	}
-
-	if base.SunsetAt != head.SunsetAt {
-		appendProducerChange(SeverityMedium, "sunset_changed", fmt.Sprintf("Sunset date changed for %s from %s to %s.", fieldID, base.SunsetAt, head.SunsetAt))
-	}
-
-	if base.Flow != head.Flow {
-		appendProducerChange(SeverityLow, "flow_changed", fmt.Sprintf("Flow narrative changed for %s.", fieldID))
-	}
-
-	if base.Note != head.Note {
-		appendProducerChange(SeverityInfo, "note_changed", fmt.Sprintf("Annotation note changed for %s.", fieldID))
-	}
-
-	changes = append(changes, compareSources(fieldID, head.SourceSystem, head.Flow, base.Sources, head.Sources)...)
-	return changes
+	return summary
 }
 
 func compareSources(fieldID string, impactedService string, flow string, baseSources []SourceRef, headSources []SourceRef) []DriftChange {

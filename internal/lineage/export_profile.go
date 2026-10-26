@@ -107,6 +107,8 @@ func applyAnnotationProfileAliases(field map[string]interface{}, annotation Anno
 	field["owner_team"] = annotation.Owner
 
 	switch profile {
+	case ProfileStricture:
+		// The base aliases above are the whole stricture profile.
 	case ProfileOTel:
 		field["service.name"] = annotation.SourceSystem
 		field["service.version"] = annotation.SourceVersion
