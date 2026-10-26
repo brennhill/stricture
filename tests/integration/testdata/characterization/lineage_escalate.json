@@ -1,0 +1,22 @@
+{
+  "service": "Identity",
+  "steps": [
+    {
+      "depth": 0,
+      "system_id": "identity",
+      "contacts": [
+        {
+          "role": "owner",
+          "name": "team.identity",
+          "channel": ""
+        },
+        {
+          "role": "escalation",
+          "name": "",
+          "channel": "slack:#identity-oncall"
+        }
+      ],
+      "reason": "reported_bad_data"
+    }
+  ]
+}

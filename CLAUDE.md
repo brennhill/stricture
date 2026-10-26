@@ -13,6 +13,8 @@ make test-phase1      # Phase 1 tests only (CLI, config, Go adapter, CONV rules)
 make test-phase2      # Phase 1+2 (add TS adapter, ARCH rules)
 make test-phase3      # Phase 1+2+3 (add TQ rules)
 make test-phase4      # Phase 1+2+3+4 (add CTR rules, manifest)
+make check-architecture # Layering, file size (800), complexity (15)
+make refactor-check   # Run after EVERY refactor step: architecture + integration + unit
 make lint             # golangci-lint
 make benchmark        # Performance benchmarks
 make ci               # Full CI: lint + test + benchmark + validate
@@ -23,10 +25,11 @@ make ci               # Full CI: lint + test + benchmark + validate
 1. **TDD** — Write failing tests first, then implement. Never the reverse.
 2. **Zero production deps** — Only Go stdlib + tree-sitter C bindings. `testify` and `yaml.v3` are allowed.
 3. **File headers** — Every `.go` file starts with `// filename.go — Purpose.`
-4. **Max 800 LOC** — No source file exceeds 800 lines. Split if needed.
+4. **Max 800 LOC, max cyclomatic complexity 15** — No source file exceeds 800 lines and no function exceeds complexity 15. Split or extract if needed. Both are enforced by `make check-architecture`.
 5. **Error format** — `{OPERATION}: {ROOT_CAUSE}. {RECOVERY_ACTION}`
 6. **File naming** — `snake_case.go` for all Go files.
-7. **Gate compliance** — Read and follow [DEVELOPMENT-GATES.md](docs/DEVELOPMENT-GATES.md) before ANY implementation.
+7. **Architecture** — Layering, rule registration, file size and function complexity are enforced by `make check-architecture` (`internal/archtest`). Read [ARCHITECTURE.md](docs/ARCHITECTURE.md) before adding a package. Never add to the ratchets in `internal/archtest/policy.go`; they only shrink.
+8. **Gate compliance** — Read and follow [DEVELOPMENT-GATES.md](docs/DEVELOPMENT-GATES.md) before ANY implementation.
 
 ## Development Workflow
 
@@ -171,6 +174,7 @@ Read in this order:
 
 | Need | Location |
 |------|----------|
+| Architecture (layers, enforcement) | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | Rule cross-reference (THE lookup table) | [`docs/RULE-INDEX.md`](docs/RULE-INDEX.md) |
 | Product spec (WHAT to build) | [`docs/product-spec.md`](docs/product-spec.md) |
 | Tech spec (HOW to build) | [`docs/tech-spec.md`](docs/tech-spec.md) |

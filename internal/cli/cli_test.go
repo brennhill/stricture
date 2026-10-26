@@ -1,53 +1,15 @@
-package main
+// cli_test.go — Unit tests for CLI argument handling, discovery, baseline, fix, and rule-running helpers.
+package cli
 
 import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"testing"
 
 	"github.com/stricture/stricture/internal/fix"
-	"github.com/stricture/stricture/internal/model"
 )
-
-type fakeRule struct {
-	id          string
-	violations  []model.Violation
-	shouldPanic bool
-}
-
-func (r fakeRule) ID() string {
-	return r.id
-}
-
-func (r fakeRule) Category() string {
-	return "TEST"
-}
-
-func (r fakeRule) Description() string {
-	return "test rule"
-}
-
-func (r fakeRule) DefaultSeverity() string {
-	return "error"
-}
-
-func (r fakeRule) Check(_ *model.UnifiedFileModel, _ *model.ProjectContext, _ model.RuleConfig) []model.Violation {
-	if r.shouldPanic {
-		panic("boom")
-	}
-	return append([]model.Violation(nil), r.violations...)
-}
-
-func (r fakeRule) NeedsProjectContext() bool {
-	return false
-}
-
-func (r fakeRule) Why() string {
-	return "tests"
-}
 
 func TestLooksLikePathArg(t *testing.T) {
 	t.Parallel()
@@ -183,43 +145,6 @@ func TestSplitAuditArgs(t *testing.T) {
 	}
 	if !reflect.DeepEqual(pathArgs, wantPaths) {
 		t.Fatalf("pathArgs = %#v, want %#v", pathArgs, wantPaths)
-	}
-}
-
-func TestParseExtensionFilter(t *testing.T) {
-	t.Parallel()
-
-	got, err := parseExtensionFilter("go, .TS,py")
-	if err != nil {
-		t.Fatalf("parseExtensionFilter returned error: %v", err)
-	}
-	want := map[string]bool{
-		".go": true,
-		".ts": true,
-		".py": true,
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("parseExtensionFilter result = %#v, want %#v", got, want)
-	}
-}
-
-func TestParseExtensionFilterInvalid(t *testing.T) {
-	t.Parallel()
-
-	if _, err := parseExtensionFilter(" , , . "); err == nil {
-		t.Fatalf("expected invalid extension filter error")
-	}
-}
-
-func TestFilterFilePathsByExtensions(t *testing.T) {
-	t.Parallel()
-
-	paths := []string{"a.go", "b.ts", "c.py", "README.md"}
-	allowlist := map[string]bool{".go": true, ".py": true}
-	got := filterFilePathsByExtensions(paths, allowlist)
-	want := []string{"a.go", "c.py"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("filterFilePathsByExtensions = %#v, want %#v", got, want)
 	}
 }
 
@@ -425,164 +350,24 @@ func TestWriteFixBackups(t *testing.T) {
 	}
 }
 
-func TestFilterViolationsBySeverity(t *testing.T) {
-	t.Parallel()
-
-	violations := []model.Violation{
-		{RuleID: "A", Severity: "warn"},
-		{RuleID: "B", Severity: "error"},
+func TestFixArgs(t *testing.T) {
+	cases := []struct {
+		name string
+		in   []string
+		want []string
+	}{
+		{"applies by default", []string{"src"}, []string{"--fix", "src"}},
+		{"dry-run previews instead of applying", []string{"--dry-run", "src"}, []string{"--fix-dry-run", "src"}},
+		{"single-dash dry-run", []string{"-dry-run", "src"}, []string{"--fix-dry-run", "src"}},
+		{"fix-dry-run alias is not combined with fix", []string{"--fix-dry-run", "src"}, []string{"--fix-dry-run", "src"}},
+		{"other flags pass through", []string{"--fix-backup", "--rule", "CONV-file-header", "src"}, []string{"--fix", "--fix-backup", "--rule", "CONV-file-header", "src"}},
+		{"dry-run mixed with flags", []string{"--format", "json", "--dry-run"}, []string{"--fix-dry-run", "--format", "json"}},
 	}
-	got := filterViolationsBySeverity(violations, "error")
-	if len(got) != 1 || got[0].RuleID != "B" {
-		t.Fatalf("filterViolationsBySeverity(error) = %#v, want only B", got)
-	}
-}
-
-func TestIsPathWithinRoot(t *testing.T) {
-	t.Parallel()
-
-	root := filepath.FromSlash("/workspace/project")
-	inside := filepath.FromSlash("/workspace/project/src/main.go")
-	outside := filepath.FromSlash("/workspace/other/file.go")
-	if !isPathWithinRoot(inside, root) {
-		t.Fatalf("inside path should be within root")
-	}
-	if isPathWithinRoot(outside, root) {
-		t.Fatalf("outside path should not be within root")
-	}
-}
-
-func TestShouldSkipLintDir(t *testing.T) {
-	t.Parallel()
-
-	if !shouldSkipLintDir("node_modules") {
-		t.Fatalf("node_modules should be skipped")
-	}
-	if !shouldSkipLintDir("tests/fixtures/sample") {
-		t.Fatalf("tests/fixtures path should be skipped")
-	}
-	if shouldSkipLintDir("src") {
-		t.Fatalf("src should not be skipped")
-	}
-}
-
-func TestSourceFileHeuristics(t *testing.T) {
-	t.Parallel()
-
-	if isLintSourceFile("x.generated.ts") {
-		t.Fatalf("generated file should not be lint source")
-	}
-	if isLintSourceFile("x.pb.go") {
-		t.Fatalf("protobuf-generated file should not be lint source")
-	}
-	if !isLintSourceFile("x.go") {
-		t.Fatalf("go file should be lint source")
-	}
-	if !isLintSourceFile("x.ts") {
-		t.Fatalf("ts file should be lint source")
-	}
-	if isLintSourceFile("x.md") {
-		t.Fatalf("markdown should not be lint source")
-	}
-}
-
-func TestCountLinesAndLooksLikeTestFile(t *testing.T) {
-	t.Parallel()
-
-	if got := countLines([]byte("a\nb\n")); got != 3 {
-		t.Fatalf("countLines = %d, want 3", got)
-	}
-	if got := countLines(nil); got != 0 {
-		t.Fatalf("countLines(nil) = %d, want 0", got)
-	}
-
-	testNames := []string{"foo_test.go", "foo.test.ts", "bar.spec.js", "test_sample.py", "serviceTest.java"}
-	for _, name := range testNames {
-		if !looksLikeTestFile(name) {
-			t.Fatalf("looksLikeTestFile(%q) = false, want true", name)
-		}
-	}
-	if looksLikeTestFile("main.go") {
-		t.Fatalf("main.go should not look like a test file")
-	}
-}
-
-func TestRunLintRulesForFileRecoversFromPanic(t *testing.T) {
-	t.Parallel()
-
-	file := &model.UnifiedFileModel{Path: "a.go", Source: []byte("package main\n")}
-	rules := []model.Rule{
-		fakeRule{id: "PANIC-rule", shouldPanic: true},
-	}
-	out := runLintRulesForFile(file, rules, &model.ProjectContext{}, 0)
-	if len(out) != 1 {
-		t.Fatalf("expected 1 panic violation, got %d", len(out))
-	}
-	if out[0].RuleID != "PANIC-rule" {
-		t.Fatalf("panic violation RuleID = %q, want PANIC-rule", out[0].RuleID)
-	}
-}
-
-func TestRunLintRulesForFileAppliesSuppressionAndRuleFallback(t *testing.T) {
-	t.Parallel()
-
-	file := &model.UnifiedFileModel{
-		Path:   "a.go",
-		Source: []byte("// stricture-disable-next-line RULE-a\nx\n"),
-	}
-	rules := []model.Rule{
-		fakeRule{
-			id: "RULE-a",
-			violations: []model.Violation{
-				{RuleID: "", Severity: "error", FilePath: "a.go", StartLine: 2, Message: "suppressed"},
-			},
-		},
-		fakeRule{
-			id: "RULE-b",
-			violations: []model.Violation{
-				{RuleID: "", Severity: "warn", FilePath: "a.go", StartLine: 3, Message: "kept"},
-			},
-		},
-	}
-	out := runLintRulesForFile(file, rules, &model.ProjectContext{}, 0)
-	if len(out) != 1 {
-		t.Fatalf("expected 1 remaining violation, got %d (%+v)", len(out), out)
-	}
-	if out[0].RuleID != "RULE-b" {
-		t.Fatalf("fallback RuleID should be RULE-b, got %q", out[0].RuleID)
-	}
-}
-
-func TestRunLintRulesParallelMatchesSequentialSet(t *testing.T) {
-	t.Parallel()
-
-	files := []*model.UnifiedFileModel{
-		{Path: "a.go", Source: []byte("package a\n")},
-		{Path: "b.go", Source: []byte("package b\n")},
-	}
-	rules := []model.Rule{
-		fakeRule{
-			id: "RULE-a",
-			violations: []model.Violation{
-				{RuleID: "RULE-a", Severity: "error", FilePath: "a.go", StartLine: 1, Message: "x"},
-			},
-		},
-	}
-	ctx := &model.ProjectContext{}
-
-	seq := runLintRulesSequential(files, rules, ctx, 0)
-	par := runLintRulesParallel(files, rules, ctx, 4)
-
-	normalize := func(in []model.Violation) []string {
-		out := make([]string, 0, len(in))
-		for _, v := range in {
-			out = append(out, v.RuleID+"|"+v.FilePath+"|"+v.Message)
-		}
-		sort.Strings(out)
-		return out
-	}
-
-	if !reflect.DeepEqual(normalize(seq), normalize(par)) {
-		t.Fatalf("parallel result differs from sequential\nseq=%v\npar=%v", normalize(seq), normalize(par))
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := fixArgs(tc.in); !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("fixArgs(%v) = %v, want %v", tc.in, got, tc.want)
+			}
+		})
 	}
 }

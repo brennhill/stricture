@@ -428,7 +428,7 @@ Each phase produces a working binary that passes all tests for that phase. **Nev
 **Goal:** `strict` can lint Go files for convention violations.
 
 **Deliverables:**
-1. CLI entry point with flag parsing (`cmd/strict/main.go`)
+1. CLI entry point with flag parsing (`cmd/strict/main.go` -> `internal/cli`)
 2. Config loader (reads `.stricture.yml`, merges with defaults)
 3. Go language adapter (`go/parser` + `go/types` → `UnifiedFileModel`)
 4. Two CONV rules: `CONV-file-naming`, `CONV-file-header`
@@ -447,7 +447,7 @@ strict --rule CONV-file-naming .    # Single rule
 ```
 
 **Files to create:**
-- `cmd/strict/main.go`
+- `cmd/strict/main.go`, `internal/cli/`
 - `internal/config/config.go`, `defaults.go`
 - `internal/adapter/goparser/goparser.go`
 - `internal/model/file.go`, `violation.go`, `rule.go`

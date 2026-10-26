@@ -1,5 +1,7 @@
 # Stricture configuration — Stricture lints itself.
 version: "1.0"
+# NOTE: ARCH-* rules do not yet analyze real code (they fire only on trigger tokens).
+# Architecture is enforced by internal/archtest (make check-architecture); see docs/ARCHITECTURE.md.
 rules:
   CONV-file-naming: [error, { style: "snake_case" }]
   CONV-file-header: [warn, { pattern: "// {filename} — {purpose}" }]

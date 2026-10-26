@@ -1,5 +1,5 @@
 # Makefile — Build, test, and validate Stricture.
-.PHONY: build build-server test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality test-server lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset publication-agent publication-agent-status publication-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-test site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
+.PHONY: refactor-check check-architecture build build-server test test-race test-coverage test-phase1 test-phase2 test-phase3 test-phase4 test-phase5 test-phase6 test-integration test-tool-quality test-server lint benchmark validate ci quality-gate check-rules check-stubs check-invariants check-shell-syntax check-tree-sitter-pinning check-usecase-examples check-fake-apis-live check-benchmarks lineage-export lineage-diff check-lineage update-lineage-baseline phase-agent phase-agent-status phase-agent-reset overseer-agent overseer-agent-once overseer-agent-status overseer-agent-reset usecase-agent usecase-agent-status usecase-agent-reset publication-agent publication-agent-status publication-agent-reset spec-quality-audit clean install scaffold-rule tdd-red tdd-green validate-gates progress progress-test progress-json check-messages add-regression validate-all quick-check site-install site-test site-demo-pack site-build site-dev site-worker-dev site-worker-deploy
 
 GOFLAGS ?=
 GOCACHE ?= $(PWD)/.cache/go-build
@@ -7,7 +7,7 @@ export GOCACHE
 LINEAGE_MODE ?= block
 TEST_PKGS := ./cmd/... ./internal/...
 BENCH_PKGS := ./cmd/... ./internal/...
-PHASE1_PKGS := ./internal/config/... ./internal/adapter/goparser/... ./internal/rules/conv/... ./internal/reporter/... ./cmd/strict/...
+PHASE1_PKGS := ./internal/config/... ./internal/adapter/goparser/... ./internal/rules/conv/... ./internal/reporter/... ./internal/cli/... ./internal/discovery/... ./internal/baseline/...
 
 build:
 	go build $(GOFLAGS) -o bin/strict ./cmd/strict
@@ -37,7 +37,7 @@ test-phase3: test-phase2
 	go test $(GOFLAGS) ./internal/rules/tq/...
 
 test-phase4: test-phase3
-	go test $(GOFLAGS) ./internal/manifest/... ./internal/rules/ctr/...
+	go test $(GOFLAGS) ./internal/manifest/... ./internal/rules/ctr/... ./internal/rules/all/...
 
 test-phase5: test-phase4
 	go test $(GOFLAGS) ./internal/adapter/python/... ./internal/adapter/java/...
@@ -68,7 +68,16 @@ validate:
 
 ci: lint quality-gate benchmark validate
 
+# Run after EVERY refactoring step: architecture policy + unit tests + CLI integration suite.
+refactor-check: check-architecture test-integration
+	go test $(GOFLAGS) -count=1 $(TEST_PKGS)
+
+# Architecture policy (layering, rule registration, file size, complexity): docs/ARCHITECTURE.md
+check-architecture:
+	go test $(GOFLAGS) -count=1 ./internal/archtest/...
+
 quality-gate:
+	$(MAKE) check-architecture
 	$(MAKE) build
 	$(MAKE) test-phase6
 	$(MAKE) test-integration
@@ -233,7 +242,7 @@ validate-all: validate-gates check-messages
 	VALIDATION_HEALTH_FAIL_ON_WARNINGS=1 ./scripts/validation-health-check.sh
 
 # Quick check: lint + test phase 1 + validate messages
-quick-check: lint test-phase1 check-messages
+quick-check: lint check-architecture test-phase1 check-messages
 
 # --- Marketing site + demo targets ---
 

@@ -14,7 +14,7 @@ STRICTURE_CMD_MIN_COVERAGE="${STRICTURE_CMD_MIN_COVERAGE:-20}"
 STRICTURE_REPEAT_RUNS="${STRICTURE_REPEAT_RUNS:-3}"
 STRICTURE_ENABLE_RACE="${STRICTURE_ENABLE_RACE:-1}"
 
-CORE_COVERAGE_PKGS="${CORE_COVERAGE_PKGS:-./internal/adapter/java/... ./internal/adapter/python/... ./internal/adapter/typescript/... ./internal/config/... ./internal/fix/... ./internal/lineage/... ./internal/manifest/... ./internal/plugins/... ./internal/rules/arch/... ./internal/rules/conv/... ./internal/rules/ctr/... ./internal/rules/tq/... ./internal/suppression/...}"
+CORE_COVERAGE_PKGS="${CORE_COVERAGE_PKGS:-./internal/adapter/java/... ./internal/adapter/python/... ./internal/adapter/typescript/... ./internal/baseline/... ./internal/config/... ./internal/discovery/... ./internal/engine/... ./internal/fix/... ./internal/lineage/... ./internal/manifest/... ./internal/plugins/... ./internal/rules/arch/... ./internal/rules/conv/... ./internal/rules/ctr/... ./internal/rules/tq/... ./internal/suppression/...}"
 
 mkdir -p "$GOCACHE_DIR" "$PROJECT_ROOT/.cache"
 export GOCACHE="$GOCACHE_DIR"
@@ -55,9 +55,9 @@ core_cov="$(extract_coverage "$CORE_PROFILE")"
 assert_min_coverage "$core_cov" "$STRICTURE_CORE_MIN_COVERAGE" "core analyzer"
 
 echo "==> CLI unit coverage gate"
-go test -count=1 -coverprofile="$CMD_PROFILE" -covermode=atomic ./cmd/strict >/dev/null
+go test -count=1 -coverprofile="$CMD_PROFILE" -covermode=atomic ./internal/cli >/dev/null
 cmd_cov="$(extract_coverage "$CMD_PROFILE")"
-assert_min_coverage "$cmd_cov" "$STRICTURE_CMD_MIN_COVERAGE" "cmd/strict"
+assert_min_coverage "$cmd_cov" "$STRICTURE_CMD_MIN_COVERAGE" "internal/cli"
 
 echo "==> Integration CLI suite"
 go test -tags=integration -count=1 -timeout=180s ./tests/integration/...

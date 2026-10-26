@@ -1,0 +1,71 @@
+{
+  "Path": "svc.go",
+  "Language": "go",
+  "IsTestFile": false,
+  "Source": "Ly8gc3ZjLmdvIOKAlCBTYW1wbGUuCnBhY2thZ2Ugc3ZjCgppbXBvcnQgKAoJImVycm9ycyIKCSJmbXQiCikKCi8vIFVzZXIgaXMgYSB1c2VyLgp0eXBlIFVzZXIgc3RydWN0IHsKCUlEICAgc3RyaW5nIGBqc29uOiJpZCJgCglOYW1lIHN0cmluZyBganNvbjoibmFtZSJgCn0KCmZ1bmMgR2V0VXNlcihpZCBzdHJpbmcpICgqVXNlciwgZXJyb3IpIHsKCWlmIGlkID09ICIiIHsKCQlyZXR1cm4gbmlsLCBlcnJvcnMuTmV3KCJlbXB0eSIpCgl9CglyZXR1cm4gJlVzZXJ7SUQ6IGlkfSwgbmlsCn0KCmZ1bmMgKHUgKlVzZXIpIFN0cmluZygpIHN0cmluZyB7IHJldHVybiBmbXQuU3ByaW50KHUuSUQpIH0K",
+  "LineCount": 23,
+  "Imports": [
+    {
+      "Path": "errors",
+      "Alias": "",
+      "Names": null,
+      "IsDefault": false,
+      "StartLine": 5,
+      "EndLine": 5
+    },
+    {
+      "Path": "fmt",
+      "Alias": "",
+      "Names": null,
+      "IsDefault": false,
+      "StartLine": 6,
+      "EndLine": 6
+    }
+  ],
+  "Exports": null,
+  "Functions": [
+    {
+      "Name": "GetUser",
+      "Receiver": "",
+      "Params": null,
+      "Returns": null,
+      "IsExported": true,
+      "IsTest": false,
+      "Calls": null,
+      "ErrorExits": null,
+      "LineCount": 0,
+      "Complexity": 0,
+      "StartLine": 15,
+      "EndLine": 20
+    },
+    {
+      "Name": "String",
+      "Receiver": "",
+      "Params": null,
+      "Returns": null,
+      "IsExported": true,
+      "IsTest": false,
+      "Calls": null,
+      "ErrorExits": null,
+      "LineCount": 0,
+      "Complexity": 0,
+      "StartLine": 22,
+      "EndLine": 22
+    }
+  ],
+  "Types": [
+    {
+      "Name": "User",
+      "Kind": "",
+      "Fields": null,
+      "Methods": null,
+      "Exported": true,
+      "StartLine": 10,
+      "EndLine": 13
+    }
+  ],
+  "Classes": null,
+  "TestCases": null,
+  "TestTargets": null,
+  "JSONTags": null
+}

@@ -11,6 +11,7 @@
 package integration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -20,7 +21,11 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
+
+// commandTimeout bounds every CLI invocation so one stuck command cannot hang the suite.
+const commandTimeout = 60 * time.Second
 
 var (
 	buildBinaryOnce sync.Once
@@ -44,6 +49,8 @@ func binaryPath(t *testing.T) string {
 	bin := filepath.Join(root, "bin", "strict")
 
 	buildBinaryOnce.Do(func() {
+		// Newer Go refuses to overwrite a non-object file; drop any stale or invalid binary first.
+		_ = os.Remove(bin)
 		cmd := exec.Command("go", "build", "-o", bin, "./cmd/strict")
 		cmd.Dir = root
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -67,7 +74,9 @@ func binaryPath(t *testing.T) string {
 func run(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 	bin := binaryPath(t)
-	cmd := exec.Command(bin, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, bin, args...)
 
 	var outBuf, errBuf strings.Builder
 	cmd.Stdout = &outBuf
@@ -75,6 +84,9 @@ func run(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 
 	err := cmd.Run()
 	exitCode = 0
+	if ctx.Err() != nil {
+		t.Fatalf("strict %v timed out after %s", args, commandTimeout)
+	}
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		exitCode = exitErr.ExitCode()
 	} else if err != nil {
@@ -88,7 +100,9 @@ func run(t *testing.T, args ...string) (stdout, stderr string, exitCode int) {
 func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, exitCode int) {
 	t.Helper()
 	bin := binaryPath(t)
-	cmd := exec.Command(bin, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.Dir = dir
 
 	var outBuf, errBuf strings.Builder
@@ -97,6 +111,9 @@ func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, 
 
 	err := cmd.Run()
 	exitCode = 0
+	if ctx.Err() != nil {
+		t.Fatalf("strict %v timed out after %s in %s", args, commandTimeout, dir)
+	}
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		exitCode = exitErr.ExitCode()
 	} else if err != nil {
@@ -107,42 +124,6 @@ func runInDir(t *testing.T, dir string, args ...string) (stdout, stderr string, 
 }
 
 // === Exit code tests ===
-
-func TestBinaryPathRebuildsWhenExistingBinaryIsInvalid(t *testing.T) {
-	root := projectRoot(t)
-	bin := filepath.Join(root, "bin", "strict")
-
-	original, readErr := os.ReadFile(bin)
-	hadOriginal := readErr == nil
-	if readErr != nil && !os.IsNotExist(readErr) {
-		t.Fatalf("read existing binary: %v", readErr)
-	}
-
-	if err := os.MkdirAll(filepath.Dir(bin), 0o755); err != nil {
-		t.Fatalf("create bin dir: %v", err)
-	}
-	if err := os.WriteFile(bin, []byte("not-a-valid-binary"), 0o755); err != nil {
-		t.Fatalf("write invalid binary: %v", err)
-	}
-	defer func() {
-		if hadOriginal {
-			_ = os.WriteFile(bin, original, 0o755)
-			return
-		}
-		_ = os.Remove(bin)
-	}()
-	buildBinaryOnce = sync.Once{}
-	buildBinaryPath = ""
-	buildBinaryErr = nil
-
-	stdout, stderr, code := run(t, "--version")
-	if code != 0 {
-		t.Fatalf("version should still run after rebuild (exit=%d)\nstderr=%q\nstdout=%q", code, stderr, stdout)
-	}
-	if !strings.Contains(stdout, "strict version") {
-		t.Fatalf("version output should include marker, got %q", stdout)
-	}
-}
 
 func TestVersionExitsZero(t *testing.T) {
 	stdout, _, code := run(t, "--version")
@@ -399,21 +380,25 @@ func firstNonNil(values ...interface{}) interface{} {
 func TestConcurrentRuns(t *testing.T) {
 	// Run 5 instances of stricture simultaneously.
 	// They must not interfere with each other (cache corruption, etc.)
+	// Build once up front: t.Fatalf must not be called from the goroutines below.
+	bin := binaryPath(t)
 	errs := make(chan error, 5)
 	for i := 0; i < 5; i++ {
 		go func() {
-			_, _, code := run(t, "--version")
-			if code != 0 {
-				errs <- fmt.Errorf("exit code %d", code)
-			} else {
-				errs <- nil
+			ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+			defer cancel()
+			out, err := exec.CommandContext(ctx, bin, "--version").CombinedOutput()
+			if err != nil {
+				errs <- fmt.Errorf("--version failed: %w\n%s", err, out)
+				return
 			}
+			errs <- nil
 		}()
 	}
 
 	for i := 0; i < 5; i++ {
 		if err := <-errs; err != nil {
-			t.Errorf("concurrent run %d failed", i)
+			t.Errorf("concurrent run %d failed: %v", i, err)
 		}
 	}
 }

@@ -1,0 +1,10 @@
+{
+  "annotations": [],
+  "errors": [
+    {
+      "line": 1,
+      "message": "missing required key \"field\" or \"field_id\""
+    }
+  ],
+  "file": "bad.go"
+}

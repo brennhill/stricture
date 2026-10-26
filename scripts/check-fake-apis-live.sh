@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$PROJECT_ROOT/tests/fake-apis/docker-compose.yml"
 PROJECT_NAME="stricture-usecase-smoke"
+# Containers compile with a cold Go build cache, so startup can exceed 30s on a busy machine.
+READY_ATTEMPTS="${FAKE_API_READY_ATTEMPTS:-120}"
 REQUIRED_IMAGE="golang:1.22"
 START_EPOCH="$(date +%s)"
 
@@ -75,7 +77,7 @@ fetch_json_200() {
 
 	tmp_file="$(mktemp)"
 
-	for attempt in $(seq 1 30); do
+	for attempt in $(seq 1 "$READY_ATTEMPTS"); do
 		status="$(curl -sS -m 5 -o "$tmp_file" -w "%{http_code}" "$url" 2>/dev/null || true)"
 		body="$(cat "$tmp_file" 2>/dev/null || true)"
 		if [ "$status" = "200" ] && [ -n "$body" ]; then
