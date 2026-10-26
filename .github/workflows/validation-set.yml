@@ -30,14 +30,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GO_VERSION: "1.22"
+  GO_VERSION: "1.27"
 
 jobs:
   rule-consistency:
     name: Rule Consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check rule consistency
         run: ./scripts/check-rule-consistency.sh
@@ -46,7 +46,7 @@ jobs:
     name: Validation Set Health Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Run health check
         run: ./scripts/validation-health-check.sh
@@ -57,9 +57,9 @@ jobs:
     needs: [rule-consistency, health-check]
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload validation results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: validation-results
           path: /tmp/stricture-validation-*

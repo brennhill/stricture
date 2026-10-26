@@ -14,7 +14,7 @@
 
 | Component | Technology | Rationale |
 |-----------|-----------|-----------|
-| Language | Go 1.22+ | Fast startup (~2ms), single binary, native concurrency, strong LLM support |
+| Language | Go 1.27+ | Fast startup (~2ms), single binary, native concurrency, strong LLM support |
 | Go parser | `go/parser` + `go/types` (stdlib) | Full type resolution for Go files, zero dependencies |
 | TS/Python/Java parser | [go-tree-sitter](https://github.com/smacker/go-tree-sitter) | Unified parsing for all non-Go languages from a single binary |
 | Config format | YAML (`.stricture.yml`) | Human-readable, widely supported, `gopkg.in/yaml.v3` |

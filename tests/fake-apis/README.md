@@ -42,7 +42,7 @@ Pass criteria:
 
 This exits `0` with a `SKIP:` message when Docker daemon is unavailable.
 
-If `golang:1.22` is missing locally, the script automatically runs `docker pull golang:1.22` before starting the stack (and fails if pull cannot complete).
+If `golang:1.27` is missing locally, the script automatically runs `docker pull golang:1.27` before starting the stack (and fails if pull cannot complete).
 
 ## Example calls
 

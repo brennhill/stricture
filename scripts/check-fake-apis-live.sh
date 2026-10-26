@@ -8,7 +8,7 @@ COMPOSE_FILE="$PROJECT_ROOT/tests/fake-apis/docker-compose.yml"
 PROJECT_NAME="stricture-usecase-smoke"
 # Containers compile with a cold Go build cache, so startup can exceed 30s on a busy machine.
 READY_ATTEMPTS="${FAKE_API_READY_ATTEMPTS:-120}"
-REQUIRED_IMAGE="golang:1.22"
+REQUIRED_IMAGE="golang:1.27"
 START_EPOCH="$(date +%s)"
 
 ASSERTIONS_TOTAL=0

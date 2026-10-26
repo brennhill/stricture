@@ -1,6 +1,6 @@
 services:
   logistics-api:
-    image: golang:1.22
+    image: golang:1.27
     working_dir: /workspace
     volumes:
       - ../../:/workspace
@@ -14,7 +14,7 @@ services:
       - "18081:18081"
 
   fintech-api:
-    image: golang:1.22
+    image: golang:1.27
     working_dir: /workspace
     volumes:
       - ../../:/workspace
@@ -28,7 +28,7 @@ services:
       - "18082:18082"
 
   media-api:
-    image: golang:1.22
+    image: golang:1.27
     working_dir: /workspace
     volumes:
       - ../../:/workspace
@@ -42,7 +42,7 @@ services:
       - "18083:18083"
 
   ecommerce-api:
-    image: golang:1.22
+    image: golang:1.27
     working_dir: /workspace
     volumes:
       - ../../:/workspace
@@ -56,7 +56,7 @@ services:
       - "18084:18084"
 
   governance-api:
-    image: golang:1.22
+    image: golang:1.27
     working_dir: /workspace
     volumes:
       - ../../:/workspace
