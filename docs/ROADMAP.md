@@ -144,8 +144,70 @@ Planned phases:
 2. **v1 (tooling):** expanded helper commands, CI staleness checks.
 3. **v2 (intelligence):** LLM prompt templates, IDE extension, autocomplete.
 
+### Track G — Contract Foundation (Pact-compatible)
+
+Goal: make contract checking the foundation that lineage, drift and audit sit on.
+Today the `CTR-*` rules are placeholders and lineage edges come from hand-written
+annotations that nothing verifies. Lineage should be a graph over *verified*
+contract edges.
+
+Approach: reuse Pact's pact file format (specification v4) as the contract-fact model
+instead of inventing one. Pact has no source annotations; the standard to adopt is the
+file format, its matching rules, generators and provider states.
+
+Scope:
+
+1. Contract-fact model in `internal/model` that maps onto a Pact v4 interaction
+   (HTTP, asynchronous message, synchronous message) with matching rules.
+2. Reader for pact files v2 through v4 and writer for v4, so existing pacts can be
+   verified statically and Stricture output can feed a Pact Broker or PactFlow.
+3. Static extraction of interactions from client call sites and server handlers
+   (Go and TypeScript first, since the adapters exist), replacing the runtime mock server.
+4. **Derived consumer-driven contracts.** Pact only covers what the consumer's tests
+   exercised, and the consumer declares the fields it needs by hand. Static extraction
+   can record which response fields the consumer's code actually reads, and use that
+   set as the consumer-driven contract. This is Pact's idea derived from code instead
+   of declared, and it covers paths no test exercised.
+5. Real implementations of `CTR-request-shape`, `CTR-response-shape` and
+   `CTR-status-code-handling`, replacing the trigger-token stubs. Matching rules map
+   onto these rules; strictness parity (`CTR-strictness-parity`) has no Pact equivalent
+   and stays a Stricture differentiator.
+6. Annotation conformance: `strict-source` annotations become claims verified against
+   extracted facts (a mismatch is a `CTR-manifest-conformance` violation) and stay
+   authoritative only for metadata such as owner, escalation and tier.
+7. Rebase `lineage-export` and `lineage-diff` onto contract facts, so a drift finding
+   means a verified edge changed.
+8. Broker-equivalent in `stricture-server` (Track D): versioned contracts, branches and
+   environments, and a `can-i-deploy` style check. In Pact this is a query over a
+   matrix of consumer and provider versions and their verification results, asking
+   whether the version being deployed has a passing verification against each version
+   already deployed in the target environment. Pending and work-in-progress contracts
+   keep new contracts from failing the provider's main build. Map `pending` onto
+   Stricture's baseline and soak modes.
+
+Planned phases:
+
+1. **v0 (model):** fact model plus pact v2-v4 reader and v4 writer, with tests.
+2. **v1 (extract):** Go and TypeScript extraction, derived field-usage contracts,
+   real request and response shape rules.
+3. **v2 (verify):** annotation conformance, lineage rebased on facts, static
+   verification of imported pacts against provider code.
+4. **v3 (broker):** versioned contracts, environments and `can-i-deploy` in the server;
+   async and message contracts, provider-state equivalents.
+
+Open questions:
+
+- Pact plugins (gRPC, protobuf, other transports): the architecture is a Rust shared
+  core or JVM plugin driver orchestrating plugins; the plugin protocol and manifest
+  format are not yet reviewed.
+- Details of `can-i-deploy` (matrix selectors, retry behavior, exit codes) need review
+  against current Pact Broker docs before the broker work is designed.
+- Provider states have no static equivalent. First version carries them through from
+  imported pacts and leaves them out of extracted ones.
+
 ## Sequencing
 
+0. **Track G (contract foundation) is the prerequisite for lineage drift, audit and policy gates.** Start with its v0 model and pact reader/writer.
 1. Finish defaults implementation and compact UX.
 2. **Deliver annotation format v2 spec and parser support.**
 3. Deliver `stricture-helper` v0 (expanded scope).
