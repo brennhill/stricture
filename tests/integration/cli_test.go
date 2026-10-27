@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -275,8 +276,12 @@ func TestGoldenTextOutput(t *testing.T) {
 		t.Fatalf("read golden file: %v", err)
 	}
 
-	if stdout != string(expected) {
-		t.Errorf("output differs from golden file\n--- got ---\n%s\n--- want ---\n%s", stdout, string(expected))
+	// elapsedMs is runtime-dependent; normalize it on both sides.
+	elapsed := regexp.MustCompile(`elapsedMs=\d+`)
+	got := elapsed.ReplaceAllString(stdout, "elapsedMs=0")
+	want := elapsed.ReplaceAllString(string(expected), "elapsedMs=0")
+	if got != want {
+		t.Errorf("output differs from golden file\n--- got ---\n%s\n--- want ---\n%s", got, want)
 	}
 }
 
