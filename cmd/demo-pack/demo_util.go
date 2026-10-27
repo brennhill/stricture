@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/stricture/stricture/internal/lineage"
@@ -65,6 +66,7 @@ func ensureParentNodesFromSubsystems(nodes map[string]*nodeMeta) {
 	for id := range nodes {
 		ids = append(ids, id)
 	}
+	sort.Strings(ids) // deterministic: parents inherit from the first child in ID order
 	for _, id := range ids {
 		cut := strings.Index(id, ":")
 		if cut <= 0 {

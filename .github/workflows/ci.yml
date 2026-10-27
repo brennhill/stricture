@@ -95,7 +95,7 @@ jobs:
         run: make build
 
       - name: Version check
-        run: ./bin/stricture --version
+        run: ./bin/strict --version
 
       - name: Run integration tests
         run: go test -tags=integration -timeout=120s ./tests/integration/...
@@ -133,7 +133,7 @@ jobs:
         run: ./scripts/validation-health-check.sh
 
       - name: Run validation set
-        run: STRICTURE_BIN=./bin/stricture ./scripts/run-validation-set.sh
+        run: STRICTURE_BIN=./bin/strict ./scripts/run-validation-set.sh
 
       - name: Upload validation artifacts
         if: always()
@@ -177,7 +177,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             OUTPUT="${OUTPUT}.exe"
           fi
-          go build -ldflags="-s -w -X main.version=$(cat VERSION)" -o "bin/${OUTPUT}" ./cmd/stricture
+          go build -ldflags="-s -w -X main.version=$(cat VERSION)" -o "bin/${OUTPUT}" ./cmd/strict
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

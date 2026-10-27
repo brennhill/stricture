@@ -102,7 +102,9 @@ func staticMessage(format string) func(c fieldCompare, b, h string) string {
 
 // fieldChecks run in order; the first entry that fires is reported first.
 var fieldChecks = []attrCheck{
-	attrDiff(fieldPathOf, fixedSeverity(SeverityMedium), "field_path_changed", producerFromTo("field path")),
+	attrDiff(fieldPathOf, fixedSeverity(SeverityMedium), "field_path_changed", func(c fieldCompare, b, h string) string {
+		return fmt.Sprintf("Producer %s changed field path from %s to %s for %s.", c.producerLabel(), b, h, c.fieldID)
+	}),
 	attrDiff(sourceSystemOf, fixedSeverity(SeverityHigh), "source_system_changed", func(c fieldCompare, b, h string) string {
 		return fmt.Sprintf("Producer system changed from %s to %s for %s.", b, h, c.fieldID)
 	}),

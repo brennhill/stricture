@@ -361,6 +361,8 @@ func TestFixArgs(t *testing.T) {
 		{"single-dash dry-run", []string{"-dry-run", "src"}, []string{"--fix-dry-run", "src"}},
 		{"fix-dry-run alias is not combined with fix", []string{"--fix-dry-run", "src"}, []string{"--fix-dry-run", "src"}},
 		{"other flags pass through", []string{"--fix-backup", "--rule", "CONV-file-header", "src"}, []string{"--fix", "--fix-backup", "--rule", "CONV-file-header", "src"}},
+		{"dry-run=true previews", []string{"--dry-run=true", "src"}, []string{"--fix-dry-run", "src"}},
+		{"dry-run=false applies", []string{"--dry-run=false", "src"}, []string{"--fix", "src"}},
 		{"dry-run mixed with flags", []string{"--format", "json", "--dry-run"}, []string{"--fix-dry-run", "--format", "json"}},
 	}
 	for _, tc := range cases {
