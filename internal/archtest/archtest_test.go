@@ -99,3 +99,15 @@ func TestCheckLineCeilings(t *testing.T) {
 		t.Errorf("compliant file flagged: %v", got)
 	}
 }
+
+func TestCheckLayeringRejectsFlagOutsidePresentation(t *testing.T) {
+	g := Graph{"internal/config": {StdFlag}, "internal/cli": {StdFlag}}
+	rules := []LayerRule{
+		{Pattern: "internal/config", Allowed: nil},
+		{Pattern: "internal/cli", Allowed: []string{StdFlag}},
+	}
+	findings := CheckLayering(g, rules)
+	if len(findings) != 1 || !strings.Contains(findings[0], "internal/config imports std:flag") {
+		t.Fatalf("findings = %v, want exactly one for internal/config", findings)
+	}
+}

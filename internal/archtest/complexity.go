@@ -18,13 +18,52 @@ func FuncComplexities(filename string, src []byte) (map[string]int, error) {
 	}
 	out := map[string]int{}
 	for _, decl := range f.Decls {
-		fn, ok := decl.(*ast.FuncDecl)
-		if !ok || fn.Body == nil {
-			continue
+		switch d := decl.(type) {
+		case *ast.FuncDecl:
+			if d.Body != nil {
+				out[uniqueKey(out, funcKey(d))] = 1 + countDecisions(d.Body)
+			}
+		case *ast.GenDecl:
+			addPackageLiterals(out, d)
 		}
-		out[funcKey(fn)] = 1 + countDecisions(fn.Body)
 	}
 	return out, nil
+}
+
+// uniqueKey keeps repeated names (several init functions) from overwriting each other.
+func uniqueKey(m map[string]int, key string) string {
+	if _, taken := m[key]; !taken {
+		return key
+	}
+	for i := 2; ; i++ {
+		if k := fmt.Sprintf("%s#%d", key, i); m[k] == 0 {
+			return k
+		}
+	}
+}
+
+// addPackageLiterals measures package-level `var X = func() {...}` values, keyed by variable name.
+func addPackageLiterals(out map[string]int, d *ast.GenDecl) {
+	for _, spec := range d.Specs {
+		vs, ok := spec.(*ast.ValueSpec)
+		if !ok {
+			continue
+		}
+		for i, v := range vs.Values {
+			if n := countDecisions(v); n > 0 || isFuncLit(v) {
+				name := "var"
+				if i < len(vs.Names) {
+					name = vs.Names[i].Name
+				}
+				out[uniqueKey(out, name)] = 1 + n
+			}
+		}
+	}
+}
+
+func isFuncLit(e ast.Expr) bool {
+	_, ok := e.(*ast.FuncLit)
+	return ok
 }
 
 func funcKey(fn *ast.FuncDecl) string {

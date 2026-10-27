@@ -33,7 +33,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          args: --timeout=5m
+          args: --timeout=5m ./cmd/... ./internal/...
 
       - name: Run quality gate
         run: make quality-gate

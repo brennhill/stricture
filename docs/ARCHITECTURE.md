@@ -34,7 +34,7 @@ internal/model        interfaces and data types (UnifiedFileModel, Rule, Violati
 | `internal/cli/*` | any `internal/...` |
 | `cmd/strict`, `cmd/stricture-server`, `cmd/demo-pack` | only `internal/cli`, `internal/server`, `internal/lineage` respectively |
 
-Consequences: rule categories cannot import each other; adapters cannot import rules; nothing below `cli` can print or parse flags; nothing imports `cmd`.
+Consequences: rule categories cannot import each other; adapters cannot import rules; nothing below `cli` can parse flags (enforced: only `internal/cli` and `cmd/demo-pack` may import `flag`); nothing imports `cmd`.
 
 ## Extending
 

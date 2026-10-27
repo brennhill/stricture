@@ -44,6 +44,9 @@ fi
 
 paths=(
     "cmd/strict"
+    "internal/cli"
+    "internal/discovery"
+    "internal/baseline"
     "internal/config"
     "internal/adapter/goparser"
     "internal/rules/conv"

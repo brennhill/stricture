@@ -92,3 +92,17 @@ func TestCheckComplexity(t *testing.T) {
 		t.Errorf("compliant or pinned function flagged: %v", got)
 	}
 }
+
+func TestFuncComplexitiesMeasuresInitsAndPackageLiterals(t *testing.T) {
+	src := []byte("package p\n\nvar Handler = func(a, b bool) bool {\n\tif a && b {\n\t\treturn true\n\t}\n\treturn false\n}\n\nfunc init() {\n\tif true {\n\t}\n}\n\nfunc init() {\n\tif true {\n\t}\n\tif true {\n\t}\n}\n")
+	got, err := FuncComplexities("p.go", src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]int{"Handler": 3, "init": 2, "init#2": 3}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("complexity[%s] = %d, want %d (all: %v)", k, got[k], v, got)
+		}
+	}
+}

@@ -17,6 +17,9 @@ import (
 // Only non-test files contribute edges.
 type Graph map[string][]string
 
+// StdFlag is the pseudo-package recorded for imports of the standard "flag" package.
+const StdFlag = "std:flag"
+
 // LayerRule says which module-internal packages a package family may import.
 // Patterns are module-relative; a trailing "/..." matches the package and its subpackages.
 type LayerRule struct {
@@ -174,6 +177,9 @@ func LoadGraph(repoRoot, modulePath string, roots []string) (Graph, map[string]i
 			}
 			if rest, ok := strings.CutPrefix(imp, modulePath+"/"); ok {
 				g[pkg] = appendUnique(g[pkg], rest)
+			} else if imp == "flag" {
+				// Flag parsing is presentation-only; the layer table must allow it explicitly.
+				g[pkg] = appendUnique(g[pkg], StdFlag)
 			}
 		}
 		return nil

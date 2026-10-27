@@ -52,12 +52,12 @@ var Layers = []LayerRule{
 	}},
 
 	// Presentation: the only layer allowed to see everything internal.
-	{Pattern: "internal/cli/...", Allowed: []string{"internal/..."}},
+	{Pattern: "internal/cli/...", Allowed: []string{"internal/...", StdFlag}},
 
 	// Entry points: each binary may import only its own front-end package. Nothing may import cmd/.
 	{Pattern: "cmd/strict", Allowed: []string{"internal/cli"}},
 	{Pattern: "cmd/stricture-server", Allowed: []string{"internal/server"}},
-	{Pattern: "cmd/demo-pack", Allowed: []string{"internal/lineage"}},
+	{Pattern: "cmd/demo-pack", Allowed: []string{"internal/lineage", StdFlag}},
 }
 
 // RulePackages are the individual rule packages. Only RuleImporters may import them directly.

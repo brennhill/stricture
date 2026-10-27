@@ -67,7 +67,7 @@ jobs:
         run: make build
 
       - name: Run validation set
-        run: STRICTURE_BIN=./bin/stricture ./scripts/run-validation-set.sh
+        run: STRICTURE_BIN=./bin/strict ./scripts/run-validation-set.sh
 
       - name: Upload validation results
         if: always()
