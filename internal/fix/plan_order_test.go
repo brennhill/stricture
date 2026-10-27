@@ -13,7 +13,7 @@ import (
 func TestPlanOrderIsIndependentOfViolationOrder(t *testing.T) {
 	dir := t.TempDir()
 	names := []string{"b_service.ts", "a_service.ts", "c_service.ts"}
-	var violations []model.Violation
+	violations := make([]model.Violation, 0, len(names))
 	for _, n := range names {
 		path := filepath.Join(dir, n)
 		if err := os.WriteFile(path, []byte("export const v = 1;\n"), 0o644); err != nil {
