@@ -25,3 +25,14 @@ func TestDiffArtifacts_FieldPathChangedMessage(t *testing.T) {
 	}
 	t.Fatal("missing field_path_changed change")
 }
+
+func TestSortChangesBreaksTiesByMessage(t *testing.T) {
+	changes := []DriftChange{
+		{Severity: SeverityLow, ChangeType: "x", FieldID: "f", Message: "b"},
+		{Severity: SeverityLow, ChangeType: "x", FieldID: "f", Message: "a"},
+	}
+	sortChanges(changes)
+	if changes[0].Message != "a" || changes[1].Message != "b" {
+		t.Fatalf("ties not ordered by message: %+v", changes)
+	}
+}

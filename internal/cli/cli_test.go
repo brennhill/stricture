@@ -363,6 +363,9 @@ func TestFixArgs(t *testing.T) {
 		{"other flags pass through", []string{"--fix-backup", "--rule", "CONV-file-header", "src"}, []string{"--fix", "--fix-backup", "--rule", "CONV-file-header", "src"}},
 		{"dry-run=true previews", []string{"--dry-run=true", "src"}, []string{"--fix-dry-run", "src"}},
 		{"dry-run=false applies", []string{"--dry-run=false", "src"}, []string{"--fix", "src"}},
+		{"dry-run after double dash is a path", []string{"--", "--dry-run"}, []string{"--fix", "--", "--dry-run"}},
+		{"dry-run as a flag value is kept", []string{"--rule", "--dry-run", "src"}, []string{"--fix", "--rule", "--dry-run", "src"}},
+		{"backup is dropped from a preview", []string{"--dry-run", "--fix-backup", "src"}, []string{"--fix-dry-run", "src"}},
 		{"dry-run mixed with flags", []string{"--format", "json", "--dry-run"}, []string{"--fix-dry-run", "--format", "json"}},
 	}
 	for _, tc := range cases {

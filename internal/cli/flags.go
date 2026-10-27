@@ -38,30 +38,32 @@ func parseFlagSetOrExit(fs *flag.FlagSet, args []string) {
 	}
 }
 
+// lintValueFlags are the lint flags that consume the next argument as their value.
+var lintValueFlags = map[string]bool{
+	"-format":          true,
+	"--format":         true,
+	"-config":          true,
+	"--config":         true,
+	"-rule":            true,
+	"--rule":           true,
+	"-category":        true,
+	"--category":       true,
+	"-ext":             true,
+	"--ext":            true,
+	"-severity":        true,
+	"--severity":       true,
+	"-concurrency":     true,
+	"--concurrency":    true,
+	"-output":          true,
+	"--output":         true,
+	"-max-violations":  true,
+	"--max-violations": true,
+	"-baseline":        true,
+	"--baseline":       true,
+}
+
 func splitLintArgs(args []string) ([]string, []string, error) {
-	valueFlags := map[string]bool{
-		"-format":          true,
-		"--format":         true,
-		"-config":          true,
-		"--config":         true,
-		"-rule":            true,
-		"--rule":           true,
-		"-category":        true,
-		"--category":       true,
-		"-ext":             true,
-		"--ext":            true,
-		"-severity":        true,
-		"--severity":       true,
-		"-concurrency":     true,
-		"--concurrency":    true,
-		"-output":          true,
-		"--output":         true,
-		"-max-violations":  true,
-		"--max-violations": true,
-		"-baseline":        true,
-		"--baseline":       true,
-	}
-	return splitArgs(args, argSpec{valueFlags: valueFlags, honorDoubleDash: true})
+	return splitArgs(args, argSpec{valueFlags: lintValueFlags, honorDoubleDash: true})
 }
 
 func splitTraceArgs(args []string) (string, []string, error) {

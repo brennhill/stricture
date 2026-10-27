@@ -216,7 +216,7 @@ func isExistingField(baseByID map[string]Annotation, headID string, headField An
 }
 
 func sortChanges(changes []DriftChange) {
-	sort.Slice(changes, func(i, j int) bool {
+	sort.SliceStable(changes, func(i, j int) bool {
 		ri := severityRank(changes[i].Severity)
 		rj := severityRank(changes[j].Severity)
 		if ri != rj {
@@ -225,7 +225,10 @@ func sortChanges(changes []DriftChange) {
 		if changes[i].FieldID != changes[j].FieldID {
 			return changes[i].FieldID < changes[j].FieldID
 		}
-		return changes[i].ChangeType < changes[j].ChangeType
+		if changes[i].ChangeType != changes[j].ChangeType {
+			return changes[i].ChangeType < changes[j].ChangeType
+		}
+		return changes[i].Message < changes[j].Message
 	})
 }
 

@@ -36,6 +36,19 @@ func Plan(violations []model.Violation) ([]Operation, error) {
 	ops := make([]Operation, 0)
 	seen := map[string]bool{}
 
+	// Rules run in parallel, so violation order varies; plan from a stable order.
+	violations = append([]model.Violation(nil), violations...)
+	sort.SliceStable(violations, func(i, j int) bool {
+		a, b := violations[i], violations[j]
+		if a.FilePath != b.FilePath {
+			return a.FilePath < b.FilePath
+		}
+		if a.RuleID != b.RuleID {
+			return a.RuleID < b.RuleID
+		}
+		return a.StartLine < b.StartLine
+	})
+
 	for _, v := range violations {
 		if unsupportedRuleIDsForFixing[v.RuleID] {
 			continue

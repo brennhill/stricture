@@ -24,7 +24,7 @@ const entries = docs
     const summary = entry.data.description || extractSummary(entry.body);
     return {
       entry,
-      title: entry.data.title || toTitle(entry.slug.split("/").pop()),
+      title: entry.data.title || toTitle(entry.id.split("/").pop()),
       summary,
     };
   })
@@ -51,7 +51,7 @@ const entries = docs
 
   <section class="card docs-grid">
     {entries.map(({ entry, title, summary }) => (
-      <a class="doc-card" href={`/docs/${entry.slug}`} data-doc-card data-doc-title={title} data-doc-summary={summary}>
+      <a class="doc-card" href={`/docs/${entry.id}`} data-doc-card data-doc-title={title} data-doc-summary={summary}>
         <h3>{title}</h3>
         <p>{summary}</p>
         <span>View doc →</span>
