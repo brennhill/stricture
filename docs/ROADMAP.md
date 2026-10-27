@@ -195,15 +195,43 @@ Planned phases:
 4. **v3 (broker):** versioned contracts, environments and `can-i-deploy` in the server;
    async and message contracts, provider-state equivalents.
 
-Open questions:
+Research findings and decisions (Pact docs reviewed Oct 2026):
 
-- Pact plugins (gRPC, protobuf, other transports): the architecture is a Rust shared
-  core or JVM plugin driver orchestrating plugins; the plugin protocol and manifest
-  format are not yet reviewed.
-- Details of `can-i-deploy` (matrix selectors, retry behavior, exit codes) need review
-  against current Pact Broker docs before the broker work is designed.
-- Provider states have no static equivalent. First version carries them through from
-  imported pacts and leaves them out of extracted ones.
+- **Pact plugins.** A plugin is a separate process with a manifest (`pact-plugin.json`:
+  `manifestVersion`, `pluginInterfaceVersion`, `name`, `version`, `executableType`,
+  `entryPoint`, `dependencies`) found under `$PACT_PLUGIN_DIR` or `~/.pact/plugins`.
+  The driver starts it, reads `{port, serverKey}` from its stdout, and talks gRPC
+  (`InitPlugin`, `UpdateCatalogue`, `CompareContents`, `ConfigureInteraction`,
+  `GenerateContent`, mock-server and verification RPCs). Plugins advertise
+  catalogue entries (`content-matcher`, `content-generator`, `matcher`, `transport`) keyed by
+  content type. The protocol exists to run mock servers and replay requests, which static
+  analysis does not need. Decision: do not build a plugin host in v0-v2. Instead
+  (a) round-trip `plugins` metadata and `pluginConfiguration` losslessly through the reader
+  and writer, (b) ship built-in static analyzers for protobuf/gRPC and parse `.proto`
+  files directly, and (c) in v3 consider a client for the single relevant RPC
+  (`CompareContents`) for formats Stricture cannot parse. Not yet reviewed: the v2 plugin
+  proto (`plugin_v2.proto`).
+- **can-i-deploy.** Inputs are pacticipant plus version, a target (`--to-environment`, or
+  `--latest`, `--branch`, `--main-branch`, `--to` tag), `--ignore`, `--retry-while-unknown`
+  and `--retry-interval`, `--dry-run` and `--output json|table`. Exit code is 0 or 1.
+  Prerequisites are environments and recorded deployments (`record-deployment`,
+  `record-release`). It queries the matrix, with `latestby` set to `cvp` for one selector
+  and `cvpv` for two. The docs do not state how rows are combined; the usual reading is
+  that every row must be successful and an unverified combination counts as unknown.
+  Decision: the Stricture server verifies statically when a contract is published, so
+  results are never unknown and the retry machinery is unnecessary. Ship `strict can-i-deploy`
+  with the same flags and exit codes so Pact users can switch, plus a blast-radius
+  section in the output.
+- **Provider states.** In Pact a state (name plus params) makes the provider's data
+  match so a replayed request is reproducible. Statically there is no data to set up, but
+  the state still determines which response variant the consumer expects (for example
+  "user does not exist" implies a 404 with an error body). Decision: treat a state as a
+  scenario label that selects a provider response variant (status code and body shape).
+  Imported states are kept in the model and verified by matching the expected status to an
+  extracted variant; unmapped states are reported as informational, not failures.
+  Extracted contracts get synthetic state names from guard conditions in the handler
+  (for example a not-found branch). An optional provider-side annotation maps a Pact state
+  name to a handler branch where inference cannot.
 
 ## Sequencing
 
